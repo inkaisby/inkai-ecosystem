@@ -70,3 +70,6 @@ app.listen(PORT, () => {
   Environment: ${process.env.NODE_VERSION || 'development'}
   `);
 });
+
+export default app;
+
