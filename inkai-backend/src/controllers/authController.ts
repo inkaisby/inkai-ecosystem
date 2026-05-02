@@ -65,6 +65,8 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { identifier, password } = req.body; // identifier can be email or NIA
 
+    console.log(`Login attempt for: ${identifier}`);
+
     // Find user by email or NIA
     let user = await prisma.user.findFirst({
       where: {
@@ -79,16 +81,20 @@ export const login = async (req: Request, res: Response) => {
       }
     });
 
-
     if (!user) {
+      console.log(`User NOT found: ${identifier}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    console.log(`User found: ${user.email}. Checking password...`);
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
+      console.log(`Password INVALID for user: ${user.email}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    console.log(`Password valid for user: ${user.email}`);
+
 
     // Generate JWT
     const token = jwt.sign(
