@@ -5,7 +5,14 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 
-void main() {
+import 'core/network/sync_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Start background sync
+  SyncService().syncData().catchError((e) => print('Sync Error: $e'));
+
   runApp(
     MultiProvider(
       providers: [

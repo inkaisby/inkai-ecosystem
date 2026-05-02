@@ -4,11 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: 'http://192.168.11.8:5000/v1', // Menggunakan IP Lokal agar bisa diakses dari Mobile
-      connectTimeout: const Duration(seconds: 5),
-      receiveTimeout: const Duration(seconds: 3),
+      baseUrl: 'https://inkai-ecosystem.vercel.app/v1', 
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
     ),
   );
+
+  Dio get dio => _dio;
 
   ApiService() {
     _dio.interceptors.add(

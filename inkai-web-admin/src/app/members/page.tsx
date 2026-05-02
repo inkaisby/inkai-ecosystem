@@ -14,21 +14,35 @@ import {
   UserMinus,
   Mail,
   Phone,
-  Loader2
+  Loader2,
+  X,
+  ArrowLeft
 } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 
 export default function MembersPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const dojoId = searchParams.get('dojoId');
+  const dojoName = searchParams.get('dojoName');
+  const branchId = searchParams.get('branchId');
+  const provinceId = searchParams.get('provinceId');
+
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [meta, setMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [search, setSearch] = useState('');
+  const [dojoInfo, setDojoInfo] = useState<any | null>(null);
 
   const fetchMembers = async (page = 1, searchQuery = '') => {
     setLoading(true);
     try {
-      const response = await api.members.getAll({ page, search: searchQuery });
+      const params: any = { page, search: searchQuery };
+      if (dojoId) params.dojoId = dojoId;
+      
+      const response = await api.members.getAll(params);
       setMembers(response.data);
       setMeta(response.meta);
       setError(null);
@@ -40,35 +54,94 @@ export default function MembersPage() {
   };
 
   useEffect(() => {
-    fetchMembers();
-  }, []);
+    fetchMembers(1, search);
+    if (dojoId) {
+      const fetchDojoInfo = async () => {
+        try {
+          const response = await api.org.getDojoDetail(dojoId);
+          setDojoInfo(response.data);
+        } catch (err) {
+          console.error('Failed to fetch dojo info', err);
+        }
+      };
+      fetchDojoInfo();
+    } else {
+      setDojoInfo(null);
+    }
+  }, [dojoId]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchMembers(1, search);
   };
 
+  const handleBack = () => {
+    if (branchId && provinceId) {
+      router.push(`/organization?branchId=${branchId}&provinceId=${provinceId}`);
+    } else {
+      router.push('/organization');
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Area */}
-      <div className="flex justify-between items-end">
-        <div>
-          <div className="flex items-center gap-2 text-amber-500 mb-2">
-            <Users size={20} />
-            <span className="text-sm font-bold uppercase tracking-widest">Database Nasional</span>
+      <div>
+        {dojoId && (
+          <button 
+            onClick={handleBack}
+            className="flex items-center gap-2 text-gray-500 hover:text-amber-500 transition-colors mb-4 group"
+          >
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm font-medium">Kembali ke Daftar Dojo</span>
+          </button>
+        )}
+        <div className="flex justify-between items-end">
+          <div>
+            <div className="flex items-center gap-2 text-amber-500 mb-2">
+              <Users size={20} />
+              <span className="text-sm font-bold uppercase tracking-widest">
+                {dojoId ? `Anggota Dojo ${dojoName}` : 'Database Nasional'}
+              </span>
+            </div>
+            <h2 className="text-3xl font-bold uppercase">
+              {dojoId ? dojoName : 'Daftar Anggota'}
+            </h2>
+            {dojoId ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 bg-amber-500/5 rounded-2xl border border-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-500">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">Kecamatan</p>
+                  <p className="text-xs font-bold text-gray-300 uppercase">{dojoInfo?.kecamatan || '...'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">Tempat Latihan</p>
+                  <p className="text-xs font-bold text-gray-300 uppercase line-clamp-1">{dojoInfo?.tempatLatihan || '...'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">No. WhatsApp</p>
+                  <p className="text-xs font-bold text-amber-500 uppercase">{dojoInfo?.phoneNumber || '...'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">Jadwal Latihan</p>
+                  <p className="text-xs font-bold text-gray-300 uppercase line-clamp-1">{dojoInfo?.schedule || '...'}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 mt-1">
+                Kelola data keanggotaan INKAI di seluruh wilayah Indonesia.
+              </p>
+            )}
           </div>
-          <h2 className="text-3xl font-bold">Daftar Anggota</h2>
-          <p className="text-gray-500 mt-1">Kelola data keanggotaan INKAI di seluruh wilayah Indonesia.</p>
-        </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">
-            <Download size={18} />
-            Export Data
-          </button>
-          <button className="btn-primary flex items-center gap-2 text-sm">
-            <Plus size={18} />
-            Anggota Baru
-          </button>
+          <div className="flex gap-3">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">
+              <Download size={18} />
+              Export Data
+            </button>
+            <button className="btn-primary flex items-center gap-2 text-sm">
+              <Plus size={18} />
+              Anggota Baru
+            </button>
+          </div>
         </div>
       </div>
 
@@ -99,11 +172,21 @@ export default function MembersPage() {
                 className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/50 transition-all"
               />
             </div>
-            <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all text-sm">
-              <Filter size={18} />
+            <button type="submit" className="flex items-center gap-2 px-6 py-2 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all text-sm">
+              <Search size={18} />
               Cari
             </button>
           </div>
+          {dojoId && (
+            <button 
+              type="button"
+              onClick={() => router.push('/members')}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 rounded-xl transition-all text-sm font-bold"
+            >
+              <X size={18} />
+              Hapus Filter Dojo
+            </button>
+          )}
         </form>
 
         <div className="overflow-x-auto relative min-h-[400px]">

@@ -17,17 +17,20 @@ model Province {
   branches  Branch[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
 }
 
 model Branch {
   id         String   @id @default(uuid())
   name       String
   city       String?
+  headName   String?
   province   Province @relation(fields: [provinceId], references: [id])
   provinceId String
   dojos      Dojo[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  isDeleted  Boolean  @default(false)
 
   @@unique([name, provinceId])
 }
@@ -36,6 +39,10 @@ model Dojo {
   id            String       @id @default(uuid())
   name          String
   address       String?
+  kecamatan     String?
+  tempatLatihan String?
+  phoneNumber   String?
+  schedule      String?
   contactPerson String?
   branch        Branch       @relation(fields: [branchId], references: [id])
   branchId      String
@@ -43,6 +50,7 @@ model Dojo {
   attendances   Attendance[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  isDeleted     Boolean      @default(false)
 
   @@unique([name, branchId])
 }
@@ -58,6 +66,7 @@ model User {
   notifications Notification[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  isDeleted    Boolean  @default(false)
 }
 
 
@@ -87,6 +96,7 @@ model Member {
   createdAt          DateTime            @default(now())
 
   updatedAt          DateTime            @updatedAt
+  isDeleted          Boolean             @default(false)
 }
 
 model MemberRank {
@@ -110,6 +120,7 @@ model Attendance {
   method     String   @default("QR_SCAN") // QR_SCAN, MANUAL
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  isDeleted  Boolean  @default(false)
 }
 
 model Billing {
@@ -123,6 +134,7 @@ model Billing {
   payment   Payment?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
 }
 
 model Payment {
@@ -148,6 +160,7 @@ model Event {
   categories    EventCategory[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
+  isDeleted    Boolean             @default(false)
 }
 
 model EventCategory {
@@ -205,6 +218,3 @@ model Verification {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
-
-
-

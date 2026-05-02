@@ -25,16 +25,20 @@ async function request(endpoint: string, options: RequestInit = {}) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        // We can't redirect here easily as it's not a hook, 
-        // but we can throw a specific error
       }
       throw new Error('Authentication required');
     }
 
-    const data = await response.json();
+    const data = response.headers.get('Content-Type')?.includes('application/json') 
+      ? await response.json()
+      : null;
 
     if (!response.ok) {
-      throw new Error(data.message || 'Something went wrong');
+      throw new Error(data?.message || `Server returned ${response.status}: ${response.statusText}`);
+    }
+
+    if (data === null) {
+      throw new Error('Expected JSON response but received something else.');
     }
 
     return data;
@@ -60,8 +64,15 @@ export const api = {
   },
   org: {
     getProvinces: () => request('/org/provinces'),
-    getBranches: (provinceId: string) => request(`/org/branches?provinceId=${provinceId}`),
-    getDojos: (branchId: string) => request(`/org/dojos?branchId=${branchId}`),
+    getBranches: (provinceId: string) => request(`/org/branches/${provinceId}`),
+    getDojos: (branchId: string) => request(`/org/dojos/${branchId}`),
+    getDojoDetail: (id: string) => request(`/org/dojo/${id}`),
+    createProvince: (data: any) => request('/org/provinces', { method: 'POST', body: JSON.stringify(data) }),
+    createBranch: (data: any) => request('/org/branches', { method: 'POST', body: JSON.stringify(data) }),
+    createDojo: (data: any) => request('/org/dojos', { method: 'POST', body: JSON.stringify(data) }),
+    updateProvince: (id: string, data: any) => request(`/org/provinces/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    updateBranch: (id: string, data: any) => request(`/org/branches/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    updateDojo: (id: string, data: any) => request(`/org/dojos/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
   attendance: {
     getLogs: (params: any = {}) => {

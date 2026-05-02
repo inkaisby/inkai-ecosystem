@@ -14,6 +14,7 @@ import inventoryRoutes from './routes/inventoryRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import verificationRoutes from './routes/verificationRoutes';
+import syncRoutes from './routes/syncRoutes';
 
 
 
@@ -40,6 +41,7 @@ app.use('/v1/inventory', inventoryRoutes);
 app.use('/v1/notifications', notificationRoutes);
 app.use('/v1/dashboard', dashboardRoutes);
 app.use('/v1/verifications', verificationRoutes);
+app.use('/v1/sync', syncRoutes);
 
 
 
