@@ -89,6 +89,35 @@ class ApiService {
   Future<Response> searchDojos(String query) async {
     return await _dio.get('/org/dojos/search', queryParameters: {'q': query});
   }
+
+  Future<Response> submitDojoTransfer({
+    required String targetDojoId,
+    required String reason,
+  }) async {
+    return await _dio.post('/verifications/claim', data: {
+      'type': 'DOJO_TRANSFER',
+      'data': targetDojoId,
+      'proofUrl': 'PENDING_DOCUMENT', // Placeholder for now
+    });
+  }
+
+  Future<Response> getConnectedProfiles() async {
+    return await _dio.get('/members/me/children');
+  }
+
+  Future<Response> registerChild({
+    required String fullName,
+    required String dojoId,
+    String? gender,
+    String? birthDate,
+  }) async {
+    return await _dio.post('/members/me/children', data: {
+      'fullName': fullName,
+      'dojoId': dojoId,
+      'gender': gender,
+      'birthDate': birthDate,
+    });
+  }
 }
 
 

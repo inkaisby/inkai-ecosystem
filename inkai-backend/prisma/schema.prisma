@@ -64,6 +64,7 @@ model User {
   member       Member?
   roles        Role[]   @relation("UserRoles")
   notifications Notification[]
+  childrenMembers Member[] @relation("ParentChildren")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   isDeleted    Boolean  @default(false)
@@ -78,8 +79,8 @@ model Role {
 
 model Member {
   id                 String              @id @default(uuid())
-  user               User                @relation(fields: [userId], references: [id])
-  userId             String              @unique
+  user               User?               @relation(fields: [userId], references: [id])
+  userId             String?             @unique
   dojo               Dojo                @relation(fields: [dojoId], references: [id])
   dojoId             String
   nia                String?             @unique
@@ -93,8 +94,9 @@ model Member {
   eventRegistrations EventRegistration[]
   verifications      Verification[]
   ranks              MemberRank[]
+  parentUserId       String?
+  parentUser         User?               @relation("ParentChildren", fields: [parentUserId], references: [id])
   createdAt          DateTime            @default(now())
-
   updatedAt          DateTime            @updatedAt
   isDeleted          Boolean             @default(false)
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { 
   Map, 
   ChevronRight, 
@@ -13,12 +13,13 @@ import {
   Search,
   ArrowLeft,
   Filter,
-  X
+  X,
+  UserCheck
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 
-export default function OrganizationPage() {
+function OrganizationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [provinces, setProvinces] = useState<any[]>([]);
@@ -583,7 +584,10 @@ export default function OrganizationPage() {
                       </div>
                     </div>
                     <button 
-                      onClick={() => handleOpenEditBranch(branch)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEditBranch(branch);
+                      }}
                       className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white/5 transition-all active:scale-90"
                     >
                       <MoreVertical size={18} />
@@ -808,6 +812,18 @@ export default function OrganizationPage() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">No. WhatsApp</label>
+                  <input 
+                    type="text"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                    value={editDojoPhone}
+                    onChange={(e) => setEditDojoPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Tempat Latihan</label>
                   <input 
                     type="text"
@@ -816,46 +832,32 @@ export default function OrganizationPage() {
                     onChange={(e) => setEditDojoVenue(e.target.value.toUpperCase())}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">No. WhatsApp</label>
-                  <input 
-                    type="text"
-                    placeholder="0812..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
-                    value={editDojoPhone}
-                    onChange={(e) => setEditDojoPhone(e.target.value.toUpperCase())}
-                  />
-                </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Jadwal Latihan</label>
                   <input 
                     type="text"
-                    placeholder="Senin & Rabu, 16:00"
+                    placeholder="Contoh: Sen & Kam 16:00"
                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                     value={editDojoSchedule}
                     onChange={(e) => setEditDojoSchedule(e.target.value.toUpperCase())}
                   />
                 </div>
               </div>
-              
+
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowEditDojoModal(false)}
-                  className="flex-1 py-3 text-sm font-bold border border-white/10 rounded-xl hover:bg-white/5 transition-all"
+                  className="flex-1 py-3 border border-white/10 rounded-xl font-bold hover:bg-white/5 transition-all"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 btn-primary py-3 text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                  Simpan Perubahan
+                  {isSubmitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Simpan'}
                 </button>
               </div>
             </form>
@@ -884,7 +886,7 @@ export default function OrganizationPage() {
                   type="text"
                   required
                   autoFocus
-                  placeholder="Contoh: Dojo KONI Jatim"
+                  placeholder="Contoh: DOJO PUSAT"
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                   value={newDojoName}
                   onChange={(e) => setNewDojoName(e.target.value.toUpperCase())}
@@ -906,7 +908,7 @@ export default function OrganizationPage() {
                 <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Alamat Dojo</label>
                 <textarea 
                   rows={2}
-                  placeholder="Alamat lengkap dojo"
+                  placeholder="Alamat lengkap tempat latihan"
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all text-sm"
                   value={newDojoAddress}
                   onChange={(e) => setNewDojoAddress(e.target.value)}
@@ -924,54 +926,54 @@ export default function OrganizationPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Tempat Latihan</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">No. WhatsApp</label>
                   <input 
                     type="text"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
-                    value={newDojoVenue}
-                    onChange={(e) => setNewDojoVenue(e.target.value.toUpperCase())}
+                    placeholder="0812..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                    value={newDojoPhone}
+                    onChange={(e) => setNewDojoPhone(e.target.value)}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">No. WhatsApp</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Tempat Latihan</label>
                   <input 
                     type="text"
-                    placeholder="0812..."
+                    placeholder="Contoh: GOR SENAYAN"
                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
-                    value={newDojoPhone}
-                    onChange={(e) => setNewDojoPhone(e.target.value.toUpperCase())}
+                    value={newDojoVenue}
+                    onChange={(e) => setNewDojoVenue(e.target.value.toUpperCase())}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Jadwal Latihan</label>
                   <input 
                     type="text"
-                    placeholder="Senin & Rabu, 16:00"
+                    placeholder="Contoh: Sen & Kam 16:00"
                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                     value={newDojoSchedule}
                     onChange={(e) => setNewDojoSchedule(e.target.value.toUpperCase())}
                   />
                 </div>
               </div>
-              
+
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowAddDojoModal(false)}
-                  className="flex-1 py-3 text-sm font-bold border border-white/10 rounded-xl hover:bg-white/5 transition-all"
+                  className="flex-1 py-3 border border-white/10 rounded-xl font-bold hover:bg-white/5 transition-all"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 btn-primary py-3 text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                  Simpan Dojo
+                  {isSubmitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Tambah Dojo'}
                 </button>
               </div>
             </form>
@@ -984,7 +986,7 @@ export default function OrganizationPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="glass-card w-full max-w-md p-8 animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Tambah Wilayah Baru</h3>
+              <h3 className="text-xl font-bold">Tambah Wilayah Baru (PENGPROV)</h3>
               <button 
                 onClick={() => setShowAddModal(false)}
                 className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-white transition-all"
@@ -1000,39 +1002,36 @@ export default function OrganizationPage() {
                   type="text"
                   required
                   autoFocus
-                  placeholder="Contoh: Jawa Timur"
+                  placeholder="Contoh: DKI JAKARTA"
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                   value={newProvinceName}
                   onChange={(e) => setNewProvinceName(e.target.value.toUpperCase())}
                 />
               </div>
-              
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Ketua Pengprov (Opsional)</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nama Ketua Pengprov</label>
                 <input 
                   type="text"
-                  placeholder="Nama Lengkap Ketua"
+                  placeholder="Nama Lengkap Beserta Gelar"
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                   value={newProvinceHead}
                   onChange={(e) => setNewProvinceHead(e.target.value.toUpperCase())}
                 />
               </div>
-              
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-3 text-sm font-bold border border-white/10 rounded-xl hover:bg-white/5 transition-all"
+                  className="flex-1 py-3 border border-white/10 rounded-xl font-bold hover:bg-white/5 transition-all"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 btn-primary py-3 text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                  Simpan Wilayah
+                  {isSubmitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Simpan Wilayah'}
                 </button>
               </div>
             </form>
@@ -1061,39 +1060,35 @@ export default function OrganizationPage() {
                   type="text"
                   required
                   autoFocus
-                  placeholder="Nama Cabang"
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                   value={editBranchName}
                   onChange={(e) => setEditBranchName(e.target.value.toUpperCase())}
                 />
               </div>
-              
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Ketua Cabang</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nama Ketua Cabang</label>
                 <input 
                   type="text"
-                  placeholder="Nama Lengkap Ketua"
+                  placeholder="Nama Lengkap"
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                   value={editBranchHead}
                   onChange={(e) => setEditBranchHead(e.target.value.toUpperCase())}
                 />
               </div>
-              
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowEditBranchModal(false)}
-                  className="flex-1 py-3 text-sm font-bold border border-white/10 rounded-xl hover:bg-white/5 transition-all"
+                  className="flex-1 py-3 border border-white/10 rounded-xl font-bold hover:bg-white/5 transition-all"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 btn-primary py-3 text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                  Simpan Perubahan
+                  {isSubmitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>
@@ -1122,39 +1117,36 @@ export default function OrganizationPage() {
                   type="text"
                   required
                   autoFocus
-                  placeholder="Contoh: Cabang Jakarta Pusat"
+                  placeholder="Contoh: JAKARTA PUSAT"
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                   value={newBranchName}
                   onChange={(e) => setNewBranchName(e.target.value.toUpperCase())}
                 />
               </div>
-              
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Ketua Cabang (Opsional)</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nama Ketua Cabang</label>
                 <input 
                   type="text"
-                  placeholder="Nama Lengkap Ketua"
+                  placeholder="Nama Lengkap"
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
                   value={newBranchHead}
                   onChange={(e) => setNewBranchHead(e.target.value.toUpperCase())}
                 />
               </div>
-              
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowAddBranchModal(false)}
-                  className="flex-1 py-3 text-sm font-bold border border-white/10 rounded-xl hover:bg-white/5 transition-all"
+                  className="flex-1 py-3 border border-white/10 rounded-xl font-bold hover:bg-white/5 transition-all"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 btn-primary py-3 text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                  Simpan Cabang
+                  {isSubmitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Tambah Cabang'}
                 </button>
               </div>
             </form>
@@ -1164,15 +1156,31 @@ export default function OrganizationPage() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-right-10 duration-500 ${
-          toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
-          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-            {toast.type === 'success' ? '✓' : '✕'}
+        <div className={`fixed bottom-8 right-8 z-[100] animate-in slide-in-from-right-10 duration-500`}>
+          <div className={`glass-card flex items-center gap-3 px-6 py-4 shadow-2xl border ${toast.type === 'success' ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${toast.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+              {toast.type === 'success' ? <UserCheck size={18} /> : <Filter size={18} />}
+            </div>
+            <p className="font-bold text-sm">{toast.message}</p>
           </div>
-          <span className="font-bold text-sm uppercase tracking-wide">{toast.message}</span>
         </div>
       )}
     </div>
+  );
+}
+
+export default function OrganizationPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-32 gap-6">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
+          <Map className="absolute inset-0 m-auto text-amber-500 animate-pulse" size={24} />
+        </div>
+        <p className="text-gray-400 font-medium tracking-wide">Menyelaraskan data organisasi...</p>
+      </div>
+    }>
+      <OrganizationContent />
+    </Suspense>
   );
 }

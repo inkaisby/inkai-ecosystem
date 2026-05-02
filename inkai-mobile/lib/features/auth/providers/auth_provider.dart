@@ -7,10 +7,12 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _token;
   Map<String, dynamic>? _user;
+  List<dynamic> _connectedProfiles = [];
 
   bool get isLoading => _isLoading;
   String? get token => _token;
   Map<String, dynamic>? get user => _user;
+  List<dynamic> get connectedProfiles => _connectedProfiles;
   bool get isAuthenticated => _token != null;
 
   AuthProvider() {
@@ -22,6 +24,7 @@ class AuthProvider extends ChangeNotifier {
     _token = prefs.getString('token');
     if (_token != null) {
       await _fetchProfile();
+      await fetchConnectedProfiles();
     }
     notifyListeners();
   }
@@ -31,6 +34,7 @@ class AuthProvider extends ChangeNotifier {
       final response = await _apiService.getProfile();
       if (response.data['status'] == 'success') {
         _user = response.data['data'];
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Fetch Profile Error: $e');
@@ -39,6 +43,25 @@ class AuthProvider extends ChangeNotifier {
         logout();
       }
     }
+  }
+
+  Future<void> fetchConnectedProfiles() async {
+    if (_user?['roles']?.contains('PARENT') ?? false) {
+      try {
+        final response = await _apiService.getConnectedProfiles();
+        if (response.data['status'] == 'success') {
+          _connectedProfiles = response.data['data'];
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('Fetch Connected Profiles Error: $e');
+      }
+    }
+  }
+
+  void switchProfile(Map<String, dynamic> targetProfile) {
+    _user = targetProfile;
+    notifyListeners();
   }
 
   Future<bool> login(String identifier, String password) async {

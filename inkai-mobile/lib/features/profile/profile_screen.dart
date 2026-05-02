@@ -75,8 +75,18 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 32),
             if (user?['roles']?.contains('PARENT') ?? false) ...[
               _buildSectionHeader('AKUN TERHUBUNG (Parent Mode):'),
-              _buildConnectedAccount('Ani Santosa', 'Anak'),
-              _buildConnectedAccount('Iwan Santosa', 'Anak'),
+              if (authProvider.connectedProfiles.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('Belum ada data anak terhubung', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                ),
+              ...authProvider.connectedProfiles.map((profile) => 
+                _buildConnectedAccount(
+                  profile['fullName'] ?? 'Tanpa Nama', 
+                  'Anak / Member', 
+                  () => authProvider.switchProfile(profile)
+                )
+              ).toList(),
               const SizedBox(height: 12),
               _buildAddChildButton(),
               const SizedBox(height: 32),
@@ -159,7 +169,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildConnectedAccount(String name, String role) {
+  Widget _buildConnectedAccount(String name, String role, VoidCallback onTap) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -184,7 +194,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: onTap,
             style: TextButton.styleFrom(foregroundColor: InkaiTheme.primaryGold),
             child: const Text('Switch', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
