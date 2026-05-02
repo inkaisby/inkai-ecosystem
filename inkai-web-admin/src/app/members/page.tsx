@@ -20,8 +20,9 @@ import {
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { Suspense } from 'react';
 
-export default function MembersPage() {
+function MembersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dojoId = searchParams.get('dojoId');
@@ -277,5 +278,17 @@ export default function MembersPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MembersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-amber-500" size={40} />
+      </div>
+    }>
+      <MembersContent />
+    </Suspense>
   );
 }
