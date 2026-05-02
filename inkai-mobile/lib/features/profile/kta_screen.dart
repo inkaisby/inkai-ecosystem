@@ -127,6 +127,15 @@ class KTAScreen extends StatelessWidget {
                                         'SABUK: ${user?['currentRank'] ?? 'PUTIH'}',
                                         style: const TextStyle(fontSize: 10, color: Colors.grey),
                                       ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'DOJO: ${user?['dojo']?['name'] ?? 'PUSAT'}',
+                                        style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                      ),
+                                      Text(
+                                        'WILAYAH: ${user?['dojo']?['branch']?['province']?['name'] ?? 'DKI JAKARTA'}',
+                                        style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                      ),
                                     ],
                                   ),
                                 ),

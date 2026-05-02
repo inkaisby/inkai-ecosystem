@@ -11,6 +11,7 @@ import '../events/event_list_screen.dart';
 import '../profile/profile_screen.dart';
 import '../store/store_screen.dart';
 import '../organization/dojo_search_screen.dart';
+import '../membership/membership_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -58,18 +59,52 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              'Status: ${user?['status'] ?? 'PENDING'} (${user?['currentRank'] ?? '-'})',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.greenAccent,
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              children: [
+                Text(
+                  'Status: ',
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
+                ),
+                Text(
+                  '${user?['status'] ?? 'PENDING'}',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: (user?['status'] == 'AKTIF') ? Colors.greenAccent : Colors.amberAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  ' (${user?['currentRank'] ?? '-'})',
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
+                ),
+              ],
             ),
           ],
         ),
         Row(
           children: [
+            if (user?['roles']?.contains('PARENT') ?? false)
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: InkWell(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: InkaiTheme.primaryGold.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: InkaiTheme.primaryGold.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.users_round, size: 14, color: InkaiTheme.primaryGold),
+                        const SizedBox(width: 4),
+                        Text('Switch', style: GoogleFonts.inter(fontSize: 10, color: InkaiTheme.primaryGold, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -212,7 +247,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        user?['dojo']?['name'] ?? 'Dojo Pusat Jakarta',
+                        '${user?['dojo']?['name'] ?? 'Dojo Pusat Jakarta'} - ${user?['dojo']?['branch']?['province']?['name'] ?? 'Pusat'}',
                         style: const TextStyle(fontSize: 14, color: Colors.grey),
                       ),
                     ],
@@ -351,8 +386,8 @@ class DashboardScreen extends StatelessWidget {
           _navIcon(LucideIcons.calendar, false, () {
              Navigator.push(context, MaterialPageRoute(builder: (_) => const EventListScreen()));
           }),
-          _navIcon(LucideIcons.users, false, () {
-             Navigator.push(context, MaterialPageRoute(builder: (_) => const DojoSearchScreen()));
+          _navIcon(LucideIcons.shield, false, () {
+             Navigator.push(context, MaterialPageRoute(builder: (_) => const MembershipScreen()));
           }),
           _navIcon(LucideIcons.user, false, () {
              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));

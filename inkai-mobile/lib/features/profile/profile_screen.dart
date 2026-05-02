@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../auth/providers/auth_provider.dart';
 import '../../../core/theme.dart';
 
@@ -65,28 +66,145 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 40),
 
-            // Profile Details
-            _buildInfoCard(LucideIcons.shield, 'Tingkatan', user?['role'] ?? 'MEMBER'),
-            _buildInfoCard(LucideIcons.map_pin, 'Dojo', 'Dojo Pusat Jakarta'),
-            _buildInfoCard(LucideIcons.mail, 'Email', user?['email'] ?? '-'),
+            // Settings
+            _buildSectionHeader('PENGATURAN:'),
+            _buildMenuLink(LucideIcons.user_round_pen, 'Edit Profil', () {}),
+            _buildMenuLink(LucideIcons.key_round, 'Ganti Kata Sandi', () {}),
+            _buildMenuLink(LucideIcons.bell_ring, 'Pengaturan Notifikasi', () {}),
             
             const SizedBox(height: 32),
+            if (user?['roles']?.contains('PARENT') ?? false) ...[
+              _buildSectionHeader('AKUN TERHUBUNG (Parent Mode):'),
+              _buildConnectedAccount('Ani Santosa', 'Anak'),
+              _buildConnectedAccount('Iwan Santosa', 'Anak'),
+              const SizedBox(height: 12),
+              _buildAddChildButton(),
+              const SizedBox(height: 32),
+            ],
+            
+            const SizedBox(height: 16),
             
             // Buttons
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () => _showLogoutDialog(context, authProvider),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.05),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.red.withOpacity(0.1),
+                  foregroundColor: Colors.redAccent,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.white.withOpacity(0.05))),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('Edit Profil'),
+                child: const Text('LOGOUT / KELUAR', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
+            const SizedBox(height: 40),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E24),
+        title: const Text('Logout', style: TextStyle(color: Colors.white)),
+        content: const Text('Apakah Anda yakin ingin keluar?', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          TextButton(onPressed: () {
+            Navigator.pop(context);
+            authProvider.logout();
+          }, child: const Text('Logout', style: TextStyle(color: Colors.redAccent))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, left: 4),
+      child: Text(
+        title,
+        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _buildMenuLink(IconData icon, String title, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: InkaiTheme.primaryGold),
+              const SizedBox(width: 16),
+              Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w500))),
+              const Icon(LucideIcons.chevron_right, size: 16, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConnectedAccount(String name, String role) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: InkaiTheme.primaryGold.withOpacity(0.1),
+            child: Text(name[0], style: const TextStyle(color: InkaiTheme.primaryGold)),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(role, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {},
+            style: TextButton.styleFrom(foregroundColor: InkaiTheme.primaryGold),
+            child: const Text('Switch', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddChildButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () {},
+        icon: const Icon(Icons.add, size: 18),
+        label: const Text('Tambah Anak / Anggota Baru'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.grey,
+          side: BorderSide(color: Colors.white.withOpacity(0.1)),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
     );
