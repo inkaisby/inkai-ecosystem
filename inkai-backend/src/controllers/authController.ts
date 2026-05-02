@@ -1,0 +1,122 @@
+import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import prisma from '../utils/prisma';
+
+export const register = async (req: Request, res: Response) => {
+  try {
+    const { email, password, fullName, phoneNumber, dojoId } = req.body;
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ status: 'error', message: 'Email sudah terdaftar' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create User and (optionally) Member in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          passwordHash: hashedPassword,
+          phoneNumber,
+          // If no dojoId, assume it's a PARENT role
+          roles: !dojoId ? {
+            connectOrCreate: {
+              where: { name: 'PARENT' },
+              create: { name: 'PARENT' }
+            }
+          } : undefined,
+        },
+      });
+
+      if (dojoId) {
+        const member = await tx.member.create({
+          data: {
+            userId: user.id,
+            fullName,
+            dojoId,
+            status: 'PENDING',
+          },
+        });
+        return { user, member };
+      }
+
+      return { user, member: null };
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: dojoId ? 'Registrasi Anggota berhasil' : 'Registrasi Orang Tua berhasil',
+      data: {
+        userId: result.user.id,
+        memberId: result.member?.id,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { identifier, password } = req.body; // identifier can be email or NIA
+
+    // Find user by email or NIA
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { member: { nia: identifier } }
+        ]
+      },
+      include: { 
+        member: true,
+        roles: true
+      }
+    });
+
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        memberId: user.member?.id,
+        roles: user.roles.map(r => r.name)
+      },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '7d' }
+    );
+
+
+    res.json({
+      status: 'success',
+      token,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.member?.fullName,
+          nia: user.member?.nia,
+          roles: user.roles.map(r => r.name)
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Login Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};

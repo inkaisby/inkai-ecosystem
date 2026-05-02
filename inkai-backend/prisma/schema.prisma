@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Province {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  headName  String?
+  branches  Branch[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Branch {
+  id         String   @id @default(uuid())
+  name       String
+  city       String?
+  province   Province @relation(fields: [provinceId], references: [id])
+  provinceId String
+  dojos      Dojo[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([name, provinceId])
+}
+
+model Dojo {
+  id            String       @id @default(uuid())
+  name          String
+  address       String?
+  contactPerson String?
+  branch        Branch       @relation(fields: [branchId], references: [id])
+  branchId      String
+  members       Member[]
+  attendances   Attendance[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([name, branchId])
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  phoneNumber  String?
+  isActive     Boolean  @default(true)
+  member       Member?
+  roles        Role[]   @relation("UserRoles")
+  notifications Notification[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+
+model Role {
+  id    String @id @default(uuid())
+  name  String @unique
+  users User[] @relation("UserRoles")
+}
+
+model Member {
+  id                 String              @id @default(uuid())
+  user               User                @relation(fields: [userId], references: [id])
+  userId             String              @unique
+  dojo               Dojo                @relation(fields: [dojoId], references: [id])
+  dojoId             String
+  nia                String?             @unique
+  fullName           String
+  gender             String?
+  birthDate          DateTime?
+  currentRank        String              @default("Putih")
+  status             String              @default("Active")
+  attendances        Attendance[]
+  billings           Billing[]
+  eventRegistrations EventRegistration[]
+  verifications      Verification[]
+  ranks              MemberRank[]
+  createdAt          DateTime            @default(now())
+
+  updatedAt          DateTime            @updatedAt
+}
+
+model MemberRank {
+  id        String   @id @default(uuid())
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+  rank      String
+  date      DateTime
+  location  String?
+  isVerified Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Attendance {
+  id         String   @id @default(uuid())
+  member     Member   @relation(fields: [memberId], references: [id])
+  memberId   String
+  dojo       Dojo     @relation(fields: [dojoId], references: [id])
+  dojoId     String
+  checkInAt  DateTime @default(now())
+  method     String   @default("QR_SCAN") // QR_SCAN, MANUAL
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Billing {
+  id        String   @id @default(uuid())
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+  type      String   // MONTHLY_IURAN, EVENT_FEE
+  amount    Float
+  dueDate   DateTime
+  status    String   @default("PENDING") // PENDING, PAID, FAILED
+  payment   Payment?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  billing       Billing  @relation(fields: [billingId], references: [id])
+  billingId     String   @unique
+  paymentMethod String?
+  externalId    String?  @unique
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Event {
+  id           String              @id @default(uuid())
+  title        String
+  description  String?
+  startDate    DateTime
+  endDate      DateTime
+  location     String?
+  registrations EventRegistration[]
+  verifications Verification[]
+  categories    EventCategory[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model EventCategory {
+  id      String @id @default(uuid())
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+  name    String
+  fee     Float
+}
+
+model EventRegistration {
+  id        String   @id @default(uuid())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int      @default(0)
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  type      String   @default("INFO") // INFO, WARNING, SUCCESS
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Verification {
+  id          String   @id @default(uuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id])
+  type        String   // RANK_PROMOTION, DOJO_TRANSFER, ACHIEVEMENT
+  data        String   // New rank, new dojo, or achievement title
+  proofUrl    String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNotes  String?
+  eventId     String?
+  event       Event?   @relation(fields: [eventId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+
