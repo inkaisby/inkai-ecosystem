@@ -6,37 +6,101 @@ const prisma = new PrismaClient();
 async function main() {
   const passwordHash = await bcrypt.hash('h413ib', 12);
 
+  console.log('Seeding roles and permissions...');
+
   // 1. Roles
-  const adminRole = await prisma.role.upsert({
-    where: { name: 'ADMIN' },
-    update: {},
-    create: { name: 'ADMIN' },
-  });
+  const roles = [
+    { name: 'ADMINISTRATOR' },
+    { name: 'ADMIN_PUSAT' },
+    { name: 'ADMIN_PROVINCE' },
+    { name: 'ADMIN_BRANCH' },
+    { name: 'MEMBER' },
+    { name: 'PARENT' },
+  ];
 
-  await prisma.role.upsert({
-    where: { name: 'MEMBER' },
-    update: {},
-    create: { name: 'MEMBER' },
-  });
+  const roleMap: Record<string, any> = {};
+  for (const r of roles) {
+    const role = await prisma.role.upsert({
+      where: { name: r.name },
+      update: {},
+      create: r,
+    });
+    roleMap[r.name] = role;
+  }
 
-  await prisma.role.upsert({
-    where: { name: 'PARENT' },
-    update: {},
-    create: { name: 'PARENT' },
-  });
+  // 2. Permissions
+  const permissions = [
+    { name: 'Dashboard', slug: 'dashboard' },
+    { name: 'Anggota', slug: 'members' },
+    { name: 'Organisasi', slug: 'organization' },
+    { name: 'Verifikasi', slug: 'verification' },
+    { name: 'Event', slug: 'events' },
+    { name: 'Store', slug: 'store' },
+    { name: 'Library', slug: 'library' },
+    { name: 'Broadcast', slug: 'broadcast' },
+    { name: 'Settings', slug: 'settings' },
+  ];
 
-  // 2. Admin User
+  const permMap: Record<string, any> = {};
+  for (const p of permissions) {
+    const perm = await prisma.permission.upsert({
+      where: { slug: p.slug },
+      update: { name: p.name },
+      create: p,
+    });
+    permMap[p.slug] = perm;
+  }
+
+  // 3. Assign Permissions to Roles
+  // ADMINISTRATOR gets everything
+  for (const p of Object.values(permMap)) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: roleMap['ADMINISTRATOR'].id, permissionId: p.id } },
+      update: {},
+      create: { roleId: roleMap['ADMINISTRATOR'].id, permissionId: p.id },
+    });
+  }
+
+  // ADMIN_PUSAT gets most things
+  const pusatPerms = ['dashboard', 'members', 'organization', 'verification', 'events', 'broadcast'];
+  for (const slug of pusatPerms) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: roleMap['ADMIN_PUSAT'].id, permissionId: permMap[slug].id } },
+      update: {},
+      create: { roleId: roleMap['ADMIN_PUSAT'].id, permissionId: permMap[slug].id },
+    });
+  }
+
+  // ADMIN_PROVINCE and ADMIN_BRANCH get basic access
+  const basePerms = ['dashboard', 'members', 'organization', 'events'];
+  for (const roleName of ['ADMIN_PROVINCE', 'ADMIN_BRANCH']) {
+    for (const slug of basePerms) {
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: roleMap[roleName].id, permissionId: permMap[slug].id } },
+        update: {},
+        create: { roleId: roleMap[roleName].id, permissionId: permMap[slug].id },
+      });
+    }
+  }
+
+  // 4. Admin User (inkaisby@gmail.com)
   await prisma.user.upsert({
     where: { email: 'inkaisby@gmail.com' },
-    update: {},
+    update: {
+      roles: {
+        connect: { id: roleMap['ADMINISTRATOR'].id }
+      }
+    },
     create: {
       email: 'inkaisby@gmail.com',
       passwordHash,
-      roles: { connect: { id: adminRole.id } },
+      roles: {
+        connect: { id: roleMap['ADMINISTRATOR'].id }
+      },
     },
   });
 
-  // 3. Provinces
+  // 5. Provinces (Basic Seed)
   const provinces = [
     'DKI JAKARTA', 'JAWA BARAT', 'JAWA TENGAH', 'JAWA TIMUR', 'BANTEN', 'BALI',
     'SUMATERA UTARA', 'SUMATERA BARAT', 'RIAU', 'KEPULAUAN RIAU', 'JAMBI',
@@ -53,49 +117,6 @@ async function main() {
       where: { name },
       update: {},
       create: { name },
-    });
-  }
-
-  // 4. Sample Branches & Dojos
-  const jakarta = await prisma.province.findUnique({ where: { name: 'DKI JAKARTA' } });
-  if (jakarta) {
-    const branch = await prisma.branch.upsert({
-      where: { name_provinceId: { name: 'JAKARTA PUSAT', provinceId: jakarta.id } },
-      update: {},
-      create: { name: 'JAKARTA PUSAT', provinceId: jakarta.id }
-    });
-    await prisma.dojo.upsert({
-      where: { name_branchId: { name: 'DOJO PUSAT MANGGALA', branchId: branch.id } },
-      update: {},
-      create: { name: 'DOJO PUSAT MANGGALA', branchId: branch.id, address: 'Senayan' }
-    });
-  }
-
-  const jatim = await prisma.province.findUnique({ where: { name: 'JAWA TIMUR' } });
-  if (jatim) {
-    const branch = await prisma.branch.upsert({
-      where: { name_provinceId: { name: 'SURABAYA', provinceId: jatim.id } },
-      update: {},
-      create: { name: 'SURABAYA', provinceId: jatim.id }
-    });
-    await prisma.dojo.upsert({
-      where: { name_branchId: { name: 'DOJO KONI JATIM', branchId: branch.id } },
-      update: {},
-      create: { name: 'DOJO KONI JATIM', branchId: branch.id, address: 'Surabaya' }
-    });
-  }
-
-  const jabar = await prisma.province.findUnique({ where: { name: 'JAWA BARAT' } });
-  if (jabar) {
-    const branch = await prisma.branch.upsert({
-      where: { name_provinceId: { name: 'BANDUNG', provinceId: jabar.id } },
-      update: {},
-      create: { name: 'BANDUNG', provinceId: jabar.id }
-    });
-    await prisma.dojo.upsert({
-      where: { name_branchId: { name: 'DOJO GOR SAPARUA', branchId: branch.id } },
-      update: {},
-      create: { name: 'DOJO GOR SAPARUA', branchId: branch.id, address: 'Bandung' }
     });
   }
 

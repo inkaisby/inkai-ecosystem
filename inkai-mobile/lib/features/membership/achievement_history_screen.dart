@@ -1,42 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme.dart';
+import '../auth/providers/auth_provider.dart';
+
+import 'add_achievement_screen.dart';
 
 class AchievementHistoryScreen extends StatelessWidget {
-  const AchievementHistoryScreen({super.key});
+  final int initialIndex;
+  const AchievementHistoryScreen({super.key, this.initialIndex = 0});
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
+    final List<dynamic> ranks = user?['ranks'] ?? [];
+    
     return DefaultTabController(
-      length: 2,
+      length: 3,
+      initialIndex: initialIndex,
       child: Scaffold(
         backgroundColor: InkaiTheme.backgroundDark,
         appBar: AppBar(
-          title: const Text('Riwayat & Prestasi'),
+          title: Text(
+            'RIWAYAT & PRESTASI',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
           bottom: TabBar(
             indicatorColor: InkaiTheme.primaryGold,
             labelColor: InkaiTheme.primaryGold,
             unselectedLabelColor: Colors.grey,
+            labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
             tabs: const [
               Tab(text: 'Sabuk'),
-              Tab(text: 'Piagam/Latih'),
+              Tab(text: 'Piagam'),
+              Tab(text: 'Pelatihan'),
             ],
           ),
         ),
         body: TabBarView(
           children: [
-            _buildSabukTab(),
-            _buildPiagamTab(),
+            _buildSabukTab(context, ranks),
+            _buildPiagamTab(context, user),
+            _buildPelatihanTab(context, user),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSabukTab() {
+  Widget _buildSabukTab(BuildContext context, List<dynamic> ranks) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -44,55 +61,88 @@ class AchievementHistoryScreen extends StatelessWidget {
         children: [
           _buildSectionHeader('RIWAYAT KENAIKAN TINGKAT:'),
           const SizedBox(height: 16),
-          _buildHistoryCard(
-            title: 'Sabuk Hitam - DAN 1',
-            date: '20 Feb 2027',
-            location: 'Jakarta (Pusat)',
-            isValidated: true,
-          ),
-          _buildHistoryCard(
-            title: 'Sabuk Coklat - KYU 1',
-            date: '15 Jan 2026',
-            location: 'Surabaya',
-            isValidated: true,
-          ),
-          _buildHistoryCard(
-            title: 'Sabuk Biru - KYU 2',
-            date: '10 Juli 2025',
-            location: 'Sidoarjo',
-            isValidated: false,
-          ),
+          if (ranks.isEmpty)
+            _buildEmptyState('Belum ada riwayat kenaikan tingkat.')
+          else
+            ...ranks.map((rank) => _buildHistoryCard(
+                  title: rank['rank'] ?? 'Sabuk',
+                  date: rank['date'] != null 
+                    ? DateFormat('dd MMM yyyy').format(DateTime.parse(rank['date']))
+                    : '-',
+                  location: rank['location'] ?? 'N/A',
+                  isValidated: rank['isVerified'] ?? false,
+                )),
           const SizedBox(height: 32),
           _buildStatusLegend(),
           const SizedBox(height: 32),
-          _buildAddButton('TAMBAH DATA KENAIKAN MANUAL'),
+          _buildAddButton(context, 'TAMBAH DATA KENAIKAN MANUAL'),
         ],
       ),
     );
   }
 
-  Widget _buildPiagamTab() {
+  Widget _buildPiagamTab(BuildContext context, Map<String, dynamic>? user) {
+    // For now using eventRegistrations as proxy for certificates if they are 'COMPLETED'
+    final List<dynamic> events = user?['eventRegistrations'] ?? [];
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('RIWAYAT PIAGAM & PELATIHAN:'),
+          _buildSectionHeader('RIWAYAT PIAGAM & PERTANDINGAN:'),
           const SizedBox(height: 16),
-          _buildHistoryCard(
-            title: 'Juara 1 Kumite - Kejurnas',
-            date: '15 Agustus 2026',
-            location: 'Jakarta',
-            isValidated: true,
-          ),
-          _buildHistoryCard(
-            title: 'Peserta Gashuku Nasional',
-            date: '10 Mei 2026',
-            location: 'Semarang',
-            isValidated: true,
-          ),
+          if (events.isEmpty)
+            _buildEmptyState('Belum ada riwayat pertandingan.')
+          else
+            ...events.map((e) => _buildHistoryCard(
+                  title: e['event']?['title'] ?? 'Pertandingan',
+                  date: e['createdAt'] != null 
+                    ? DateFormat('dd MMM yyyy').format(DateTime.parse(e['createdAt']))
+                    : '-',
+                  location: e['event']?['location'] ?? 'Lokasi Terdaftar',
+                  isValidated: e['status'] == 'APPROVED',
+                )),
           const SizedBox(height: 32),
-          _buildAddButton('TAMBAH PIAGAM / PELATIHAN'),
+          _buildAddButton(context, 'TAMBAH PIAGAM / PERTANDINGAN'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPelatihanTab(BuildContext context, Map<String, dynamic>? user) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('RIWAYAT PELATIHAN & TEKNIS:'),
+          const SizedBox(height: 16),
+          _buildEmptyState('Belum ada riwayat pelatihan.'),
+          const SizedBox(height: 32),
+          _buildAddButton(context, 'TAMBAH RIWAYAT PELATIHAN'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Icon(LucideIcons.folder_open, size: 40, color: Colors.white.withOpacity(0.1)),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+          ),
         ],
       ),
     );
@@ -125,10 +175,10 @@ class AchievementHistoryScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
                 const SizedBox(height: 4),
-                Text('Tanggal: $date', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                Text('Lokasi : $location', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text('Tanggal: $date', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
+                Text('Lokasi : $location', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ),
@@ -144,18 +194,22 @@ class AchievementHistoryScreen extends StatelessWidget {
 
   Widget _buildStatusLegend() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.02),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('STATUS VERIFIKASI:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
-          const SizedBox(height: 8),
+          Text(
+            'STATUS VERIFIKASI:', 
+            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1)
+          ),
+          const SizedBox(height: 12),
           _legendItem(LucideIcons.check, Colors.greenAccent, 'Data sudah divalidasi Pusat'),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           _legendItem(LucideIcons.info, Colors.amber, 'Menunggu Validasi'),
         ],
       ),
@@ -166,19 +220,19 @@ class AchievementHistoryScreen extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, size: 14, color: color),
-        const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        const SizedBox(width: 10),
+        Text(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey)),
       ],
     );
   }
 
-  Widget _buildAddButton(String label) {
+  Widget _buildAddButton(BuildContext context, String label) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
-        icon: const Icon(Icons.add, size: 18),
-        label: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddAchievementScreen())),
+        icon: const Icon(LucideIcons.plus, size: 18),
+        label: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
         style: OutlinedButton.styleFrom(
           foregroundColor: InkaiTheme.primaryGold,
           side: const BorderSide(color: InkaiTheme.primaryGold),

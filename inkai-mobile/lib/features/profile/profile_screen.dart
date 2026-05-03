@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../auth/providers/auth_provider.dart';
 import '../../../core/theme.dart';
 
+import 'edit_profile_screen.dart';
+
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -14,14 +16,16 @@ class ProfileScreen extends StatelessWidget {
     final user = authProvider.user;
 
     return Scaffold(
+      backgroundColor: InkaiTheme.backgroundDark,
       appBar: AppBar(
-        title: const Text('Profil Saya'),
+        title: Text('PROFIL SAYA', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () => authProvider.logout(),
-            icon: const Icon(LucideIcons.log_out, color: Colors.redAccent),
+            onPressed: () => _showLogoutDialog(context, authProvider),
+            icon: const Icon(LucideIcons.log_out, color: Colors.redAccent, size: 20),
           ),
         ],
       ),
@@ -44,6 +48,13 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white.withOpacity(0.1), width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: InkaiTheme.primaryGold.withOpacity(0.2),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
                     child: Center(
                       child: Text(
@@ -55,7 +66,7 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     user?['fullName'] ?? 'Nama Anggota',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   Text(
                     'NIA: ${user?['nia'] ?? '-'}',
@@ -68,7 +79,9 @@ class ProfileScreen extends StatelessWidget {
 
             // Settings
             _buildSectionHeader('PENGATURAN:'),
-            _buildMenuLink(LucideIcons.user_round_pen, 'Edit Profil', () {}),
+            _buildMenuLink(LucideIcons.user_round_pen, 'Edit Profil', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()));
+            }),
             _buildMenuLink(LucideIcons.key_round, 'Ganti Kata Sandi', () {}),
             _buildMenuLink(LucideIcons.bell_ring, 'Pengaturan Notifikasi', () {}),
             
@@ -88,7 +101,7 @@ class ProfileScreen extends StatelessWidget {
                 )
               ).toList(),
               const SizedBox(height: 12),
-              _buildAddChildButton(),
+              _buildAddChildButton(context),
               const SizedBox(height: 32),
             ],
             
@@ -203,11 +216,14 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAddChildButton() {
+  Widget _buildAddChildButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: () {
+          // Navigate to child registration
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Halaman pendaftaran anak sedang disiapkan.')));
+        },
         icon: const Icon(Icons.add, size: 18),
         label: const Text('Tambah Anak / Anggota Baru'),
         style: OutlinedButton.styleFrom(

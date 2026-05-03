@@ -1,4 +1,4 @@
-package com.example.inkai_mobile
+package com.inkai.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

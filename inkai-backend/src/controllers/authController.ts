@@ -23,6 +23,7 @@ export const register = async (req: Request, res: Response) => {
           email,
           passwordHash: hashedPassword,
           phoneNumber,
+          fullName,
           // If no dojoId, assume it's a PARENT role
           roles: !dojoId ? {
             connectOrCreate: {
@@ -77,7 +78,17 @@ export const login = async (req: Request, res: Response) => {
       },
       include: { 
         member: true,
-        roles: true
+        managedProvince: { select: { name: true } },
+        managedBranch: { select: { name: true } },
+        roles: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -95,13 +106,23 @@ export const login = async (req: Request, res: Response) => {
     }
     console.log(`Password valid for user: ${user.email}`);
 
+    // Flatten permissions
+    const permissions = user.roles.flatMap(role => 
+      role.permissions.map(rp => rp.permission.slug)
+    );
+    const uniquePermissions = Array.from(new Set(permissions));
 
     // Generate JWT
     const token = jwt.sign(
       { 
         userId: user.id, 
         memberId: user.member?.id,
-        roles: user.roles.map(r => r.name)
+        roles: user.roles.map(r => r.name),
+        permissions: uniquePermissions,
+        managedProvinceId: user.managedProvinceId,
+        managedBranchId: user.managedBranchId,
+        managedProvinceName: user.managedProvince?.name,
+        managedBranchName: user.managedBranch?.name
       },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '7d' }
@@ -115,9 +136,14 @@ export const login = async (req: Request, res: Response) => {
         user: {
           id: user.id,
           email: user.email,
-          fullName: user.member?.fullName,
+          fullName: user.member?.fullName || user.fullName,
           nia: user.member?.nia,
-          roles: user.roles.map(r => r.name)
+          roles: user.roles.map(r => r.name),
+          permissions: uniquePermissions,
+          managedProvinceId: user.managedProvinceId,
+          managedBranchId: user.managedBranchId,
+          managedProvinceName: user.managedProvince?.name,
+          managedBranchName: user.managedBranch?.name
         }
       }
     });

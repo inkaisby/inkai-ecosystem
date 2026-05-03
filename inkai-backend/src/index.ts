@@ -15,6 +15,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import verificationRoutes from './routes/verificationRoutes';
 import syncRoutes from './routes/syncRoutes';
+import roleRoutes from './routes/roleRoutes';
 
 
 
@@ -42,6 +43,7 @@ app.use('/v1/notifications', notificationRoutes);
 app.use('/v1/dashboard', dashboardRoutes);
 app.use('/v1/verifications', verificationRoutes);
 app.use('/v1/sync', syncRoutes);
+app.use('/v1/roles', roleRoutes);
 
 
 

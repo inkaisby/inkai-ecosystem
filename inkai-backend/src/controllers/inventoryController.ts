@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
+import { notifyAdmins } from '../utils/notification';
 
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
@@ -27,6 +28,14 @@ export const createProduct = async (req: Request, res: Response) => {
     const product = await prisma.product.create({
       data: { name, description, price, stock, imageUrl }
     });
+
+    // Notify all admins about new products
+    await notifyAdmins({
+      title: 'Stok Produk Baru',
+      content: `Produk "${product.name}" telah ditambahkan ke katalog.`,
+      type: 'INFO'
+    });
+
     res.status(201).json({ status: 'success', data: product });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });

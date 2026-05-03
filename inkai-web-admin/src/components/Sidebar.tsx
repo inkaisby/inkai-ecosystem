@@ -17,19 +17,40 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-  { icon: Users, label: 'Anggota', href: '/members' },
-  { icon: Map, label: 'Organisasi', href: '/organization' },
-  { icon: ShieldCheck, label: 'Verifikasi', href: '/verification' },
-  { icon: Calendar, label: 'Event', href: '/events' },
-  { icon: Store, label: 'Store', href: '#' },
-  { icon: BookOpen, label: 'Library', href: '#' },
-  { icon: MessageSquare, label: 'Broadcast', href: '/broadcast' },
-  { icon: Settings, label: 'Settings', href: '/settings' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/', slug: 'dashboard' },
+  { icon: Users, label: 'Anggota', href: '/members', slug: 'members' },
+  { icon: Map, label: 'Organisasi', href: '/organization', slug: 'organization' },
+  { icon: ShieldCheck, label: 'Verifikasi', href: '/verification', slug: 'verification' },
+  { icon: Calendar, label: 'Event', href: '/events', slug: 'events' },
+  { icon: Store, label: 'Store', href: '#', slug: 'store' },
+  { icon: BookOpen, label: 'Library', href: '#', slug: 'library' },
+  { icon: MessageSquare, label: 'Broadcast', href: '/broadcast', slug: 'broadcast' },
+  { icon: Settings, label: 'Settings', href: '/settings', slug: 'settings' },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [user, setUser] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  };
+
+  const filteredMenuItems = menuItems.filter(item => {
+    if (!user) return true; // Show all until user is loaded
+    // If no permissions array, default to all for now (backward compatibility)
+    if (!user.permissions) return true;
+    return user.permissions.includes(item.slug);
+  });
 
   return (
     <aside className="w-64 h-screen bg-[#0f0f12] border-r border-white/5 flex flex-col p-4 fixed left-0 top-0">
@@ -44,7 +65,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1">
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link 
@@ -60,7 +81,10 @@ export default function Sidebar() {
       </nav>
 
       <div className="pt-4 border-t border-white/5">
-        <button className="sidebar-item w-full text-red-500 hover:bg-red-500/10">
+        <button 
+          onClick={handleLogout}
+          className="sidebar-item w-full text-red-500 hover:bg-red-500/10 transition-colors"
+        >
           <LogOut size={20} />
           <span>Keluar</span>
         </button>

@@ -25,7 +25,13 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [user, setUser] = useState<any>(null);
+
   useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
     const fetchData = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -108,7 +114,15 @@ export default function Dashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold">Dashboard Overview</h2>
-          <p className="text-gray-500">Selamat datang kembali, Administrator Pusat.</p>
+          <p className="text-gray-500">
+            Selamat datang kembali, {
+              user?.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
+              user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Administrator Pusat' :
+              user?.roles?.[0] === 'ADMIN_PROVINCE' ? 'Administrator Provinsi' :
+              user?.roles?.[0] === 'ADMIN_BRANCH' ? 'Administrator Cabang' :
+              'Administrator'
+            }.
+          </p>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium text-gray-300">

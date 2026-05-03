@@ -1,19 +1,44 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 
-export const getStats = async (req: Request, res: Response) => {
+interface AuthRequest extends Request {
+  user?: any;
+}
+
+export const getStats = async (req: AuthRequest, res: Response) => {
   try {
-    const totalMembers = await prisma.member.count();
-    const totalDojos = await prisma.dojo.count();
-    const totalProvinces = await prisma.province.count();
+    const where: any = {};
+    const dojoWhere: any = {};
+    const provinceWhere: any = {};
+
+    if (req.user) {
+      if (req.user.managedProvinceId) {
+        where.dojo = { branch: { provinceId: req.user.managedProvinceId } };
+        dojoWhere.branch = { provinceId: req.user.managedProvinceId };
+        provinceWhere.id = req.user.managedProvinceId;
+      } else if (req.user.managedBranchId) {
+        where.dojo = { branchId: req.user.managedBranchId };
+        dojoWhere.branchId = req.user.managedBranchId;
+        // For branch admin, provinces might not be directly relevant, 
+        // but we can show the parent province if needed.
+      }
+    }
+
+    const totalMembers = await prisma.member.count({ where });
+    const totalDojos = await prisma.dojo.count({ where: dojoWhere });
+    const totalProvinces = await prisma.province.count({ where: provinceWhere });
     
     // Summary of monthly iuran
     const iuranSum = await prisma.billing.aggregate({
-      where: { type: 'MONTHLY_IURAN', status: 'PAID' },
+      where: { 
+        type: 'MONTHLY_IURAN', 
+        status: 'PAID',
+        member: where
+      },
       _sum: { amount: true }
     });
 
-    const pendingVerifications = 0; // Placeholder until we have a Verification model
+    const pendingVerifications = 0; 
 
     res.json({
       status: 'success',
@@ -30,9 +55,19 @@ export const getStats = async (req: Request, res: Response) => {
   }
 };
 
-export const getRecentActivities = async (req: Request, res: Response) => {
+export const getRecentActivities = async (req: AuthRequest, res: Response) => {
   try {
+    const where: any = {};
+    if (req.user) {
+      if (req.user.managedProvinceId) {
+        where.dojo = { branch: { provinceId: req.user.managedProvinceId } };
+      } else if (req.user.managedBranchId) {
+        where.dojo = { branchId: req.user.managedBranchId };
+      }
+    }
+
     const members = await prisma.member.findMany({
+      where,
       take: 5,
       orderBy: { createdAt: 'desc' },
       include: { dojo: true }

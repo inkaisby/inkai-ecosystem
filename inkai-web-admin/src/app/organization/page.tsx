@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   Filter,
   X,
-  UserCheck
+  UserCheck,
+  Lock
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -41,6 +42,11 @@ function OrganizationContent() {
   const [newProvinceName, setNewProvinceName] = useState('');
   const [newProvinceHead, setNewProvinceHead] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Edit Province states
+  const [showEditProvinceModal, setShowEditProvinceModal] = useState(false);
+  const [editProvinceName, setEditProvinceName] = useState('');
+  const [editProvinceHead, setEditProvinceHead] = useState('');
   
   // Edit Branch states
   const [showEditBranchModal, setShowEditBranchModal] = useState(false);
@@ -72,6 +78,10 @@ function OrganizationContent() {
   const [newDojoVenue, setNewDojoVenue] = useState('');
   const [newDojoPhone, setNewDojoPhone] = useState('');
   const [newDojoSchedule, setNewDojoSchedule] = useState('');
+
+  // Admin Account states
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -90,7 +100,37 @@ function OrganizationContent() {
         
         const pId = searchParams.get('provinceId');
         const bId = searchParams.get('branchId');
+
+        // 1. Regional Admin Auto-Navigation (Priority)
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.managedBranchId) {
+            const prov = response.data[0];
+            if (prov) {
+              setSelectedProvince(prov);
+              const branchRes = await api.org.getBranches(prov.id);
+              setBranches(branchRes.data);
+              const branch = branchRes.data.find((b: any) => b.id === user.managedBranchId);
+              if (branch) {
+                setSelectedBranch(branch);
+                setViewState('dojos');
+                await fetchDojos(branch.id);
+                return; // Stop here for branch admin
+              }
+            }
+          } else if (user.managedProvinceId) {
+            const prov = response.data.find((p: any) => p.id === user.managedProvinceId);
+            if (prov) {
+              setSelectedProvince(prov);
+              setViewState('branches');
+              await fetchBranches(prov.id);
+              return; // Stop here for province admin
+            }
+          }
+        }
         
+        // 2. Search Params Navigation (Fallback)
         if (pId) {
           const prov = response.data.find((p: any) => p.id === pId);
           if (prov) {
@@ -220,10 +260,47 @@ function OrganizationContent() {
     }
   };
 
+  const handleOpenEditProvince = (prov: any) => {
+    setSelectedProvince(prov);
+    setEditProvinceName(prov.name);
+    setEditProvinceHead(prov.headName || '');
+    setAdminEmail(prov.admins?.[0]?.email || '');
+    setAdminPassword('');
+    setShowEditProvinceModal(true);
+  };
+
+  const handleUpdateProvince = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProvince || !editProvinceName) return;
+
+    setIsSubmitting(true);
+    try {
+      await api.org.updateProvince(selectedProvince.id, {
+        name: editProvinceName,
+        headName: editProvinceHead,
+        adminEmail,
+        adminPassword
+      });
+
+      const response = await api.org.getProvinces();
+      setProvinces(response.data);
+      
+      setShowEditProvinceModal(false);
+      setSelectedProvince(null);
+      showToast('Data wilayah berhasil diperbarui!');
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleOpenEditBranch = (branch: any) => {
     setSelectedBranch(branch);
     setEditBranchName(branch.name);
     setEditBranchHead(branch.headName || '');
+    setAdminEmail(branch.admins?.[0]?.email || '');
+    setAdminPassword('');
     setShowEditBranchModal(true);
   };
 
@@ -235,7 +312,9 @@ function OrganizationContent() {
     try {
       await api.org.updateBranch(selectedBranch.id, {
         name: editBranchName,
-        headName: editBranchHead
+        headName: editBranchHead,
+        adminEmail,
+        adminPassword
       });
 
       await fetchBranches(selectedProvince.id);
@@ -395,9 +474,10 @@ function OrganizationContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
             <input 
               type="text"
+              suppressHydrationWarning={true}
               placeholder={
                 viewState === 'provinces' ? "Cari wilayah..." :
-                viewState === 'branches' ? "Cari cabang..." :
+                viewState === 'branches' ? `Cari cabang di ${selectedProvince?.name}...` :
                 "Cari dojo..."
               }
               className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
@@ -408,6 +488,7 @@ function OrganizationContent() {
           {viewState === 'provinces' && (
             <button 
               onClick={() => setShowAddModal(true)}
+              suppressHydrationWarning={true}
               className="btn-primary flex items-center gap-2 text-sm w-full sm:w-auto justify-center"
             >
               <Plus size={18} />
@@ -417,6 +498,7 @@ function OrganizationContent() {
           {viewState === 'branches' && (
             <button 
               onClick={() => setShowAddBranchModal(true)}
+              suppressHydrationWarning={true}
               className="btn-primary flex items-center gap-2 text-sm w-full sm:w-auto justify-center"
             >
               <Plus size={18} />
@@ -462,7 +544,10 @@ function OrganizationContent() {
                     </div>
                   </div>
                 </div>
-                <button className="p-2.5 text-gray-500 hover:text-white rounded-xl hover:bg-white/5 transition-all active:scale-95">
+                <button 
+                  onClick={() => handleOpenEditProvince(prov)}
+                  className="p-2.5 text-gray-500 hover:text-white rounded-xl hover:bg-white/5 transition-all active:scale-95"
+                >
                   <MoreVertical size={20} />
                 </button>
               </div>
@@ -637,6 +722,7 @@ function OrganizationContent() {
               <p className="text-gray-500 max-w-sm mx-auto mb-10 leading-relaxed">Struktur organisasi wilayah ini masih kosong. Mulai bangun jaringan dengan menambahkan cabang pertama.</p>
               <button 
                 onClick={() => setShowAddBranchModal(true)}
+                suppressHydrationWarning={true}
                 className="px-8 py-4 bg-amber-500 text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-amber-400 shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
               >
                 Inisialisasi Cabang Baru
@@ -744,6 +830,7 @@ function OrganizationContent() {
               <p className="text-gray-500 max-w-sm mx-auto mb-10 leading-relaxed">Cabang ini belum memiliki dojo atau ranting yang terdaftar.</p>
               <button 
                 onClick={() => setShowAddDojoModal(true)}
+                suppressHydrationWarning={true}
                 className="px-8 py-4 bg-amber-500 text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-amber-400 shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
               >
                 Daftarkan Dojo Pertama
@@ -1075,10 +1162,125 @@ function OrganizationContent() {
                   onChange={(e) => setEditBranchHead(e.target.value.toUpperCase())}
                 />
               </div>
+
+              <div className="pt-4 border-t border-white/5 space-y-4">
+                <div className="flex items-center gap-2 text-amber-500">
+                  <Lock size={16} />
+                  <span className="text-xs font-bold uppercase tracking-widest">Akun Admin Cabang</span>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Email Admin</label>
+                    <input 
+                      type="email"
+                      placeholder="admin.cabang@email.com"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Password Baru</label>
+                    <input 
+                      type="password"
+                      placeholder="Isi untuk ubah password"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowEditBranchModal(false)}
+                  className="flex-1 py-3 border border-white/10 rounded-xl font-bold hover:bg-white/5 transition-all"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all disabled:opacity-50"
+                >
+                  {isSubmitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Simpan Perubahan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Province Modal */}
+      {showEditProvinceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="glass-card w-full max-w-md p-8 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Edit Wilayah (PENGPROV)</h3>
+              <button 
+                onClick={() => setShowEditProvinceModal(false)}
+                className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-white transition-all"
+              >
+                <MoreVertical size={20} className="rotate-90" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateProvince} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nama Provinsi / Wilayah</label>
+                <input 
+                  type="text"
+                  required
+                  autoFocus
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
+                  value={editProvinceName}
+                  onChange={(e) => setEditProvinceName(e.target.value.toUpperCase())}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nama Ketua Pengprov</label>
+                <input 
+                  type="text"
+                  placeholder="Nama Lengkap Beserta Gelar"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all uppercase"
+                  value={editProvinceHead}
+                  onChange={(e) => setEditProvinceHead(e.target.value.toUpperCase())}
+                />
+              </div>
+
+              <div className="pt-4 border-t border-white/5 space-y-4">
+                <div className="flex items-center gap-2 text-amber-500">
+                  <Lock size={16} />
+                  <span className="text-xs font-bold uppercase tracking-widest">Akun Admin Wilayah</span>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Email Admin</label>
+                    <input 
+                      type="email"
+                      placeholder="admin.wilayah@email.com"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Password Baru</label>
+                    <input 
+                      type="password"
+                      placeholder="Isi untuk ubah password"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setShowEditProvinceModal(false)}
                   className="flex-1 py-3 border border-white/10 rounded-xl font-bold hover:bg-white/5 transition-all"
                 >
                   Batal

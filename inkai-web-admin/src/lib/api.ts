@@ -20,18 +20,18 @@ async function request(endpoint: string, options: RequestInit = {}) {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, config);
     
+    const data = response.headers.get('Content-Type')?.includes('application/json') 
+      ? await response.json()
+      : null;
+
     // Check if it's a 401 Unauthorized
     if (response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
-      throw new Error('Authentication required');
+      throw new Error(data?.message || 'Authentication required');
     }
-
-    const data = response.headers.get('Content-Type')?.includes('application/json') 
-      ? await response.json()
-      : null;
 
     if (!response.ok) {
       throw new Error(data?.message || `Server returned ${response.status}: ${response.statusText}`);
@@ -61,6 +61,8 @@ export const api = {
       return request(`/members?${query}`);
     },
     getProfile: () => request('/members/me'),
+    create: (data: any) => request('/members', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => request(`/members/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
   org: {
     getProvinces: () => request('/org/provinces'),
@@ -96,5 +98,10 @@ export const api = {
   billing: {
     getMemberBills: (memberId: string) => request(`/billing/member/${memberId}`),
     createBill: (data: any) => request('/billing', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  roles: {
+    getAll: () => request('/roles'),
+    getPermissions: () => request('/roles/permissions'),
+    updatePermissions: (roleId: string, data: any) => request(`/roles/${roleId}/permissions`, { method: 'PUT', body: JSON.stringify(data) }),
   }
 };

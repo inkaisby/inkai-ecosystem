@@ -3,6 +3,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/network/api_service.dart';
 import '../../../core/theme.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -116,10 +117,11 @@ class _BillingScreenState extends State<BillingScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: totalUnpaid > 0 ? () {} : null,
+              onPressed: totalUnpaid > 0 ? () => _showPaymentDialog(context, totalUnpaid, formatter) : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: InkaiTheme.primaryGold,
                 foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('BAYAR SEKARANG', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -129,6 +131,77 @@ class _BillingScreenState extends State<BillingScreen> {
       ),
     );
   }
+
+  void _showPaymentDialog(BuildContext context, double amount, NumberFormat formatter) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E24),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Konfirmasi Pembayaran', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Total Tagihan', style: TextStyle(color: Colors.grey)),
+                Text(formatter.format(amount), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              ],
+            ),
+            const SizedBox(height: 32),
+            const Text('Pilih Metode Pembayaran:', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _methodItem(LucideIcons.landmark, 'Virtual Account (Dojo)'),
+            _methodItem(LucideIcons.qr_code, 'QRIS / E-Wallet'),
+            _methodItem(LucideIcons.banknote, 'Tunai ke Bendahara Dojo'),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permintaan pembayaran dikirim!')));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: InkaiTheme.primaryGold,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('LANJUTKAN PEMBAYARAN', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _methodItem(IconData icon, String title) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: InkaiTheme.primaryGold),
+          const SizedBox(width: 16),
+          Text(title, style: const TextStyle(color: Colors.white, fontSize: 13)),
+          const Spacer(),
+          const Icon(LucideIcons.chevron_right, size: 14, color: Colors.grey),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildBillingItem(dynamic bill, NumberFormat formatter) {
     final isPaid = bill['status'] == 'PAID';

@@ -108,6 +108,21 @@ export default function SettingsPage() {
               </div>
               <ChevronRight size={20} className="text-gray-600 group-hover:text-white transition-all" />
             </div>
+            <div 
+              onClick={() => router.push('/settings/roles')}
+              className="glass-card group hover:bg-white/[0.04] transition-all flex items-center justify-between cursor-pointer border-amber-500/20 bg-amber-500/5"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl transition-all">
+                  <Shield size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold">Hak Akses & Role</h4>
+                  <p className="text-xs text-gray-500 mt-1">Atur izin menu & RBAC sistem</p>
+                </div>
+              </div>
+              <ChevronRight size={20} className="text-gray-600 group-hover:text-white transition-all" />
+            </div>
             <div className="glass-card group hover:bg-white/[0.04] transition-all flex items-center justify-between cursor-pointer">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white/5 text-gray-400 group-hover:text-amber-500 group-hover:bg-amber-500/10 rounded-xl transition-all">

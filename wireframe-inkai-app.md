@@ -245,7 +245,7 @@ Mencatat perjalanan karateka, mulai dari kenaikan tingkat hingga pelatihan.
 +---------------------------------------+
 |  < Kembali      Riwayat & Prestasi    |
 |---------------------------------------|
-|  [ Tab: Sabuk ] [ Tab: Piagam/Latih ] |
+| [ Sabuk ] [ Piagam ] [ Pelatihan ]  |
 |                                       |
 |  RIWAYAT KENAIKAN TINGKAT:            |
 |  +---------------------------------+  |
@@ -268,7 +268,7 @@ Mencatat perjalanan karateka, mulai dari kenaikan tingkat hingga pelatihan.
 |                                       |
 |  [ + TAMBAH DATA KENAIKAN MANUAL ]    |
 |                                       |
-|  [ LIHAT PIAGAM & SERTIFIKAT > ]      |
+|  [ LIHAT PIAGAM & PERTANDINGAN > ]    |
 |  [ LIHAT RIWAYAT PELATIHAN > ]        |
 |                                       |
 |=======================================|
@@ -296,23 +296,23 @@ Mencatat perjalanan karateka, mulai dari kenaikan tingkat hingga pelatihan.
 
 ---
 
-## 3.4 Halaman Piagam & Sertifikat
+## 3.4 Halaman Piagam & Pertandingan (Sertifikat)
 
 Daftar prestasi dan penghargaan digital anggota.
 
 ```text
 +---------------------------------------+
-|  < Kembali      Piagam & Sertifikat   |
+|  < Kembali      Piagam & Pertandingan |
 |---------------------------------------|
 |                                       |
-|  DAFTAR PIAGAM:                       |
+|  RIWAYAT PIAGAM & PERTANDINGAN:       |
 |  1. Juara 1 Kumite Perorangan (2025)  |
-|     [ Lihat ] [ Download ]            |
+|     [ Lihat Piagam ] [ Download ]     |
 |                                       |
 |  2. Piagam Atlet Terbaik Dojo (2024)  |
-|     [ Lihat ] [ Download ]            |
+|     [ Lihat Piagam ] [ Download ]     |
 |                                       |
-|  [ + UNGGAH PIAGAM BARU ]             |
+|  [ + UNGGAH PIAGAM / HASIL LOMBA ]    |
 |                                       |
 +---------------------------------------+
 ```

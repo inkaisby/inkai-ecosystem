@@ -12,14 +12,40 @@ import '../profile/profile_screen.dart';
 import '../store/store_screen.dart';
 import '../organization/dojo_search_screen.dart';
 import '../membership/membership_screen.dart';
+import '../membership/attendance_history_screen.dart';
+import '../membership/digital_library_screen.dart';
+import '../membership/achievement_history_screen.dart';
+import '../membership/dojo_transfer_screen.dart';
+import 'widgets/admin_dashboard_widgets.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
+    final roles = List<String>.from(user?['roles'] ?? []);
+
+    String? primaryRole;
+    if (roles.contains('ADMIN_PUSAT')) {
+      primaryRole = 'ADMIN_PUSAT';
+    } else if (roles.contains('ADMIN_PROVINCE')) {
+      primaryRole = 'ADMIN_PROVINCE';
+    } else if (roles.contains('ADMIN_BRANCH')) {
+      primaryRole = 'ADMIN_BRANCH';
+    } else if (roles.contains('ADMIN_DOJO')) {
+      primaryRole = 'ADMIN_DOJO';
+    } else {
+      primaryRole = 'MEMBER';
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -28,54 +54,91 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context, user),
+              _buildHeader(context, user, primaryRole),
               const SizedBox(height: 32),
-              _buildMemberCard(user),
-              const SizedBox(height: 32),
-              _buildQuickActions(context),
-              const SizedBox(height: 32),
-              _buildUpcomingEvents(context),
+              _buildDashboardContent(user, primaryRole),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
+      bottomNavigationBar: _buildBottomNav(context, primaryRole),
     );
   }
 
-  Widget _buildHeader(BuildContext context, Map<String, dynamic>? user) {
+  Widget _buildDashboardContent(Map<String, dynamic>? user, String primaryRole) {
+    switch (primaryRole) {
+      case 'ADMIN_DOJO':
+        return DojoAdminDashboard(user: user);
+      case 'ADMIN_BRANCH':
+        return BranchAdminDashboard(user: user);
+      case 'ADMIN_PROVINCE':
+        return ProvinceAdminDashboard(user: user);
+      case 'ADMIN_PUSAT':
+        return ProvinceAdminDashboard(user: user); // Reuse province for now
+      default:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildMemberCard(user),
+            const SizedBox(height: 32),
+            _buildQuickActions(context),
+            const SizedBox(height: 32),
+            _buildUpcomingEvents(context),
+          ],
+        );
+    }
+  }
+
+  Widget _buildHeader(BuildContext context, Map<String, dynamic>? user, String primaryRole) {
+    String greeting = 'Oss';
+    String subGreeting = 'Anggota Aktif';
+
+    if (primaryRole == 'ADMIN_DOJO') subGreeting = user?['dojo']?['name'] ?? 'Ketua Dojo';
+    if (primaryRole == 'ADMIN_BRANCH') subGreeting = user?['managedBranchName'] ?? 'Pengurus Cabang';
+    if (primaryRole == 'ADMIN_PROVINCE') subGreeting = user?['managedProvinceName'] ?? 'Pengurus Provinsi';
+    if (primaryRole == 'ADMIN_PUSAT') subGreeting = 'Pengurus Pusat';
+    if (user?['roles']?.contains('PARENT') ?? false) subGreeting = 'Orang Tua / Wali';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
           children: [
-            Text(
-              'Halo, ${user?['fullName'] ?? 'Anggota'}!',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: InkaiTheme.textLight,
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: InkaiTheme.primaryGold, width: 2),
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/inkai-logo.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const Icon(LucideIcons.user, color: Colors.white, size: 20),
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            Row(
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Status: ',
-                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
-                ),
-                Text(
-                  '${user?['status'] ?? 'PENDING'}',
+                  '${greeting}, ${user?['fullName']?.split(' ')[0] ?? user?['email']?.split('@')[0] ?? 'Anggota'}!',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: (user?['status'] == 'AKTIF') ? Colors.greenAccent : Colors.amberAccent,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: InkaiTheme.textLight,
                   ),
                 ),
                 Text(
-                  ' (${user?['currentRank'] ?? '-'})',
-                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
+                  subGreeting,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: InkaiTheme.primaryGold,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -274,17 +337,51 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        _actionItem(LucideIcons.qr_code, 'Absensi', () {}),
-        _actionItem(LucideIcons.wallet, 'Iuran', () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const BillingScreen()));
-        }),
-        _actionItem(LucideIcons.book_open, 'Materi', () {}),
-        _actionItem(LucideIcons.shopping_bag, 'Store', () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreScreen()));
-        }),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _actionItem(LucideIcons.qr_code, 'Absensi', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceHistoryScreen()));
+            }),
+            _actionItem(LucideIcons.wallet, 'Iuran', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const BillingScreen()));
+            }),
+            _actionItem(LucideIcons.book_open, 'Materi', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const DigitalLibraryScreen()));
+            }),
+            _actionItem(LucideIcons.shopping_bag, 'Store', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreScreen()));
+            }),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _actionItem(LucideIcons.award, 'Sabuk', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => AchievementHistoryScreen(initialIndex: 0)));
+            }),
+            _actionItem(LucideIcons.scroll, 'Piagam', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => AchievementHistoryScreen(initialIndex: 1)));
+            }),
+            _actionItem(LucideIcons.graduation_cap, 'Pelatihan', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => AchievementHistoryScreen(initialIndex: 2)));
+            }),
+            _actionItem(LucideIcons.arrow_right_left, 'Pindah', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => DojoTransferScreen()));
+            }),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            _actionItem(LucideIcons.file_text, 'Dokumen', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => MembershipScreen()));
+            }),
+          ],
+        ),
       ],
     );
   }
@@ -372,7 +469,44 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNav(BuildContext context) {
+  Widget _buildBottomNav(BuildContext context, String primaryRole) {
+    final List<Map<String, dynamic>> items = [];
+
+    switch (primaryRole) {
+      case 'ADMIN_DOJO':
+        items.addAll([
+          {'icon': LucideIcons.house, 'label': 'Home'},
+          {'icon': LucideIcons.users, 'label': 'Anggota'},
+          {'icon': LucideIcons.scan_line, 'label': 'Absensi'},
+          {'icon': LucideIcons.user, 'label': 'Profil'},
+        ]);
+        break;
+      case 'ADMIN_BRANCH':
+        items.addAll([
+          {'icon': LucideIcons.house, 'label': 'Home'},
+          {'icon': LucideIcons.building, 'label': 'Dojo'},
+          {'icon': LucideIcons.megaphone, 'label': 'Info'},
+          {'icon': LucideIcons.user, 'label': 'Profil'},
+        ]);
+        break;
+      case 'ADMIN_PROVINCE':
+      case 'ADMIN_PUSAT':
+        items.addAll([
+          {'icon': LucideIcons.house, 'label': 'Home'},
+          {'icon': LucideIcons.map, 'label': 'Cabang'},
+          {'icon': LucideIcons.shield_half, 'label': 'Admin'},
+          {'icon': LucideIcons.user, 'label': 'Profil'},
+        ]);
+        break;
+      default:
+        items.addAll([
+          {'icon': LucideIcons.house, 'label': 'Home'},
+          {'icon': LucideIcons.calendar, 'label': 'Event'},
+          {'icon': LucideIcons.shield, 'label': 'Membership'},
+          {'icon': LucideIcons.user, 'label': 'Profil'},
+        ]);
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
@@ -381,18 +515,24 @@ class DashboardScreen extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _navIcon(LucideIcons.house, true, () {}),
-          _navIcon(LucideIcons.calendar, false, () {
-             Navigator.push(context, MaterialPageRoute(builder: (_) => const EventListScreen()));
-          }),
-          _navIcon(LucideIcons.shield, false, () {
-             Navigator.push(context, MaterialPageRoute(builder: (_) => const MembershipScreen()));
-          }),
-          _navIcon(LucideIcons.user, false, () {
-             Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-          }),
-        ],
+        children: List.generate(items.length, (index) {
+          final item = items[index];
+          return _navIcon(item['icon'], _currentIndex == index, () {
+            setState(() {
+              _currentIndex = index;
+            });
+            // Handle navigation
+            if (index == 0) {
+              // Already on Dashboard, maybe scroll to top if needed
+            } else if (index == 1) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const EventListScreen()));
+            } else if (index == 2) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const MembershipScreen()));
+            } else if (index == 3) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+            }
+          });
+        }),
       ),
     );
   }
@@ -407,3 +547,4 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 }
+

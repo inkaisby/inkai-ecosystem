@@ -15,6 +15,7 @@ model Province {
   name      String   @unique
   headName  String?
   branches  Branch[]
+  admins    User[]   @relation("ProvinceAdmin")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   isDeleted Boolean  @default(false)
@@ -28,6 +29,7 @@ model Branch {
   province   Province @relation(fields: [provinceId], references: [id])
   provinceId String
   dojos      Dojo[]
+  admins     User[]   @relation("BranchAdmin")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   isDeleted  Boolean  @default(false)
@@ -65,6 +67,11 @@ model User {
   roles        Role[]   @relation("UserRoles")
   notifications Notification[]
   childrenMembers Member[] @relation("ParentChildren")
+  fullName     String?
+  managedProvinceId String?
+  managedProvince   Province? @relation("ProvinceAdmin", fields: [managedProvinceId], references: [id])
+  managedBranchId   String?
+  managedBranch     Branch?   @relation("BranchAdmin", fields: [managedBranchId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   isDeleted    Boolean  @default(false)
@@ -72,9 +79,26 @@ model User {
 
 
 model Role {
-  id    String @id @default(uuid())
-  name  String @unique
-  users User[] @relation("UserRoles")
+  id          String           @id @default(uuid())
+  name        String           @unique
+  users       User[]           @relation("UserRoles")
+  permissions RolePermission[]
+}
+
+model Permission {
+  id    String           @id @default(uuid())
+  name  String           @unique // e.g., "Dashboard", "Anggota"
+  slug  String           @unique // e.g., "dashboard", "members"
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
 }
 
 model Member {

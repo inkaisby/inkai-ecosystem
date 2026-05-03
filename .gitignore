@@ -42,11 +42,11 @@ ios/Flutter/Generated.framework.zip
 android/app/debug/
 android/app/profile/
 android/app/release/
-*.lock
+# Lock files (Should be committed for dependency consistency)
+# *.lock
 
 # Prisma
-/inkai-backend/prisma/migrations/
-# (Keep migrations if you want to track database changes, but usually we exclude specific local DB files)
+# /inkai-backend/prisma/migrations/ (Must be committed to track DB changes)
 *.db
 *.db-journal
 

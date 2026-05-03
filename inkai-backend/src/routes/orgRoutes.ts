@@ -13,20 +13,22 @@ import {
   updateDojo
 } from '../controllers/orgController';
 
+import { authenticate } from '../middleware/authMiddleware';
+
 const router = Router();
 
-router.get('/provinces', getProvinces);
-router.get('/branches/:provinceId', getBranches);
-router.get('/dojos/search', searchDojos);
-router.get('/dojos/:branchId', getDojos);
-router.get('/dojo/:id', getDojo);
+router.get('/provinces', authenticate, getProvinces);
+router.get('/branches/:provinceId', authenticate, getBranches);
+router.get('/dojos/search', authenticate, searchDojos);
+router.get('/dojos/:branchId', authenticate, getDojos);
+router.get('/dojo/:id', authenticate, getDojo);
 
-router.post('/provinces', createProvince);
-router.post('/branches', createBranch);
-router.post('/dojos', createDojo);
+router.post('/provinces', authenticate, createProvince);
+router.post('/branches', authenticate, createBranch);
+router.post('/dojos', authenticate, createDojo);
 
-router.patch('/provinces/:id', updateProvince);
-router.patch('/branches/:id', updateBranch);
-router.patch('/dojos/:id', updateDojo);
+router.patch('/provinces/:id', authenticate, updateProvince);
+router.patch('/branches/:id', authenticate, updateBranch);
+router.patch('/dojos/:id', authenticate, updateDojo);
 
 export default router;

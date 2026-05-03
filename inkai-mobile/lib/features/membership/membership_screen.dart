@@ -9,6 +9,7 @@ import '../billing/billing_screen.dart';
 import 'attendance_history_screen.dart';
 import 'dojo_transfer_screen.dart';
 import 'achievement_history_screen.dart';
+import 'digital_library_screen.dart';
 
 class MembershipScreen extends StatelessWidget {
   const MembershipScreen({super.key});
@@ -53,6 +54,12 @@ class MembershipScreen extends StatelessWidget {
               icon: LucideIcons.award,
               title: 'Lihat Riwayat & Prestasi',
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AchievementHistoryScreen())),
+            ),
+            const SizedBox(height: 12),
+            _buildMenuLink(
+              icon: LucideIcons.book_open,
+              title: 'Materi Teknik (Digital Library)',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DigitalLibraryScreen())),
             ),
             const SizedBox(height: 12),
             _buildMenuLink(
