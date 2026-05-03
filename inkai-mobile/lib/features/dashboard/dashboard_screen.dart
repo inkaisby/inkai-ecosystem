@@ -17,6 +17,10 @@ import '../membership/digital_library_screen.dart';
 import '../membership/achievement_history_screen.dart';
 import '../membership/dojo_transfer_screen.dart';
 import 'widgets/admin_dashboard_widgets.dart';
+import 'providers/notification_provider.dart';
+import 'providers/admin_provider.dart';
+import 'notification_screen.dart';
+import '../chat/chat_list_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,13 +33,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<NotificationProvider>(context, listen: false).fetchNotifications();
+      Provider.of<AdminProvider>(context, listen: false).fetchStats();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
     final roles = List<String>.from(user?['roles'] ?? []);
 
     String? primaryRole;
-    if (roles.contains('ADMIN_PUSAT')) {
+    if (roles.contains('ADMIN_PUSAT') || roles.contains('ADMINISTRATOR')) {
       primaryRole = 'ADMIN_PUSAT';
     } else if (roles.contains('ADMIN_PROVINCE')) {
       primaryRole = 'ADMIN_PROVINCE';
@@ -66,83 +79,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDashboardContent(Map<String, dynamic>? user, String primaryRole) {
-    switch (primaryRole) {
-      case 'ADMIN_DOJO':
-        return DojoAdminDashboard(user: user);
-      case 'ADMIN_BRANCH':
-        return BranchAdminDashboard(user: user);
-      case 'ADMIN_PROVINCE':
-        return ProvinceAdminDashboard(user: user);
-      case 'ADMIN_PUSAT':
-        return ProvinceAdminDashboard(user: user); // Reuse province for now
-      default:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMemberCard(user),
-            const SizedBox(height: 32),
-            _buildQuickActions(context),
-            const SizedBox(height: 32),
-            _buildUpcomingEvents(context),
-          ],
-        );
+    if (_currentIndex == 2 && primaryRole.contains('ADMIN')) {
+      // ADMIN TAB: Show KPIs and Executive Menu
+      switch (primaryRole) {
+        case 'ADMIN_DOJO':
+          return DojoAdminDashboard(user: user);
+        case 'ADMIN_BRANCH':
+          return BranchAdminDashboard(user: user);
+        case 'ADMIN_PROVINCE':
+          return ProvinceAdminDashboard(user: user);
+        case 'ADMIN_PUSAT':
+          return NationalAdminDashboard(user: user);
+      }
     }
+
+    // HOME TAB (Index 0) or DEFAULT
+    if (primaryRole.contains('ADMIN')) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildUpcomingEvents(context),
+          const SizedBox(height: 32),
+          _buildQuickActions(context),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildMemberCard(user),
+        const SizedBox(height: 32),
+        _buildQuickActions(context),
+        const SizedBox(height: 32),
+        _buildUpcomingEvents(context),
+      ],
+    );
   }
 
   Widget _buildHeader(BuildContext context, Map<String, dynamic>? user, String primaryRole) {
     String greeting = 'Oss';
     String subGreeting = 'Anggota Aktif';
 
+    if (user?['roles']?.contains('PARENT') ?? false) subGreeting = 'Orang Tua / Wali';
     if (primaryRole == 'ADMIN_DOJO') subGreeting = user?['dojo']?['name'] ?? 'Ketua Dojo';
     if (primaryRole == 'ADMIN_BRANCH') subGreeting = user?['managedBranchName'] ?? 'Pengurus Cabang';
     if (primaryRole == 'ADMIN_PROVINCE') subGreeting = user?['managedProvinceName'] ?? 'Pengurus Provinsi';
-    if (primaryRole == 'ADMIN_PUSAT') subGreeting = 'Pengurus Pusat';
-    if (user?['roles']?.contains('PARENT') ?? false) subGreeting = 'Orang Tua / Wali';
+    if (primaryRole == 'ADMIN_PUSAT') subGreeting = 'Superadmin • ${user?['email'] ?? ''}';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: InkaiTheme.primaryGold, width: 2),
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/images/inkai-logo.png',
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(LucideIcons.user, color: Colors.white, size: 20),
+        Expanded(
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: InkaiTheme.primaryGold, width: 2),
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${greeting}, ${user?['fullName']?.split(' ')[0] ?? user?['email']?.split('@')[0] ?? 'Anggota'}!',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: InkaiTheme.textLight,
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/inkai-logo.png',
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(LucideIcons.user, color: Colors.white, size: 20),
                   ),
                 ),
-                Text(
-                  subGreeting,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: InkaiTheme.primaryGold,
-                    fontWeight: FontWeight.w500,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${greeting}, ${user?['fullName']?.split(' ')[0] ?? user?['email']?.split('@')[0] ?? 'Anggota'}!',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: InkaiTheme.textLight,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      subGreeting,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: InkaiTheme.primaryGold,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
         Row(
           children: [
@@ -168,13 +203,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
+            const SizedBox(width: 12),
+            InkWell(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen())),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(LucideIcons.message_circle, size: 20, color: Colors.white),
               ),
-              child: const Icon(LucideIcons.bell, size: 20, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Consumer<NotificationProvider>(
+              builder: (context, notificationProvider, _) {
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen())),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(LucideIcons.bell, size: 20, color: Colors.white),
+                      ),
+                    ),
+                    if (notificationProvider.unreadCount > 0)
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          child: Text(
+                            '${notificationProvider.unreadCount}',
+                            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(width: 12),
             InkWell(
@@ -470,79 +547,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildBottomNav(BuildContext context, String primaryRole) {
-    final List<Map<String, dynamic>> items = [];
+    final List<Map<String, dynamic>> items = [
+      {'icon': LucideIcons.house, 'label': 'Home', 'index': 0},
+    ];
 
-    switch (primaryRole) {
-      case 'ADMIN_DOJO':
-        items.addAll([
-          {'icon': LucideIcons.house, 'label': 'Home'},
-          {'icon': LucideIcons.users, 'label': 'Anggota'},
-          {'icon': LucideIcons.scan_line, 'label': 'Absensi'},
-          {'icon': LucideIcons.user, 'label': 'Profil'},
-        ]);
-        break;
-      case 'ADMIN_BRANCH':
-        items.addAll([
-          {'icon': LucideIcons.house, 'label': 'Home'},
-          {'icon': LucideIcons.building, 'label': 'Dojo'},
-          {'icon': LucideIcons.megaphone, 'label': 'Info'},
-          {'icon': LucideIcons.user, 'label': 'Profil'},
-        ]);
-        break;
-      case 'ADMIN_PROVINCE':
-      case 'ADMIN_PUSAT':
-        items.addAll([
-          {'icon': LucideIcons.house, 'label': 'Home'},
-          {'icon': LucideIcons.map, 'label': 'Cabang'},
-          {'icon': LucideIcons.shield_half, 'label': 'Admin'},
-          {'icon': LucideIcons.user, 'label': 'Profil'},
-        ]);
-        break;
-      default:
-        items.addAll([
-          {'icon': LucideIcons.house, 'label': 'Home'},
-          {'icon': LucideIcons.calendar, 'label': 'Event'},
-          {'icon': LucideIcons.shield, 'label': 'Membership'},
-          {'icon': LucideIcons.user, 'label': 'Profil'},
-        ]);
+    if (primaryRole != 'ADMIN_BRANCH' && primaryRole != 'ADMIN_DOJO') {
+      items.add({'icon': LucideIcons.map, 'label': 'Provinsi', 'index': 1});
     }
 
+    if (primaryRole.toUpperCase().contains('ADMIN')) {
+      items.add({'icon': LucideIcons.shield, 'label': 'Admin', 'index': 2});
+    }
+
+    items.add({'icon': LucideIcons.user, 'label': 'Profil', 'index': 3});
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: InkaiTheme.backgroundDark,
         border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(items.length, (index) {
-          final item = items[index];
-          return _navIcon(item['icon'], _currentIndex == index, () {
-            setState(() {
-              _currentIndex = index;
-            });
-            // Handle navigation
-            if (index == 0) {
-              // Already on Dashboard, maybe scroll to top if needed
-            } else if (index == 1) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const EventListScreen()));
-            } else if (index == 2) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const MembershipScreen()));
-            } else if (index == 3) {
+        children: items.map((item) {
+          final int itemIndex = item['index'];
+          final bool isCurrent = _currentIndex == itemIndex;
+
+          return _navIcon(item['icon'], item['label'], isCurrent, () {
+            if (itemIndex == 0 || itemIndex == 2) {
+              setState(() => _currentIndex = itemIndex);
+            } else if (itemIndex == 1) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const DojoSearchScreen()));
+            } else if (itemIndex == 3) {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
             }
           });
-        }),
+        }).toList(),
       ),
     );
   }
 
-  Widget _navIcon(IconData icon, bool isActive, VoidCallback onTap) {
+  Widget _navIcon(IconData icon, String label, bool isActive, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      child: Icon(
-        icon,
-        color: isActive ? InkaiTheme.primaryGold : Colors.grey,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: isActive ? InkaiTheme.primaryGold : Colors.white24,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 9,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              color: isActive ? InkaiTheme.primaryGold : Colors.white24,
+            ),
+          ),
+        ],
       ),
     );
   }

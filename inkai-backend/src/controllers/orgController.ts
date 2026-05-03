@@ -45,7 +45,10 @@ export const getProvinces = async (req: AuthRequest, res: Response) => {
 export const getBranches = async (req: AuthRequest, res: Response) => {
   try {
     const { provinceId } = req.params;
-    const where: any = { provinceId };
+    const where: any = {};
+    if (provinceId && provinceId !== 'all') {
+      where.provinceId = provinceId;
+    }
     
     if (req.user) {
       if (req.user.managedBranchId) {
@@ -69,7 +72,10 @@ export const getBranches = async (req: AuthRequest, res: Response) => {
 export const getDojos = async (req: AuthRequest, res: Response) => {
   try {
     const { branchId } = req.params;
-    const where: any = { branchId };
+    const where: any = {};
+    if (branchId && branchId !== 'all') {
+      where.branchId = branchId;
+    }
 
     const dojos = await prisma.dojo.findMany({
       where,

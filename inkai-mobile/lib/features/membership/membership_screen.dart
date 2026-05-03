@@ -1,18 +1,198 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../auth/providers/auth_provider.dart';
 import '../../core/theme.dart';
+import '../../core/network/api_service.dart';
 import '../billing/billing_screen.dart';
 import 'attendance_history_screen.dart';
 import 'dojo_transfer_screen.dart';
 import 'achievement_history_screen.dart';
 import 'digital_library_screen.dart';
 
-class MembershipScreen extends StatelessWidget {
+class MembershipScreen extends StatefulWidget {
   const MembershipScreen({super.key});
+
+  @override
+  State<MembershipScreen> createState() => _MembershipScreenState();
+}
+
+class _MembershipScreenState extends State<MembershipScreen> {
+  final ApiService _apiService = ApiService();
+  final ImagePicker _picker = ImagePicker();
+  bool _isUploading = false;
+
+  void _showPickerMenu(String fieldName) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: InkaiTheme.backgroundDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'PILIH SUMBER DOKUMEN',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white70),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildPickerOption(
+                  icon: LucideIcons.camera,
+                  label: 'Kamera',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickFromCamera(fieldName);
+                  },
+                ),
+                _buildPickerOption(
+                  icon: LucideIcons.image,
+                  label: 'Galeri',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickFromGallery(fieldName);
+                  },
+                ),
+                _buildPickerOption(
+                  icon: LucideIcons.file_search,
+                  label: 'File/Drive',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickFromFile(fieldName);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickerOption({required IconData icon, required String label, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: InkaiTheme.primaryGold, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.white54)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickFromCamera(String fieldName) async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.camera, 
+      imageQuality: 70,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
+    if (image != null) _processUpload(fieldName, image.path);
+  }
+
+  Future<void> _pickFromGallery(String fieldName) async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery, 
+      imageQuality: 70,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
+    if (image != null) _processUpload(fieldName, image.path);
+  }
+
+  Future<void> _pickFromFile(String fieldName) async {
+    try {
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+      );
+      if (result != null && result.files.single.path != null) {
+        _processUpload(fieldName, result.files.single.path!);
+      }
+    } catch (e) {
+      debugPrint('FilePicker Error: $e');
+    }
+  }
+
+  Future<void> _processUpload(String fieldName, String filePath) async {
+    try {
+      final file = File(filePath);
+      final fileSize = await file.length();
+      
+      if (fileSize > 2 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ukuran file terlalu besar (Maks. 2MB). Silakan kompres atau perkecil resolusi.')),
+          );
+        }
+        return;
+      }
+
+      setState(() => _isUploading = true);
+
+      final response = await _apiService.uploadDocument(fieldName, filePath);
+
+      if (mounted) {
+        if (response.data['status'] == 'success') {
+          Provider.of<AuthProvider>(context, listen: false).fetchProfile();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dokumen berhasil diunggah')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal: ${response.data['message']}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  void _viewDocument(String? url) async {
+    if (url == null || url.isEmpty) return;
+    
+    final baseUrl = 'http://127.0.0.1:5001';
+    final absoluteUrl = url.startsWith('http') ? url : '$baseUrl$url';
+    
+    final uri = Uri.parse(absoluteUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak bisa membuka dokumen')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,13 +253,26 @@ class MembershipScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildSectionTitle('DOKUMEN PENDUKUNG'),
-                Icon(LucideIcons.info, size: 16, color: Colors.white.withOpacity(0.3)),
+                if (_isUploading)
+                  const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: InkaiTheme.primaryGold))
+                else
+                  Icon(LucideIcons.info, size: 16, color: Colors.white.withOpacity(0.3)),
               ],
             ),
             const SizedBox(height: 16),
-            _buildDocumentItem('Akte Lahir', true),
+            _buildDocumentItem(
+              'Akte Lahir', 
+              user?['birthCertificateUrl'], 
+              () => _showPickerMenu('akte_lahir'),
+              () => _viewDocument(user?['birthCertificateUrl']),
+            ),
             const SizedBox(height: 12),
-            _buildDocumentItem('Kartu BPJS', false),
+            _buildDocumentItem(
+              'Kartu BPJS', 
+              user?['bpjsCardUrl'], 
+              () => _showPickerMenu('bpjs'),
+              () => _viewDocument(user?['bpjsCardUrl']),
+            ),
             
             const SizedBox(height: 32),
             _buildDojoTransferInfo(context),
@@ -137,7 +330,6 @@ class MembershipScreen extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Official Photo Placeholder
                       Container(
                         width: 80,
                         height: 100,
@@ -253,7 +445,8 @@ class MembershipScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDocumentItem(String name, bool isUploaded) {
+  Widget _buildDocumentItem(String name, String? url, VoidCallback onUpload, VoidCallback onView) {
+    final isUploaded = url != null && url.isNotEmpty;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -271,7 +464,7 @@ class MembershipScreen extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: isUploaded ? onView : onUpload,
             child: Text(
               isUploaded ? 'Lihat' : 'Upload',
               style: GoogleFonts.inter(
@@ -281,6 +474,11 @@ class MembershipScreen extends StatelessWidget {
               ),
             ),
           ),
+          if (isUploaded)
+             IconButton(
+               icon: const Icon(LucideIcons.refresh_cw, size: 14, color: Colors.white30),
+               onPressed: onUpload,
+             ),
         ],
       ),
     );

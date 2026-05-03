@@ -23,13 +23,13 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('token');
     if (_token != null) {
-      await _fetchProfile();
+      await fetchProfile();
       await fetchConnectedProfiles();
     }
     notifyListeners();
   }
 
-  Future<void> _fetchProfile() async {
+  Future<void> fetchProfile() async {
     try {
       final response = await _apiService.getProfile();
       if (response.data['status'] == 'success') {
@@ -76,7 +76,7 @@ class AuthProvider extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', _token!);
 
-        await _fetchProfile();
+        await fetchProfile();
         
         _isLoading = false;
         notifyListeners();

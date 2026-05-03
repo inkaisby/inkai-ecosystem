@@ -6,6 +6,8 @@ import '../auth/providers/auth_provider.dart';
 import '../../../core/theme.dart';
 
 import 'edit_profile_screen.dart';
+import 'change_password_screen.dart';
+import '../dashboard/notification_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -14,6 +16,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
+    final baseUrl = 'http://127.0.0.1:5001';
 
     return Scaffold(
       backgroundColor: InkaiTheme.backgroundDark,
@@ -48,6 +51,12 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white.withOpacity(0.1), width: 4),
+                      image: user?['photoUrl'] != null 
+                        ? DecorationImage(
+                            image: NetworkImage(user!['photoUrl'].startsWith('http') ? user['photoUrl'] : 'http://127.0.0.1:5001${user['photoUrl']}'),
+                            fit: BoxFit.cover,
+                          ) 
+                        : null,
                       boxShadow: [
                         BoxShadow(
                           color: InkaiTheme.primaryGold.withOpacity(0.2),
@@ -56,12 +65,14 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Text(
-                        user?['fullName']?.substring(0, 1).toUpperCase() ?? 'U',
-                        style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black),
-                      ),
-                    ),
+                    child: user?['photoUrl'] == null 
+                      ? Center(
+                          child: Text(
+                            user?['fullName']?.substring(0, 1).toUpperCase() ?? 'U',
+                            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black),
+                          ),
+                        )
+                      : null,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -82,8 +93,12 @@ class ProfileScreen extends StatelessWidget {
             _buildMenuLink(LucideIcons.user_round_pen, 'Edit Profil', () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()));
             }),
-            _buildMenuLink(LucideIcons.key_round, 'Ganti Kata Sandi', () {}),
-            _buildMenuLink(LucideIcons.bell_ring, 'Pengaturan Notifikasi', () {}),
+            _buildMenuLink(LucideIcons.key_round, 'Ganti Kata Sandi', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordScreen()));
+            }),
+            _buildMenuLink(LucideIcons.bell_ring, 'Notifikasi Saya', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen()));
+            }),
             
             const SizedBox(height: 32),
             if (user?['roles']?.contains('PARENT') ?? false) ...[

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
+import '../../../core/network/api_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -10,10 +11,12 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _identifierController = TextEditingController();
+  final ApiService _apiService = ApiService();
   bool _isLoading = false;
 
-  void _handleRecovery() {
-    if (_identifierController.text.isEmpty) {
+  Future<void> _handleRecovery() async {
+    final identifier = _identifierController.text.trim();
+    if (identifier.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Silakan masukkan Email atau NIA Anda')),
       );
@@ -22,16 +25,46 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _isLoading = true);
     
-    // Simulasi pengiriman link pemulihan
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      final response = await _apiService.forgotPassword(identifier);
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (response.data['status'] == 'success') {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: InkaiTheme.backgroundDark,
+              title: const Text('Permintaan Terkirim', style: TextStyle(color: Colors.white)),
+              content: const Text(
+                'Instruksi pemulihan telah dikirim. Silakan cek email Anda (termasuk folder spam).\n\n(Selama tahap pengembangan, link reset juga muncul di terminal server)',
+                style: TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // close dialog
+                    Navigator.pop(context); // go back to login
+                  },
+                  child: const Text('MENGERTI', style: TextStyle(color: InkaiTheme.primaryGold)),
+                ),
+              ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal: ${response.data['message']}')),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Link pemulihan telah dikirim ke email Anda')),
+          SnackBar(content: Text('Error: $e')),
         );
-        Navigator.pop(context);
       }
-    });
+    }
   }
 
   @override
@@ -82,6 +115,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             const SizedBox(height: 8),
             TextField(
               controller: _identifierController,
+              style: const TextStyle(color: Colors.white),
               decoration: _inputDecoration('budi@email.com / 123456789'),
             ),
             const SizedBox(height: 32),

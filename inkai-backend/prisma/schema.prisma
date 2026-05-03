@@ -68,6 +68,9 @@ model User {
   notifications Notification[]
   childrenMembers Member[] @relation("ParentChildren")
   fullName     String?
+  photoUrl     String?
+  resetToken   String?  @unique
+  resetTokenExpiry DateTime?
   managedProvinceId String?
   managedProvince   Province? @relation("ProvinceAdmin", fields: [managedProvinceId], references: [id])
   managedBranchId   String?
@@ -75,6 +78,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   isDeleted    Boolean  @default(false)
+  conversations Conversation[] @relation("UserConversations")
+  messages      Message[]
 }
 
 
@@ -120,6 +125,8 @@ model Member {
   ranks              MemberRank[]
   parentUserId       String?
   parentUser         User?               @relation("ParentChildren", fields: [parentUserId], references: [id])
+  birthCertificateUrl String?
+  bpjsCardUrl        String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   isDeleted          Boolean             @default(false)
@@ -243,4 +250,24 @@ model Verification {
   event       Event?   @relation(fields: [eventId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Conversation {
+  id            String    @id @default(uuid())
+  participants  User[]    @relation("UserConversations")
+  messages      Message[]
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  sender         User         @relation(fields: [senderId], references: [id])
+  senderId       String
+  content        String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
 }

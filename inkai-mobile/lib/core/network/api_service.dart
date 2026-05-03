@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: 'http://localhost:5000/v1', 
+      baseUrl: 'http://127.0.0.1:5001/v1', 
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ),
@@ -16,6 +17,9 @@ class ApiService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          // DEBUG: Verify URL before request
+          debugPrint('🚀 API Request: ${options.method} ${options.baseUrl}${options.path}');
+          
           final prefs = await SharedPreferences.getInstance();
           final token = prefs.getString('token');
           if (token != null) {
@@ -55,11 +59,20 @@ class ApiService {
   }
 
   Future<Response> getBranches(String provinceId) async {
-    return await _dio.get('/org/branches/$provinceId');
+    final path = (provinceId.isEmpty || provinceId == 'all') ? '/org/branches/all' : '/org/branches/$provinceId';
+    return await _dio.get(path);
   }
 
   Future<Response> getDojos(String branchId) async {
-    return await _dio.get('/org/dojos/$branchId');
+    final path = (branchId.isEmpty || branchId == 'all') ? '/org/dojos/all' : '/org/dojos/$branchId';
+    return await _dio.get(path);
+  }
+
+  Future<Response> getMembers({String? dojoId, String? search}) async {
+    final Map<String, dynamic> params = {};
+    if (dojoId != null) params['dojoId'] = dojoId;
+    if (search != null) params['search'] = search;
+    return await _dio.get('/members', queryParameters: params);
   }
 
   Future<Response> getProfile() async {
@@ -105,6 +118,10 @@ class ApiService {
     return await _dio.get('/members/me/children');
   }
 
+  Future<Response> getDashboardStats() async {
+    return await _dio.get('/dashboard/stats');
+  }
+
   Future<Response> registerChild({
     required String fullName,
     required String dojoId,
@@ -116,6 +133,68 @@ class ApiService {
       'dojoId': dojoId,
       'gender': gender,
       'birthDate': birthDate,
+    });
+  }
+
+  // Chat Endpoints
+  Future<Response> getConversations() async {
+    return await _dio.get('/chat/conversations');
+  }
+
+  Future<Response> getChatMessages(String conversationId) async {
+    return await _dio.get('/chat/messages/$conversationId');
+  }
+
+  Future<Response> startConversation(String participantId) async {
+    return await _dio.post('/chat/conversations', data: {
+      'participantId': participantId,
+    });
+  }
+
+  Future<Response> broadcastNotification({
+    required String title,
+    required String content,
+    required String type,
+  }) async {
+    return await _dio.post('/notifications/broadcast', data: {
+      'title': title,
+      'content': content,
+      'type': type,
+    });
+  }
+
+  Future<Response> uploadDocument(String fieldName, String filePath) async {
+    final formData = FormData.fromMap({
+      'fieldName': fieldName,
+      'document': await MultipartFile.fromFile(filePath),
+    });
+    return await _dio.post('/members/upload-document', data: formData);
+  }
+
+  Future<Response> changePassword(String oldPassword, String newPassword) async {
+    return await _dio.put('/auth/change-password', data: {
+      'oldPassword': oldPassword,
+      'newPassword': newPassword,
+    });
+  }
+
+  Future<Response> uploadProfilePhoto(String filePath) async {
+    final formData = FormData.fromMap({
+      'photo': await MultipartFile.fromFile(filePath),
+    });
+    return await _dio.post('/auth/upload-photo', data: formData);
+  }
+
+  Future<Response> updateProfile(String fullName, String phoneNumber) async {
+    return await _dio.patch('/members/me', data: {
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
+    });
+  }
+
+  Future<Response> forgotPassword(String identifier) async {
+    return await _dio.post('/auth/forgot-password', data: {
+      'identifier': identifier,
     });
   }
 }

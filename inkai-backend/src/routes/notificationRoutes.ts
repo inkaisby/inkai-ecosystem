@@ -6,6 +6,6 @@ const router = Router();
 
 router.get('/my', authenticate, notificationController.getMyNotifications);
 router.patch('/:id/read', authenticate, notificationController.markAsRead);
-router.post('/broadcast', authenticate, authorize(['ADMIN']), notificationController.broadcastNotification);
+router.post('/broadcast', authenticate, authorize(['ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO', 'ADMINISTRATOR', 'ADMIN']), notificationController.broadcastNotification);
 
 export default router;
