@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,25 +11,25 @@ model Province {
   id        String   @id @default(uuid())
   name      String   @unique
   headName  String?
-  branches  Branch[]
-  admins    User[]   @relation("ProvinceAdmin")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   isDeleted Boolean  @default(false)
+  branches  Branch[]
+  admins    User[]   @relation("ProvinceAdmin")
 }
 
 model Branch {
   id         String   @id @default(uuid())
   name       String
   city       String?
-  headName   String?
-  province   Province @relation(fields: [provinceId], references: [id])
   provinceId String
-  dojos      Dojo[]
-  admins     User[]   @relation("BranchAdmin")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  headName   String?
   isDeleted  Boolean  @default(false)
+  province   Province @relation(fields: [provinceId], references: [id])
+  dojos      Dojo[]
+  admins     User[]   @relation("BranchAdmin")
 
   @@unique([name, provinceId])
 }
@@ -41,178 +38,181 @@ model Dojo {
   id            String       @id @default(uuid())
   name          String
   address       String?
-  kecamatan     String?
-  tempatLatihan String?
-  phoneNumber   String?
-  schedule      String?
   contactPerson String?
-  branch        Branch       @relation(fields: [branchId], references: [id])
   branchId      String
-  members       Member[]
-  attendances   Attendance[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  kecamatan     String?
+  phoneNumber   String?
+  schedule      String?
+  tempatLatihan String?
   isDeleted     Boolean      @default(false)
+  attendances   Attendance[]
+  branch        Branch       @relation(fields: [branchId], references: [id])
+  members       Member[]
 
   @@unique([name, branchId])
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  phoneNumber  String?
-  isActive     Boolean  @default(true)
-  member       Member?
-  roles        Role[]   @relation("UserRoles")
-  notifications Notification[]
-  childrenMembers Member[] @relation("ParentChildren")
-  fullName     String?
-  photoUrl     String?
-  resetToken   String?  @unique
-  resetTokenExpiry DateTime?
-  managedProvinceId String?
-  managedProvince   Province? @relation("ProvinceAdmin", fields: [managedProvinceId], references: [id])
+  id                String         @id @default(uuid())
+  email             String         @unique
+  passwordHash      String
+  phoneNumber       String?
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  isDeleted         Boolean        @default(false)
+  fullName          String?
   managedBranchId   String?
-  managedBranch     Branch?   @relation("BranchAdmin", fields: [managedBranchId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  isDeleted    Boolean  @default(false)
-  conversations Conversation[] @relation("UserConversations")
-  messages      Message[]
+  managedProvinceId String?
+  photoUrl          String?
+  childrenMembers   Member[]       @relation("ParentChildren")
+  member            Member?
+  messages          Message[]
+  notifications     Notification[]
+  managedBranch     Branch?        @relation("BranchAdmin", fields: [managedBranchId], references: [id])
+  managedProvince   Province?      @relation("ProvinceAdmin", fields: [managedProvinceId], references: [id])
+  conversations     Conversation[] @relation("UserConversations")
+  roles             Role[]         @relation("UserRoles")
+  events            Event[]        @relation("UserEvents")
 }
-
 
 model Role {
   id          String           @id @default(uuid())
   name        String           @unique
-  users       User[]           @relation("UserRoles")
   permissions RolePermission[]
+  users       User[]           @relation("UserRoles")
 }
 
 model Permission {
   id    String           @id @default(uuid())
-  name  String           @unique // e.g., "Dashboard", "Anggota"
-  slug  String           @unique // e.g., "dashboard", "members"
+  name  String           @unique
+  slug  String           @unique
   roles RolePermission[]
 }
 
 model RolePermission {
   roleId       String
   permissionId String
-  role         Role       @relation(fields: [roleId], references: [id])
   permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
 
   @@id([roleId, permissionId])
 }
 
 model Member {
-  id                 String              @id @default(uuid())
-  user               User?               @relation(fields: [userId], references: [id])
-  userId             String?             @unique
-  dojo               Dojo                @relation(fields: [dojoId], references: [id])
-  dojoId             String
-  nia                String?             @unique
-  fullName           String
-  gender             String?
-  birthDate          DateTime?
-  currentRank        String              @default("Putih")
-  status             String              @default("Active")
-  attendances        Attendance[]
-  billings           Billing[]
-  eventRegistrations EventRegistration[]
-  verifications      Verification[]
-  ranks              MemberRank[]
-  parentUserId       String?
-  parentUser         User?               @relation("ParentChildren", fields: [parentUserId], references: [id])
+  id                  String              @id @default(uuid())
+  userId              String?             @unique
+  dojoId              String
+  nia                 String?             @unique
+  fullName            String
+  gender              String?
+  birthDate           DateTime?
+  currentRank         String              @default("Putih")
+  status              String              @default("Active")
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  isDeleted           Boolean             @default(false)
+  parentUserId        String?
   birthCertificateUrl String?
-  bpjsCardUrl        String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  isDeleted          Boolean             @default(false)
+  bpjsCardUrl         String?
+  attendances         Attendance[]
+  billings            Billing[]
+  eventRegistrations  EventRegistration[]
+  dojo                Dojo                @relation(fields: [dojoId], references: [id])
+  parentUser          User?               @relation("ParentChildren", fields: [parentUserId], references: [id])
+  user                User?               @relation(fields: [userId], references: [id])
+  ranks               MemberRank[]
+  verifications       Verification[]
 }
 
 model MemberRank {
-  id        String   @id @default(uuid())
-  member    Member   @relation(fields: [memberId], references: [id])
-  memberId  String
-  rank      String
-  date      DateTime
-  location  String?
+  id         String   @id @default(uuid())
+  memberId   String
+  rank       String
+  date       DateTime
+  location   String?
   isVerified Boolean  @default(false)
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  member     Member   @relation(fields: [memberId], references: [id])
 }
 
 model Attendance {
-  id         String   @id @default(uuid())
-  member     Member   @relation(fields: [memberId], references: [id])
-  memberId   String
-  dojo       Dojo     @relation(fields: [dojoId], references: [id])
-  dojoId     String
-  checkInAt  DateTime @default(now())
-  method     String   @default("QR_SCAN") // QR_SCAN, MANUAL
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  isDeleted  Boolean  @default(false)
+  id        String   @id @default(uuid())
+  memberId  String
+  dojoId    String
+  checkInAt DateTime @default(now())
+  method    String   @default("QR_SCAN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+  dojo      Dojo     @relation(fields: [dojoId], references: [id])
+  member    Member   @relation(fields: [memberId], references: [id])
 }
 
 model Billing {
   id        String   @id @default(uuid())
-  member    Member   @relation(fields: [memberId], references: [id])
   memberId  String
-  type      String   // MONTHLY_IURAN, EVENT_FEE
+  type      String
   amount    Float
   dueDate   DateTime
-  status    String   @default("PENDING") // PENDING, PAID, FAILED
-  payment   Payment?
+  status    String   @default("PENDING")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   isDeleted Boolean  @default(false)
+  member    Member   @relation(fields: [memberId], references: [id])
+  payment   Payment?
 }
 
 model Payment {
-  id            String   @id @default(uuid())
-  billing       Billing  @relation(fields: [billingId], references: [id])
-  billingId     String   @unique
+  id            String    @id @default(uuid())
+  billingId     String    @unique
   paymentMethod String?
-  externalId    String?  @unique
+  externalId    String?   @unique
   paidAt        DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  billing       Billing   @relation(fields: [billingId], references: [id])
 }
 
 model Event {
-  id           String              @id @default(uuid())
-  title        String
-  description  String?
-  startDate    DateTime
-  endDate      DateTime
-  location     String?
+  id            String              @id @default(uuid())
+  title         String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime
+  location      String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  isDeleted     Boolean             @default(false)
+  createdById   String?
+  createdBy     User?               @relation("UserEvents", fields: [createdById], references: [id])
+  categories    EventCategory[]
   registrations EventRegistration[]
   verifications Verification[]
-  categories    EventCategory[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  isDeleted    Boolean             @default(false)
 }
 
 model EventCategory {
   id      String @id @default(uuid())
-  event   Event  @relation(fields: [eventId], references: [id])
   eventId String
   name    String
   fee     Float
+  event   Event  @relation(fields: [eventId], references: [id])
+  registrations EventRegistration[]
 }
 
 model EventRegistration {
-  id        String   @id @default(uuid())
-  event     Event    @relation(fields: [eventId], references: [id])
-  eventId   String
-  member    Member   @relation(fields: [memberId], references: [id])
-  memberId  String
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String        @id @default(uuid())
+  eventId    String
+  memberId   String
+  categoryId String?
+  status     String        @default("PENDING")
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  category   EventCategory? @relation(fields: [categoryId], references: [id])
+  event      Event         @relation(fields: [eventId], references: [id])
+  member     Member        @relation(fields: [memberId], references: [id])
 }
 
 model Product {
@@ -230,44 +230,44 @@ model Notification {
   id        String   @id @default(uuid())
   title     String
   content   String
-  type      String   @default("INFO") // INFO, WARNING, SUCCESS
+  type      String   @default("INFO")
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
 }
 
 model Verification {
-  id          String   @id @default(uuid())
-  memberId    String
-  member      Member   @relation(fields: [memberId], references: [id])
-  type        String   // RANK_PROMOTION, DOJO_TRANSFER, ACHIEVEMENT
-  data        String   // New rank, new dojo, or achievement title
-  proofUrl    String
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  adminNotes  String?
-  eventId     String?
-  event       Event?   @relation(fields: [eventId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  memberId   String
+  type       String
+  data       String
+  proofUrl   String
+  status     String   @default("PENDING")
+  adminNotes String?
+  eventId    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  event      Event?   @relation(fields: [eventId], references: [id])
+  member     Member   @relation(fields: [memberId], references: [id])
 }
 
 model Conversation {
   id            String    @id @default(uuid())
-  participants  User[]    @relation("UserConversations")
-  messages      Message[]
   lastMessageAt DateTime  @default(now())
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  updatedAt     DateTime  @default(now()) @updatedAt
+  messages      Message[]
+  participants  User[]    @relation("UserConversations")
 }
 
 model Message {
   id             String       @id @default(uuid())
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
   conversationId String
-  sender         User         @relation(fields: [senderId], references: [id])
   senderId       String
   content        String
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         User         @relation(fields: [senderId], references: [id])
 }

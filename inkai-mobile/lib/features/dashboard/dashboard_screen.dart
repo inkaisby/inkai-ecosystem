@@ -21,6 +21,9 @@ import 'providers/notification_provider.dart';
 import 'providers/admin_provider.dart';
 import 'notification_screen.dart';
 import '../chat/chat_list_screen.dart';
+import '../events/providers/event_provider.dart';
+import '../events/event_detail_screen.dart';
+import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -38,6 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<NotificationProvider>(context, listen: false).fetchNotifications();
       Provider.of<AdminProvider>(context, listen: false).fetchStats();
+      Provider.of<EventProvider>(context, listen: false).fetchEvents();
     });
   }
 
@@ -490,58 +494,108 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildUpcomingEvents(BuildContext context) {
+    return Consumer<EventProvider>(
+      builder: (context, eventProvider, _) {
+        final events = eventProvider.events;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Event Terdekat',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EventListScreen())),
+                  child: const Text('Lihat Semua', style: TextStyle(color: InkaiTheme.primaryGold, fontSize: 12)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (eventProvider.isLoading)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(color: InkaiTheme.primaryGold),
+              ))
+            else if (events.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.03),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                ),
+                child: const Center(
+                  child: Text('Belum ada event terdekat.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                ),
+              )
+            else
+              ...events.take(3).map((event) => _buildEventItem(context, event)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEventItem(BuildContext context, dynamic event) {
+    final bool isUKTEvent = event['title'].toString().toUpperCase().contains('UKT') || 
+                            event['title'].toString().toUpperCase().contains('UJIAN');
+    
     return InkWell(
       onTap: () {
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const EventListScreen()));
+          context, 
+          MaterialPageRoute(builder: (_) => EventDetailScreen(event: event))
+        );
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Event Terdekat',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: (isUKTEvent ? Colors.blue : Colors.amber).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                isUKTEvent ? LucideIcons.award : LucideIcons.trophy, 
+                color: isUKTEvent ? Colors.blue : Colors.amber,
+                size: 20,
+              ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(15),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event['title'] ?? 'Judul Event',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: const Icon(LucideIcons.trophy, color: Colors.amber),
-                ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Kejurnas INKAI 2026',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '15-18 Agustus | Jakarta',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
+                  const SizedBox(height: 4),
+                  Text(
+                    '${DateFormat('dd MMM').format(DateTime.parse(event['startDate']))} | ${event['location'] ?? 'Indonesia'}',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
-                ),
-                const Icon(LucideIcons.chevron_right, color: Colors.grey),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            const Icon(LucideIcons.chevron_right, color: Colors.grey, size: 16),
+          ],
+        ),
       ),
     );
   }
@@ -551,7 +605,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       {'icon': LucideIcons.house, 'label': 'Home', 'index': 0},
     ];
 
-    if (primaryRole != 'ADMIN_BRANCH' && primaryRole != 'ADMIN_DOJO') {
+    if (primaryRole.contains('ADMIN') && primaryRole != 'ADMIN_BRANCH' && primaryRole != 'ADMIN_DOJO') {
       items.add({'icon': LucideIcons.map, 'label': 'Provinsi', 'index': 1});
     }
 

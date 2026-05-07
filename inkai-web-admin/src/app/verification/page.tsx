@@ -12,6 +12,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function VerificationPage() {
   const [claims, setClaims] = useState<any[]>([]);
@@ -27,13 +28,13 @@ export default function VerificationPage() {
   const fetchClaims = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/v1/verifications/pending', {
+      const response = await fetch('http://localhost:5001/v1/verifications/pending', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
       setClaims(data.data);
     } catch (err) {
-      console.error(err);
+      toast.error('Gagal memuat antrean verifikasi');
     } finally {
       setLoading(false);
     }
@@ -43,7 +44,7 @@ export default function VerificationPage() {
     if (!selectedClaim) return;
     setProcessing(true);
     try {
-      await fetch(`http://localhost:5000/v1/verifications/${selectedClaim.id}/process`, {
+      await fetch(`http://localhost:5001/v1/verifications/${selectedClaim.id}/process`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -51,11 +52,12 @@ export default function VerificationPage() {
         },
         body: JSON.stringify({ status, adminNotes })
       });
+      toast.success(status === 'APPROVED' ? 'Pengajuan berhasil disetujui!' : 'Pengajuan telah ditolak.');
       setSelectedClaim(null);
       setAdminNotes('');
       fetchClaims();
     } catch (err) {
-      console.error(err);
+      toast.error('Gagal memproses pengajuan');
     } finally {
       setProcessing(false);
     }

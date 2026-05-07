@@ -20,7 +20,7 @@ export default function InventoryPage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('http://localhost:5000/v1/inventory'); // Simple fetch for now
+        const response = await fetch('http://localhost:5001/v1/inventory'); // Simple fetch for now
         const data = await response.json();
         setProducts(data.data);
       } catch (err) {

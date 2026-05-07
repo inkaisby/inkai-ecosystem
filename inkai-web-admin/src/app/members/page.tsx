@@ -23,6 +23,7 @@ import {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Suspense } from 'react';
+import toast from 'react-hot-toast';
 
 function MembersContent() {
   const router = useRouter();
@@ -54,6 +55,8 @@ function MembersContent() {
     birthDate: '',
     currentRank: 'Putih (Kyu 10)',
     nia: '',
+    email: '',
+    password: '',
     dojoId: dojoId || ''
   });
   const [provinces, setProvinces] = useState<any[]>([]);
@@ -141,6 +144,8 @@ function MembersContent() {
       birthDate: member.birthDate ? member.birthDate.split('T')[0] : '',
       currentRank: member.currentRank || 'Putih',
       nia: member.nia || '',
+      email: member.user?.email || '',
+      password: '',
       dojoId: member.dojoId || ''
     });
 
@@ -165,6 +170,8 @@ function MembersContent() {
       birthDate: '',
       currentRank: 'Putih (Kyu 10)',
       nia: '',
+      email: '',
+      password: '',
       dojoId: dojoId || ''
     });
     setDateInput('');
@@ -173,7 +180,7 @@ function MembersContent() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div suppressHydrationWarning className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Area */}
       <div>
         {dojoId && (
@@ -407,8 +414,9 @@ function MembersContent() {
                 setShowAddModal(false);
                 resetForm();
                 fetchMembers(1, search);
+                toast.success(isEdit ? 'Data anggota berhasil diperbarui!' : 'Anggota baru berhasil terdaftar!');
               } catch (err: any) {
-                alert(err.message);
+                toast.error(err.message || 'Gagal memproses data');
               } finally {
                 setIsSubmitting(false);
               }
@@ -416,14 +424,16 @@ function MembersContent() {
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Nama Lengkap</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value.toUpperCase() })}
-                    placeholder="CONTOH: BUDI SANTOSO"
-                    className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all uppercase"
-                  />
+                    <input 
+                      type="text" 
+                      required
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Harap isi nama lengkap anggota')}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value.toUpperCase() })}
+                      placeholder="CONTOH: BUDI SANTOSO"
+                      className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all uppercase"
+                    />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -549,23 +559,57 @@ function MembersContent() {
                   </div>
                 </div>
 
+                <div className="pt-2 border-t border-white/5 space-y-4">
+                  <label className="text-[10px] font-black uppercase text-amber-500 tracking-widest block">Kredensial Login (Opsional)</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                        <input 
+                          type="email" 
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="nama@email.com"
+                          className="w-full bg-[#1e1e24] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">
+                        {isEdit ? 'Kata Sandi Baru' : 'Kata Sandi'}
+                      </label>
+                      <input 
+                        type="password" 
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder={isEdit ? 'Kosongkan jika tidak diubah' : 'Min. 6 karakter'}
+                        className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {(!dojoId || isEdit) ? (
                   <div className="space-y-4 pt-2 border-t border-white/5">
                     <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest block">Wilayah & Dojo</label>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="relative">
-                        <select 
-                          value={selectedProvinceId}
-                          onChange={(e) => {
-                            setSelectedProvinceId(e.target.value);
-                            setSelectedBranchId('');
-                            setDojos([]);
-                            setFormData(prev => ({ ...prev, dojoId: '' }));
-                          }}
-                          className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 appearance-none"
-                          style={{ colorScheme: 'dark' }}
-                        >
-                          <option value="">Pilih Provinsi</option>
+                          <select 
+                            value={selectedProvinceId}
+                            onChange={(e) => {
+                              setSelectedProvinceId(e.target.value);
+                              setSelectedBranchId('');
+                              setDojos([]);
+                              setFormData(prev => ({ ...prev, dojoId: '' }));
+                            }}
+                            required
+                            onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Harap pilih provinsi')}
+                            onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
+                            className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 appearance-none"
+                            style={{ colorScheme: 'dark' }}
+                          >
+                          <option value="">Pilih salah satu provinsi...</option>
                           {provinces.map(p => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                           ))}
@@ -579,11 +623,14 @@ function MembersContent() {
                             setSelectedBranchId(e.target.value);
                             setFormData(prev => ({ ...prev, dojoId: '' }));
                           }}
+                          required
+                          onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Harap pilih pengcab')}
+                          onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                           disabled={!selectedProvinceId}
                           className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 appearance-none disabled:opacity-30"
                           style={{ colorScheme: 'dark' }}
                         >
-                          <option value="">Pilih Pengcab</option>
+                          <option value="">Pilih salah satu pengcab...</option>
                           {branches.map(b => (
                             <option key={b.id} value={b.id}>{b.name}</option>
                           ))}
@@ -595,11 +642,14 @@ function MembersContent() {
                       <select 
                         value={formData.dojoId}
                         onChange={(e) => setFormData({ ...formData, dojoId: e.target.value })}
+                        required
+                        onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Harap pilih dojo')}
+                        onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                         disabled={!selectedBranchId}
                         className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 appearance-none disabled:opacity-30"
                         style={{ colorScheme: 'dark' }}
                       >
-                        <option value="">Pilih Dojo</option>
+                        <option value="">Pilih salah satu dojo...</option>
                         {dojos.map(d => (
                           <option key={d.id} value={d.id}>{d.name}</option>
                         ))}

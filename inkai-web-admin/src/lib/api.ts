@@ -1,4 +1,4 @@
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/v1').replace(/\/$/, '');
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/v1').replace(/\/$/, '');
 
 async function request(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -84,7 +84,9 @@ export const api = {
   },
   events: {
     getAll: () => request('/events'),
+    getById: (id: string) => request(`/events/${id}`),
     create: (data: any) => request('/events', { method: 'POST', body: JSON.stringify(data) }),
+    delete: (id: string) => request(`/events/${id}`, { method: 'DELETE' }),
   },
   notifications: {
     getNotifications: () => request('/notifications/my'),

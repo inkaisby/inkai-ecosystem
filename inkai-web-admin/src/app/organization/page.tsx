@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 function OrganizationContent() {
   const router = useRouter();
@@ -83,13 +84,6 @@ function OrganizationContent() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   
-  // Toast state
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   useEffect(() => {
     const initData = async () => {
@@ -184,7 +178,7 @@ function OrganizationContent() {
       const response = await api.org.getDojos(branchId);
       setDojos(response.data);
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error(err.message);
     } finally {
       setDojosLoading(false);
     }
@@ -252,9 +246,9 @@ function OrganizationContent() {
       setShowAddModal(false);
       setNewProvinceName('');
       setNewProvinceHead('');
-      showToast('Wilayah berhasil ditambahkan!');
+      toast.success('Wilayah berhasil ditambahkan!');
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -287,9 +281,9 @@ function OrganizationContent() {
       
       setShowEditProvinceModal(false);
       setSelectedProvince(null);
-      showToast('Data wilayah berhasil diperbarui!');
+      toast.success('Data wilayah berhasil diperbarui!');
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -321,9 +315,9 @@ function OrganizationContent() {
       
       setShowEditBranchModal(false);
       setSelectedBranch(null);
-      showToast('Data cabang berhasil diperbarui!');
+      toast.success('Data cabang berhasil diperbarui!');
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -346,9 +340,9 @@ function OrganizationContent() {
       setShowAddBranchModal(false);
       setNewBranchName('');
       setNewBranchHead('');
-      showToast('Cabang baru berhasil ditambahkan!');
+      toast.success('Cabang baru berhasil ditambahkan!');
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -386,9 +380,9 @@ function OrganizationContent() {
       
       setShowEditDojoModal(false);
       setSelectedDojo(null);
-      showToast('Data dojo berhasil diperbarui!');
+      toast.success('Data dojo berhasil diperbarui!');
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -421,9 +415,9 @@ function OrganizationContent() {
       setNewDojoVenue('');
       setNewDojoPhone('');
       setNewDojoSchedule('');
-      showToast('Dojo baru berhasil ditambahkan!');
+      toast.success('Dojo baru berhasil ditambahkan!');
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }

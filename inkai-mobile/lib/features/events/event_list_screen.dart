@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'event_detail_screen.dart';
 import '../../../core/network/api_service.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme.dart';
 
@@ -74,6 +75,9 @@ class _EventListScreenState extends State<EventListScreen> {
   }
 
   Widget _buildEventCard(dynamic event) {
+    final bool isUKTEvent = event['title'].toString().toUpperCase().contains('UKT') || 
+                            event['title'].toString().toUpperCase().contains('UJIAN');
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -88,10 +92,13 @@ class _EventListScreenState extends State<EventListScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: InkaiTheme.primaryGold.withOpacity(0.1),
+              color: (isUKTEvent ? Colors.blue : InkaiTheme.primaryGold).withOpacity(0.1),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Icon(LucideIcons.calendar, color: InkaiTheme.primaryGold),
+            child: Icon(
+              isUKTEvent ? LucideIcons.award : LucideIcons.trophy, 
+              color: isUKTEvent ? Colors.blue : InkaiTheme.primaryGold
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -104,7 +111,7 @@ class _EventListScreenState extends State<EventListScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${event['location'] ?? 'Lokasi'} • ${event['startDate']}',
+                  '${event['location'] ?? 'Lokasi'} • ${DateFormat('dd-MM-yyyy').format(DateTime.parse(event['startDate']))}',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],

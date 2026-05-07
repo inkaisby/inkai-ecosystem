@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
+import bcrypt from 'bcryptjs';
 import { notifyAdmins } from '../utils/notification';
 
 interface AuthRequest extends Request {
@@ -182,6 +183,11 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
               } 
             } 
           } 
+        },
+        user: {
+          select: {
+            email: true
+          }
         }
       },
       skip,
@@ -273,6 +279,8 @@ export const createMember = async (req: Request, res: Response) => {
       birthDate, 
       currentRank, 
       nia,
+      email,
+      password,
       status = 'Active'
     } = req.body;
 
@@ -289,27 +297,61 @@ export const createMember = async (req: Request, res: Response) => {
       }
     }
 
-    const newMember = await prisma.member.create({
-      data: {
-        fullName,
-        dojoId,
-        gender,
-        birthDate: birthDate ? new Date(birthDate) : undefined,
-        currentRank: currentRank || 'Putih',
-        nia,
-        status
-      },
-      include: {
-        dojo: {
-          include: {
-            branch: {
-              include: {
-                province: true
+    const newMember = await prisma.$transaction(async (tx) => {
+      let userId = undefined;
+      
+      if (email) {
+        // Check if user already exists
+        const existingUser = await tx.user.findUnique({ where: { email } });
+        if (existingUser) {
+          throw new Error('Email sudah terdaftar');
+        }
+
+        const hashedPassword = await bcrypt.hash(password || '123456', 12);
+        const user = await tx.user.create({
+          data: {
+            email,
+            passwordHash: hashedPassword,
+            fullName,
+            roles: {
+              connectOrCreate: {
+                where: { name: 'MEMBER' },
+                create: { name: 'MEMBER' }
               }
             }
           }
-        }
+        });
+        userId = user.id;
       }
+
+      return await tx.member.create({
+        data: {
+          fullName,
+          dojoId,
+          gender,
+          birthDate: birthDate ? new Date(birthDate) : undefined,
+          currentRank: currentRank || 'Putih',
+          nia,
+          status,
+          userId
+        },
+        include: {
+          dojo: {
+            include: {
+              branch: {
+                include: {
+                  province: true
+                }
+              }
+            }
+          },
+          user: {
+            select: {
+              email: true
+            }
+          }
+        }
+      });
     });
 
     // Notify admins
@@ -337,6 +379,8 @@ export const updateMember = async (req: Request, res: Response) => {
       birthDate, 
       currentRank, 
       nia,
+      email,
+      password,
       status
     } = req.body;
 
@@ -352,28 +396,79 @@ export const updateMember = async (req: Request, res: Response) => {
       }
     }
 
-    const updatedMember = await prisma.member.update({
-      where: { id },
-      data: {
-        fullName,
-        dojoId,
-        gender,
-        birthDate: birthDate ? new Date(birthDate) : undefined,
-        currentRank,
-        nia,
-        status
-      },
-      include: {
-        dojo: {
-          include: {
-            branch: {
-              include: {
-                province: true
+    const updatedMember = await prisma.$transaction(async (tx) => {
+      const currentMember = await tx.member.findUnique({ 
+        where: { id },
+        include: { user: true }
+      });
+
+      if (!currentMember) throw new Error('Member not found');
+
+      let userId = currentMember.userId;
+
+      if (email || password) {
+        if (userId) {
+          // Update existing user
+          const userData: any = {};
+          if (email) userData.email = email;
+          if (password) userData.passwordHash = await bcrypt.hash(password, 12);
+          
+          await tx.user.update({
+            where: { id: userId },
+            data: userData
+          });
+        } else if (email) {
+          // Create new user if email provided but no user exists
+          const existingUser = await tx.user.findUnique({ where: { email } });
+          if (existingUser) throw new Error('Email sudah terdaftar');
+
+          const hashedPassword = await bcrypt.hash(password || '123456', 12);
+          const user = await tx.user.create({
+            data: {
+              email,
+              passwordHash: hashedPassword,
+              fullName,
+              roles: {
+                connectOrCreate: {
+                  where: { name: 'MEMBER' },
+                  create: { name: 'MEMBER' }
+                }
               }
+            }
+          });
+          userId = user.id;
+        }
+      }
+
+      return await tx.member.update({
+        where: { id },
+        data: {
+          fullName,
+          dojoId,
+          gender,
+          birthDate: birthDate ? new Date(birthDate) : undefined,
+          currentRank,
+          nia,
+          status,
+          userId
+        },
+        include: {
+          dojo: {
+            include: {
+              branch: {
+                include: {
+                  province: true
+                }
+              }
+            }
+          },
+          user: {
+            select: {
+              email: true
             }
           }
         }
-      }
+      });
     });
 
     res.json({ status: 'success', data: updatedMember });

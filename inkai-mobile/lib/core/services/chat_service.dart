@@ -6,7 +6,7 @@ import '../../models/chat_models.dart';
 class ChatService extends ChangeNotifier {
   IO.Socket? socket;
   // Use localhost for web/desktop, 10.0.2.2 for android emulator
-  final String _baseUrl = 'http://localhost:5000'; 
+  final String _baseUrl = 'http://127.0.0.1:5001'; 
   List<ChatMessage> _messages = [];
   List<ChatMessage> get messages => _messages;
   

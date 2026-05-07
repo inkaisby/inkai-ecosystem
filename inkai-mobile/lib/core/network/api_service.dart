@@ -197,6 +197,10 @@ class ApiService {
       'identifier': identifier,
     });
   }
+
+  Future<Response> updateEvent(String id, Map<String, dynamic> data) async {
+    return await _dio.put('/events/$id', data: data);
+  }
 }
 
 

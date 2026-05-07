@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 import SidebarWrapper from "@/components/SidebarWrapper";
+import { Toaster } from "react-hot-toast";
 
 export default function RootLayout({
   children,
@@ -20,6 +21,25 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={inter.className}>
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#1e1e24',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.1)',
+              fontSize: '14px',
+              borderRadius: '12px',
+              backdropFilter: 'blur(8px)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#f59e0b',
+                secondary: '#000',
+              },
+            },
+          }}
+        />
         <SidebarWrapper>
           {children}
         </SidebarWrapper>

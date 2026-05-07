@@ -195,6 +195,9 @@ class DojoAdminDashboard extends StatelessWidget {
                 AdminMenuItem(icon: LucideIcons.shield_check, label: 'Verifikasi', onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const MembershipScreen()));
                 }),
+                AdminMenuItem(icon: LucideIcons.calendar_days, label: 'Daftar\nEvent', onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const EventListScreen()));
+                }),
               ],
             ),
           ],
@@ -280,6 +283,9 @@ class BranchAdminDashboard extends StatelessWidget {
                 }),
                 AdminMenuItem(icon: LucideIcons.trending_up, label: 'Laporan\nCabang', onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const BranchReportScreen()));
+                }),
+                AdminMenuItem(icon: LucideIcons.calendar_days, label: 'Daftar\nEvent', onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const EventListScreen()));
                 }),
               ],
             ),
@@ -525,6 +531,9 @@ class ProvinceAdminDashboard extends StatelessWidget {
                 }),
                 AdminMenuItem(icon: LucideIcons.mail_check, label: 'Persetujuan', onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const MembershipScreen()));
+                }),
+                AdminMenuItem(icon: LucideIcons.calendar_days, label: 'Daftar\nEvent', onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const EventListScreen()));
                 }),
               ],
             ),
