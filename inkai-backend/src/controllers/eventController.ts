@@ -18,6 +18,43 @@ export const getAllEvents = async (req: Request, res: Response) => {
   }
 };
 
+export const getMyEvents = async (req: any, res: Response) => {
+  try {
+    const memberId = req.user.memberId;
+    if (!memberId) {
+      return res.status(400).json({ status: 'error', message: 'User is not a member' });
+    }
+
+    const registrations = await prisma.eventRegistration.findMany({
+      where: { 
+        memberId,
+        event: {
+          endDate: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          }
+        }
+      },
+      include: {
+        event: {
+          include: { categories: true }
+        },
+        category: true
+      },
+      orderBy: { event: { startDate: 'desc' } }
+    });
+
+    const events = registrations.map(reg => ({
+      ...reg.event,
+      registrationStatus: reg.status,
+      selectedCategory: reg.category
+    }));
+
+    res.json({ status: 'success', data: events });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 export const getEventById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -31,6 +68,9 @@ export const getEventById = async (req: Request, res: Response) => {
               include: {
                 dojo: {
                   include: { branch: true }
+                },
+                billings: {
+                  where: { type: 'EVENT_FEE' }
                 }
               }
             },
@@ -109,8 +149,10 @@ export const registerForEvent = async (req: Request, res: Response) => {
       await prisma.billing.create({
         data: {
           memberId: registration.memberId,
+          registrationId: registration.id,
           type: 'EVENT_FEE',
           amount: registration.category.fee,
+          description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
           status: 'PENDING'
         }
@@ -180,6 +222,7 @@ export const updateRegistration = async (req: Request, res: Response) => {
           where: { id: existingBilling.id },
           data: { 
             amount: registration.category.fee,
+            description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
           }
         });
@@ -187,8 +230,10 @@ export const updateRegistration = async (req: Request, res: Response) => {
         await prisma.billing.create({
           data: {
             memberId: registration.memberId,
+            registrationId: registration.id,
             type: 'EVENT_FEE',
             amount: registration.category.fee,
+            description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             status: 'PENDING'
           }

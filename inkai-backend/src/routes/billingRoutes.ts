@@ -8,6 +8,7 @@ router.get('/my', authenticate, billingController.getMyBillings);
 router.get('/member/:memberId', authenticate, billingController.getMemberBillings);
 router.post('/', authenticate, billingController.createBilling);
 router.post('/pay', authenticate, billingController.processPayment);
-
+router.post('/verify', authenticate, billingController.verifyPayment);
+router.delete('/:id', authenticate, billingController.deleteBilling);
 
 export default router;

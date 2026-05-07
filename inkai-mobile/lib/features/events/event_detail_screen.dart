@@ -22,6 +22,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _isRegistering = false;
   late dynamic _event;
   bool _isLoading = false;
+  bool _isParticipantsExpanded = false;
+  bool _isCategoriesExpanded = true;
   String? _selectedCategoryId;
   dynamic _userRegistration;
 
@@ -61,11 +63,29 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           _checkUserRegistration();
         });
       }
+
+      // Also check for pending billing verifications
+      final billingResponse = await _apiService.getMyBillings();
+      if (billingResponse.data['status'] == 'success') {
+        final List billings = billingResponse.data['data'];
+        setState(() {
+          _hasPendingVerification = billings.any((b) => b['status'] == 'WAITING_VERIFICATION');
+        });
+      }
     } catch (e) {
-      debugPrint('Error fetching event: $e');
+      debugPrint('Error fetching data: $e');
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  bool _hasPendingVerification = false;
+
+  bool get isRegularMember {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final roles = List<String>.from(user?['roles'] ?? []);
+    final isAdmin = roles.any((r) => ['ADMIN_BRANCH', 'ADMIN_PROVINCE', 'ADMIN_PUSAT', 'ADMINISTRATOR'].contains(r));
+    return roles.contains('MEMBER') && !isAdmin;
   }
 
   Future<void> _register() async {
@@ -153,7 +173,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final bool isAdmin = roles.any((r) => ['ADMIN_BRANCH', 'ADMIN_PROVINCE', 'ADMIN_PUSAT', 'ADMINISTRATOR'].contains(r));
     final bool isOwner = _event['createdById'] != null && user?['id'] == _event['createdById'];
     final bool canEdit = isAdmin || isOwner;
-    final bool isRegularMember = roles.contains('MEMBER') && !isAdmin;
+    // Removed local isRegularMember as it is now a class getter
     
     final bool isUKTEvent = _event['title'].toString().toUpperCase().contains('UKT') || 
                             _event['title'].toString().toUpperCase().contains('UJIAN KENAIKAN TINGKAT');
@@ -225,53 +245,119 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       style: const TextStyle(color: Colors.grey, height: 1.5),
                     ),
                     const SizedBox(height: 40),
-                    Text(
-                      isUKTEvent ? 'Ujian Kenaikan Sabuk' : 'Kategori Lomba',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    if (_event['categories'] != null && (_event['categories'] as List).isNotEmpty)
-                      ...(_event['categories'] as List).map((cat) => _buildCategorySelectionItem(cat))
-                    else
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Text('Tidak ada kategori khusus', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                        ),
-                      ),
-
-                    if (!isRegularMember) ...[
-                      const SizedBox(height: 40),
-                      Row(
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _isCategoriesExpanded = !_isCategoriesExpanded;
+                          if (_isCategoriesExpanded) {
+                            _isParticipantsExpanded = false;
+                          }
+                        });
+                      },
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Daftar Peserta',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: InkaiTheme.primaryGold.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${(_event['registrations'] as List?)?.length ?? 0} Orang',
-                              style: const TextStyle(color: InkaiTheme.primaryGold, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                isUKTEvent ? 'Ujian Kenaikan Sabuk' : 'Kategori Lomba',
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                _isCategoriesExpanded ? LucideIcons.chevron_up : LucideIcons.chevron_down,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      if (_event['registrations'] != null && (_event['registrations'] as List).isNotEmpty)
-                        ...(_event['registrations'] as List).map((reg) => _buildParticipantItem(reg['member']))
+                    ),
+                    const SizedBox(height: 16),
+                    if (_isCategoriesExpanded) ...[
+                      if (_event['categories'] != null && (_event['categories'] as List).isNotEmpty)
+                        ...(_event['categories'] as List)
+                          .where((cat) {
+                            // If already registered, only show the selected category
+                            if (_userRegistration != null) {
+                              return cat['id'].toString() == _userRegistration['categoryId']?.toString();
+                            }
+                            return true;
+                          })
+                          .map((cat) => _buildCategorySelectionItem(cat))
                       else
                         const Center(
                           child: Padding(
                             padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Text('Belum ada peserta terdaftar', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                            child: Text('Tidak ada kategori khusus', style: TextStyle(color: Colors.grey, fontSize: 13)),
                           ),
                         ),
+                    ],
+
+                    if (!isRegularMember) ...[
+                      const SizedBox(height: 40),
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isParticipantsExpanded = !_isParticipantsExpanded;
+                            if (_isParticipantsExpanded) {
+                              _isCategoriesExpanded = false;
+                            }
+                          });
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Daftar Peserta',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  _isParticipantsExpanded ? LucideIcons.chevron_up : LucideIcons.chevron_down,
+                                  size: 18,
+                                  color: Colors.grey,
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: InkaiTheme.primaryGold.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${(_event['registrations'] as List?)?.length ?? 0} Orang',
+                                style: const TextStyle(color: InkaiTheme.primaryGold, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (_isParticipantsExpanded) ...[
+                        if (_event['registrations'] != null && _event['registrations'] is List)
+                          ...(_event['registrations'] as List).where((reg) {
+                            if (isRegularMember) return true;
+                            // For Admins, show only those who have paid or are waiting for verification
+                            final billings = reg['member']['billings'];
+                            if (billings is! List) return false;
+                            
+                            final isPaid = reg['status'] == 'PAID' || (billings.any((b) => b['status'] == 'PAID'));
+                            final isWaiting = billings.any((b) => b['status'] == 'WAITING_VERIFICATION');
+                            return isPaid || isWaiting;
+                          }).map((reg) => _buildParticipantItem(reg))
+                        else
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Text('Tidak ada peserta yang perlu verifikasi', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                            ),
+                          ),
+                      ],
                     ],
                   ],
                 ),
@@ -287,17 +373,54 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, -5))
           ]
         ),
-        child: ElevatedButton(
-          onPressed: _isRegistering ? null : _register,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: InkaiTheme.primaryGold,
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          child: _isRegistering
-              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-              : Text(_userRegistration == null ? 'DAFTAR SEKARANG' : 'UPDATE PENDAFTARAN', style: const TextStyle(fontWeight: FontWeight.bold)),
+        child: Builder(
+          builder: (context) {
+            final bool isPaid = _userRegistration != null && _userRegistration['status'] == 'PAID';
+            final bool isRegistered = _userRegistration != null;
+
+            return ElevatedButton(
+              onPressed: (_isRegistering || _hasPendingVerification || isRegistered) 
+                ? (isPaid ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Anda sudah terdaftar dan pembayaran telah diverifikasi.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } : (isRegistered ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Anda sudah terdaftar. Selesaikan pembayaran untuk memproses.'),
+                        backgroundColor: Colors.blue,
+                      ),
+                    );
+                  } : (_hasPendingVerification ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Selesaikan verifikasi pembayaran sebelumnya terlebih dahulu.'),
+                        backgroundColor: Colors.amber,
+                      ),
+                    );
+                  } : null)))
+                : _register,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: (isRegistered || _hasPendingVerification) ? Colors.grey.withOpacity(0.2) : InkaiTheme.primaryGold,
+                foregroundColor: (isRegistered || _hasPendingVerification) ? Colors.white38 : Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: _isRegistering
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                  : Text(
+                      isRegistered 
+                        ? 'SUDAH TERDAFTAR'
+                        : (_hasPendingVerification 
+                          ? 'MENUNGGU VERIFIKASI' 
+                          : 'DAFTAR SEKARANG'), 
+                      style: const TextStyle(fontWeight: FontWeight.bold)
+                    ),
+            );
+          },
         ),
       ) : null,
     );
@@ -306,8 +429,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Widget _buildCategorySelectionItem(dynamic category) {
     final isSelected = _selectedCategoryId == category['id'].toString();
     
+    final isRegistered = _userRegistration != null;
+    
     return InkWell(
-      onTap: () {
+      onTap: isRegistered ? null : () {
         setState(() {
           _selectedCategoryId = category['id'].toString();
         });
@@ -370,39 +495,85 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _buildParticipantItem(Map<String, dynamic> member) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildParticipantItem(Map<String, dynamic> reg) {
+    final member = reg['member'];
+    final billings = member['billings'] as List?;
+    final waitingBilling = billings?.firstWhere((b) => b['status'] == 'WAITING_VERIFICATION', orElse: () => null);
+    final isWaiting = waitingBilling != null;
+    final isPaid = reg['status'] == 'PAID' || (billings?.any((b) => b['status'] == 'PAID') ?? false);
+
+    return InkWell(
+      onTap: (!isRegularMember && isWaiting) ? () => _showVerifyDialog(waitingBilling['id'], member['fullName']) : null,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isWaiting ? Colors.purple.withOpacity(0.05) : Colors.white.withOpacity(0.02),
+          borderRadius: BorderRadius.circular(12),
+          border: isWaiting ? Border.all(color: Colors.purple.withOpacity(0.2)) : null,
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: (isWaiting ? Colors.purple : (isPaid ? Colors.green : InkaiTheme.primaryGold)).withOpacity(0.1),
+              child: Text(
+                (member['fullName'] as String? ?? 'U')[0].toUpperCase(),
+                style: TextStyle(color: isWaiting ? Colors.purpleAccent : (isPaid ? Colors.green : InkaiTheme.primaryGold), fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    member['fullName'] ?? 'User',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  Text(
+                    isWaiting ? 'Menunggu Verifikasi Tunai' : 'NIA: ${member['nia'] ?? '-'}',
+                    style: TextStyle(color: isWaiting ? Colors.purpleAccent : Colors.grey, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            if (!isRegularMember && isWaiting)
+              const Icon(LucideIcons.shield_check, color: Colors.purpleAccent, size: 20),
+            if (isPaid)
+              const Icon(LucideIcons.circle_check, color: Colors.green, size: 16),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: InkaiTheme.primaryGold.withOpacity(0.1),
-            child: Text(
-              (member['fullName'] as String? ?? 'U')[0].toUpperCase(),
-              style: const TextStyle(color: InkaiTheme.primaryGold, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  member['fullName'] ?? 'User',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                Text(
-                  'NIA: ${member['nia'] ?? '-'}',
-                  style: const TextStyle(color: Colors.grey, fontSize: 11),
-                ),
-              ],
-            ),
+    );
+  }
+
+  void _showVerifyDialog(String billingId, String name) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E24),
+        title: const Text('Verifikasi Pembayaran', style: TextStyle(color: Colors.white)),
+        content: Text('Konfirmasi bahwa $name telah membayar secara tunai? Status akan berubah menjadi LUNAS.', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('BATAL')),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await _apiService.verifyPayment(billingId: billingId);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pembayaran berhasil diverifikasi!'), backgroundColor: Colors.green));
+                  _fetchEvent(); // Refresh data
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            child: const Text('VERIFIKASI'),
           ),
         ],
       ),

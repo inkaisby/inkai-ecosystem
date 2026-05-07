@@ -16,6 +16,14 @@ class AchievementHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
     final List<dynamic> ranks = user?['ranks'] ?? [];
+    final List<dynamic> eventRegs = user?['eventRegistrations'] ?? [];
+    
+    // Filter UKT registrations that are PAID
+    final uktRegs = eventRegs.where((reg) {
+      final title = reg['event']?['title']?.toString().toUpperCase() ?? '';
+      final isUKT = title.contains('UKT') || title.contains('UJIAN');
+      return isUKT && reg['status'] == 'PAID';
+    }).toList();
     
     return DefaultTabController(
       length: 3,
@@ -44,7 +52,7 @@ class AchievementHistoryScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _buildSabukTab(context, ranks),
+            _buildSabukTab(context, ranks, uktRegs),
             _buildPiagamTab(context, user),
             _buildPelatihanTab(context, user),
           ],
@@ -53,7 +61,7 @@ class AchievementHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSabukTab(BuildContext context, List<dynamic> ranks) {
+  Widget _buildSabukTab(BuildContext context, List<dynamic> ranks, List<dynamic> uktRegs) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -61,9 +69,18 @@ class AchievementHistoryScreen extends StatelessWidget {
         children: [
           _buildSectionHeader('RIWAYAT KENAIKAN TINGKAT:'),
           const SizedBox(height: 16),
-          if (ranks.isEmpty)
+          if (ranks.isEmpty && uktRegs.isEmpty)
             _buildEmptyState('Belum ada riwayat kenaikan tingkat.')
-          else
+          else ...[
+            ...uktRegs.map((reg) => _buildHistoryCard(
+                  title: reg['category']?['name'] ?? 'Ujian UKT',
+                  date: reg['event']?['startDate'] != null 
+                    ? DateFormat('dd MMM yyyy').format(DateTime.parse(reg['event']['startDate']))
+                    : '-',
+                  location: reg['event']?['location'] ?? 'Lokasi Ujian',
+                  isValidated: false,
+                  customStatus: 'Menunggu Hasil Ujian',
+                )),
             ...ranks.map((rank) => _buildHistoryCard(
                   title: rank['rank'] ?? 'Sabuk',
                   date: rank['date'] != null 
@@ -72,6 +89,7 @@ class AchievementHistoryScreen extends StatelessWidget {
                   location: rank['location'] ?? 'N/A',
                   isValidated: rank['isVerified'] ?? false,
                 )),
+          ],
           const SizedBox(height: 32),
           _buildStatusLegend(),
           const SizedBox(height: 32),
@@ -160,6 +178,7 @@ class AchievementHistoryScreen extends StatelessWidget {
     required String date,
     required String location,
     required bool isValidated,
+    String? customStatus,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -182,10 +201,26 @@ class AchievementHistoryScreen extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
-            isValidated ? LucideIcons.check : LucideIcons.info,
-            color: isValidated ? Colors.greenAccent : Colors.amber,
-            size: 20,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Icon(
+                isValidated ? LucideIcons.check : LucideIcons.info,
+                color: isValidated ? Colors.greenAccent : Colors.amber,
+                size: 20,
+              ),
+              if (customStatus != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  customStatus,
+                  style: GoogleFonts.inter(
+                    fontSize: 8, 
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber,
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

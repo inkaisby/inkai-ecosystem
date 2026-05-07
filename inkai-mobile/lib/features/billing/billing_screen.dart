@@ -47,7 +47,7 @@ class _BillingScreenState extends State<BillingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Iuran & Pembayaran'),
+        title: const Text('Pembayaran'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -89,6 +89,8 @@ class _BillingScreenState extends State<BillingScreen> {
         .where((b) => b['status'] == 'PENDING')
         .fold(0.0, (sum, b) => sum + double.parse(b['amount'].toString()));
 
+    final hasWaiting = _billings.any((b) => b['status'] == 'WAITING_VERIFICATION');
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -117,14 +119,26 @@ class _BillingScreenState extends State<BillingScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: totalUnpaid > 0 ? () => _showPaymentDialog(context, totalUnpaid, formatter) : null,
+              onPressed: (totalUnpaid > 0 && !hasWaiting) 
+                ? () => _showPaymentDialog(context, totalUnpaid, formatter) 
+                : (hasWaiting ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Selesaikan verifikasi pembayaran sebelumnya terlebih dahulu.'),
+                        backgroundColor: Colors.amber,
+                      ),
+                    );
+                  } : null),
               style: ElevatedButton.styleFrom(
-                backgroundColor: InkaiTheme.primaryGold,
-                foregroundColor: Colors.black,
+                backgroundColor: hasWaiting ? Colors.grey.withOpacity(0.2) : InkaiTheme.primaryGold,
+                foregroundColor: hasWaiting ? Colors.white38 : Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('BAYAR SEKARANG', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                hasWaiting ? 'MENUNGGU VERIFIKASI' : 'BAYAR SEKARANG', 
+                style: const TextStyle(fontWeight: FontWeight.bold)
+              ),
             ),
           ),
         ],
@@ -132,72 +146,180 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
+  String? _selectedMethod = 'VA'; // Default selection
+  bool _isProcessing = false;
+
   void _showPaymentDialog(BuildContext context, double amount, NumberFormat formatter) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF1E1E24),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Konfirmasi Pembayaran', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Total Tagihan', style: TextStyle(color: Colors.grey)),
-                Text(formatter.format(amount), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('Konfirmasi Pembayaran', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Total Tagihan', style: TextStyle(color: Colors.grey)),
+                    Text(formatter.format(amount), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                const Text('Pilih Metode Pembayaran:', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                _methodItem(LucideIcons.landmark, 'Virtual Account (Dojo)', 'VA', setModalState),
+                _methodItem(LucideIcons.qr_code, 'QRIS / E-Wallet', 'QRIS', setModalState),
+                _methodItem(LucideIcons.banknote, 'Tunai ke Bendahara Dojo', 'CASH', setModalState),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isProcessing ? null : () => _handlePayment(context, setModalState),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: InkaiTheme.primaryGold,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _isProcessing 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                      : const Text('LANJUTKAN PEMBAYARAN', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 32),
-            const Text('Pilih Metode Pembayaran:', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _methodItem(LucideIcons.landmark, 'Virtual Account (Dojo)'),
-            _methodItem(LucideIcons.qr_code, 'QRIS / E-Wallet'),
-            _methodItem(LucideIcons.banknote, 'Tunai ke Bendahara Dojo'),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permintaan pembayaran dikirim!')));
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: InkaiTheme.primaryGold,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('LANJUTKAN PEMBAYARAN', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
+          );
+        }
       ),
     );
   }
 
-  Widget _methodItem(IconData icon, String title) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: InkaiTheme.primaryGold),
-          const SizedBox(width: 16),
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 13)),
-          const Spacer(),
-          const Icon(LucideIcons.chevron_right, size: 14, color: Colors.grey),
+  Future<void> _handlePayment(BuildContext context, StateSetter setModalState) async {
+    final pendingBillings = _billings.where((b) => b['status'] == 'PENDING').toList();
+    if (pendingBillings.isEmpty) return;
+
+    setModalState(() => _isProcessing = true);
+    setState(() => _isProcessing = true);
+
+    try {
+      for (var billing in pendingBillings) {
+        await _apiService.processPayment(
+          billingId: billing['id'],
+          paymentMethod: _selectedMethod ?? 'VA',
+        );
+      }
+
+      if (mounted) {
+        Navigator.pop(context); // Close bottom sheet
+        
+        String message = _selectedMethod == 'CASH' 
+          ? 'Permintaan terkirim. Silakan lakukan pembayaran ke Bendahara Dojo.' 
+          : 'Pembayaran Berhasil!';
+        Color bgColor = _selectedMethod == 'CASH' ? Colors.amber : Colors.green;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: bgColor,
+          ),
+        );
+        _fetchBillings(); // Refresh list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setModalState(() => _isProcessing = false);
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  void _confirmDeleteBilling(String id) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E24),
+        title: const Text('Batalkan Tagihan?', style: TextStyle(color: Colors.white)),
+        content: const Text('Ini juga akan membatalkan pendaftaran event Anda. Lanjutkan?', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('BATAL')),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await _apiService.deleteBilling(id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tagihan berhasil dibatalkan'), backgroundColor: Colors.green));
+                  _fetchBillings();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('HAPUS'),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _methodItem(IconData icon, String title, [String? value, StateSetter? setModalState]) {
+    final isSelected = _selectedMethod == value;
+
+    return InkWell(
+      onTap: () {
+        if (setModalState != null && value != null) {
+          setModalState(() {
+            _selectedMethod = value;
+          });
+        }
+        setState(() {
+          if (value != null) _selectedMethod = value;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? InkaiTheme.primaryGold.withOpacity(0.1) : Colors.white.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? InkaiTheme.primaryGold : Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: isSelected ? InkaiTheme.primaryGold : Colors.grey),
+            const SizedBox(width: 16),
+            Text(
+              title, 
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey, 
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              )
+            ),
+            const Spacer(),
+            if (isSelected)
+              const Icon(LucideIcons.check, size: 14, color: InkaiTheme.primaryGold)
+            else
+              const Icon(LucideIcons.chevron_right, size: 14, color: Colors.grey),
+          ],
+        ),
       ),
     );
   }
@@ -205,6 +327,7 @@ class _BillingScreenState extends State<BillingScreen> {
 
   Widget _buildBillingItem(dynamic bill, NumberFormat formatter) {
     final isPaid = bill['status'] == 'PAID';
+    final isWaiting = bill['status'] == 'WAITING_VERIFICATION';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -219,12 +342,12 @@ class _BillingScreenState extends State<BillingScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: (isPaid ? Colors.green : Colors.amber).withOpacity(0.1),
+              color: (isPaid ? Colors.green : (isWaiting ? Colors.purple : Colors.amber)).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isPaid ? LucideIcons.check : LucideIcons.clock,
-              color: isPaid ? Colors.green : Colors.amber,
+              isPaid ? LucideIcons.check : (isWaiting ? LucideIcons.shield_alert : LucideIcons.clock),
+              color: isPaid ? Colors.green : (isWaiting ? Colors.purple : Colors.amber),
               size: 16,
             ),
           ),
@@ -234,12 +357,14 @@ class _BillingScreenState extends State<BillingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  bill['type'] == 'MONTHLY_IURAN' ? 'Iuran Bulanan' : 'Biaya Event',
+                  bill['description'] ?? (bill['type'] == 'MONTHLY_IURAN' ? 'Iuran Bulanan' : 'Biaya Event'),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  'Jatuh tempo: ${bill['dueDate']}',
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  isPaid 
+                    ? 'Lunas pada: ${DateFormat('dd-MM-yyyy HH:mm').format(DateTime.parse((bill['payment'] is List && (bill['payment'] as List).isNotEmpty) ? ((bill['payment'] as List).first['paidAt'] ?? bill['updatedAt']) : bill['updatedAt']))}'
+                    : (isWaiting ? 'Menunggu Verifikasi' : 'Jatuh tempo: ${DateFormat('dd-MM-yyyy').format(DateTime.parse(bill['dueDate']))}'),
+                  style: TextStyle(fontSize: 10, color: isPaid ? Colors.greenAccent : (isWaiting ? Colors.purpleAccent : Colors.grey)),
                 ),
               ],
             ),
@@ -251,6 +376,13 @@ class _BillingScreenState extends State<BillingScreen> {
               color: isPaid ? Colors.grey : Colors.white,
             ),
           ),
+          if (!isPaid && !isWaiting) ...[
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: () => _confirmDeleteBilling(bill['id']),
+              child: const Icon(LucideIcons.trash_2, size: 16, color: Colors.redAccent),
+            ),
+          ],
         ],
       ),
     );

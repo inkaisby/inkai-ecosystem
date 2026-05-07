@@ -152,17 +152,19 @@ model Attendance {
 }
 
 model Billing {
-  id        String   @id @default(uuid())
-  memberId  String
-  type      String
-  amount    Float
-  dueDate   DateTime
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isDeleted Boolean  @default(false)
-  member    Member   @relation(fields: [memberId], references: [id])
-  payment   Payment?
+  id             String   @id @default(uuid())
+  memberId       String
+  registrationId String?
+  type           String
+  amount         Float
+  description    String?
+  dueDate        DateTime
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  isDeleted      Boolean  @default(false)
+  member         Member   @relation(fields: [memberId], references: [id])
+  payment        Payment?
 }
 
 model Payment {

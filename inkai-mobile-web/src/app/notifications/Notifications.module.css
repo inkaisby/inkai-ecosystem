@@ -1,0 +1,107 @@
+.container {
+  min-height: 100vh;
+  background-color: var(--background-dark);
+}
+
+.header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backBtn {
+  color: white;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 16px;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.unread {
+  background-color: rgba(245, 158, 11, 0.02);
+}
+
+.itemIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconSuccess { color: #4ade80; }
+.iconWarning { color: #facc15; }
+.iconInfo { color: #60a5fa; }
+
+.itemContent {
+  flex: 1;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.itemTitle {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.itemTime {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.itemText {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--primary-gold);
+  position: absolute;
+  top: 24px;
+  right: 12px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+  color: var(--primary-gold);
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

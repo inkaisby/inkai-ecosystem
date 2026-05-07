@@ -1,0 +1,209 @@
+.container {
+  min-height: 100vh;
+  background-color: var(--background-dark);
+}
+
+.header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backBtn {
+  color: white;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: bold;
+  flex: 1;
+  text-align: center;
+  margin-right: 40px; /* Offset for back button to center title */
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0 16px;
+}
+
+.tab {
+  flex: 1;
+  padding: 16px 0;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-muted);
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.tab.active {
+  color: var(--primary-gold);
+}
+
+.indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-gold);
+}
+
+.content {
+  padding: 24px;
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historyCard {
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardInfo {
+  flex: 1;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.cardMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cardStatus {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.statusValid {
+  color: #4ade80;
+}
+
+.statusPendingWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.statusPending {
+  color: #facc15;
+}
+
+.customStatusText {
+  font-size: 8px;
+  font-weight: bold;
+  color: #facc15;
+  text-transform: uppercase;
+}
+
+.legend {
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legendLabel {
+  font-size: 10px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 1px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.addBtn {
+  width: 100%;
+  padding: 16px;
+  background: none;
+  border: 1px solid var(--primary-gold);
+  border-radius: 16px;
+  color: var(--primary-gold);
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.emptyState {
+  padding: 32px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.emptyIcon {
+  color: rgba(255, 255, 255, 0.1);
+}
+
+.emptyText {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+  color: var(--primary-gold);
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

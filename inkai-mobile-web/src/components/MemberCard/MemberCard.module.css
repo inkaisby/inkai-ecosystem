@@ -1,0 +1,100 @@
+.card {
+  width: 100%;
+  height: 220px;
+  background: var(--gradient-card);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.1);
+}
+
+.watermark {
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  color: rgba(255, 255, 255, 0.02);
+  pointer-events: none;
+}
+
+.content {
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoBadge {
+  width: 32px;
+  height: 32px;
+  background-color: var(--primary-gold);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
+  font-weight: bold;
+}
+
+.badgeText {
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+}
+
+.infoBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.nia {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-gold);
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.dojo {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.qrContainer {
+  display: flex;
+  align-items: center;
+}
+
+.qrWrapper {
+  padding: 8px;
+  background-color: white;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -13,6 +13,7 @@ import '../store/store_screen.dart';
 import '../organization/dojo_search_screen.dart';
 import '../membership/membership_screen.dart';
 import '../membership/attendance_history_screen.dart';
+import '../../core/network/api_service.dart';
 import '../membership/digital_library_screen.dart';
 import '../membership/achievement_history_screen.dart';
 import '../membership/dojo_transfer_screen.dart';
@@ -23,6 +24,7 @@ import 'notification_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../events/providers/event_provider.dart';
 import '../events/event_detail_screen.dart';
+import '../events/my_events_screen.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -39,10 +41,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<NotificationProvider>(context, listen: false).fetchNotifications();
-      Provider.of<AdminProvider>(context, listen: false).fetchStats();
-      Provider.of<EventProvider>(context, listen: false).fetchEvents();
+      _handleRefresh();
     });
+  }
+
+  Future<void> _handleRefresh() async {
+    if (!mounted) return;
+    
+    // Providers
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final notification = Provider.of<NotificationProvider>(context, listen: false);
+    final admin = Provider.of<AdminProvider>(context, listen: false);
+    final event = Provider.of<EventProvider>(context, listen: false);
+
+    await Future.wait([
+      auth.fetchProfile(),
+      auth.fetchConnectedProfiles(),
+      notification.fetchNotifications(),
+      admin.fetchStats(),
+      event.fetchEvents(),
+    ]);
+    
+    if (mounted) {
+      setState(() {}); // Trigger refresh for FutureBuilders
+    }
   }
 
   @override
@@ -66,15 +88,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context, user, primaryRole),
-              const SizedBox(height: 32),
-              _buildDashboardContent(user, primaryRole),
-            ],
+        child: RefreshIndicator(
+          onRefresh: _handleRefresh,
+          color: InkaiTheme.primaryGold,
+          backgroundColor: InkaiTheme.backgroundDark,
+          displacement: 20,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context, user, primaryRole),
+                const SizedBox(height: 32),
+                _buildDashboardContent(user, primaryRole),
+              ],
+            ),
           ),
         ),
       ),
@@ -113,11 +142,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildMemberCard(user),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
+        _buildPaymentNotice(context),
+        const SizedBox(height: 24),
         _buildQuickActions(context),
         const SizedBox(height: 32),
         _buildUpcomingEvents(context),
+        const SizedBox(height: 32),
+        _buildMyEvents(context),
       ],
+    );
+  }
+
+  Widget _buildPaymentNotice(BuildContext context) {
+    // We'll use a FutureBuilder or similar to check billings
+    // For now, let's look at how billings are fetched in BillingScreen
+    // Since we don't have a BillingProvider yet, I'll use a simple FutureBuilder with ApiService
+    return FutureBuilder(
+      future: ApiService().getMyBillings(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        
+        final data = snapshot.data?.data;
+        if (data == null || data['data'] == null || data['data'] is! List) return const SizedBox.shrink();
+
+        final List billings = data['data'];
+        final hasWaiting = billings.any((b) => b['status'] == 'WAITING_VERIFICATION');
+        final hasPending = billings.any((b) => b['status'] == 'PENDING');
+
+        if (!hasWaiting && !hasPending) return const SizedBox.shrink();
+
+        return InkWell(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BillingScreen())),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: (hasWaiting ? Colors.purple : Colors.amber).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: (hasWaiting ? Colors.purple : Colors.amber).withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  hasWaiting ? LucideIcons.shield_alert : LucideIcons.wallet, 
+                  color: hasWaiting ? Colors.purpleAccent : Colors.amber, 
+                  size: 20
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        hasWaiting ? 'Verifikasi Sedang Diproses' : 'Ada Tagihan Belum Dibayar',
+                        style: TextStyle(
+                          color: hasWaiting ? Colors.purpleAccent : Colors.amber, 
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 13
+                        ),
+                      ),
+                      Text(
+                        hasWaiting 
+                          ? 'Pembayaran tunai Anda sedang diverifikasi oleh bendahara.' 
+                          : 'Silakan lakukan pembayaran untuk melanjutkan pendaftaran event.',
+                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(LucideIcons.chevron_right, color: Colors.white24, size: 16),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -461,6 +559,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _actionItem(LucideIcons.file_text, 'Dokumen', () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => MembershipScreen()));
             }),
+            const SizedBox(width: 32),
+            _actionItem(LucideIcons.calendar_check, 'Event', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const MyEventsScreen()));
+            }),
           ],
         ),
       ],
@@ -490,6 +592,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMyEvents(BuildContext context) {
+    return FutureBuilder(
+      future: ApiService().getMyEvents(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        
+        final data = snapshot.data?.data;
+        if (data == null || data['data'] == null || data['data'] is! List) return const SizedBox.shrink();
+
+        final List myEvents = data['data'];
+        if (myEvents.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Riwayat UKT',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...myEvents.map((e) => _buildEventItem(context, e, isHistory: true)).toList(),
+          ],
+        );
+      },
     );
   }
 
@@ -540,10 +672,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildEventItem(BuildContext context, dynamic event) {
+  Widget _buildEventItem(BuildContext context, dynamic event, {bool isHistory = false}) {
     final bool isUKTEvent = event['title'].toString().toUpperCase().contains('UKT') || 
                             event['title'].toString().toUpperCase().contains('UJIAN');
     
+    final status = event['registrationStatus'];
+    final bool isPaid = status == 'PAID';
+
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -552,7 +687,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 12, left: 24, right: 24),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.03),
@@ -586,9 +721,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${DateFormat('dd MMM').format(DateTime.parse(event['startDate']))} | ${event['location'] ?? 'Indonesia'}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${DateFormat('dd MMM').format(DateTime.parse(event['startDate']))} | ${event['location'] ?? 'Indonesia'}',
+                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isHistory) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (isPaid ? Colors.green : Colors.amber).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            isPaid ? 'LUNAS' : 'PENDING',
+                            style: TextStyle(
+                              fontSize: 8, 
+                              fontWeight: FontWeight.bold,
+                              color: isPaid ? Colors.green : Colors.amber,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),

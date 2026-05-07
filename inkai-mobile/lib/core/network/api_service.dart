@@ -87,6 +87,14 @@ class ApiService {
     return await _dio.get('/events');
   }
 
+  Future<Response> getMyEvents() async {
+    return await _dio.get('/events/my/registrations');
+  }
+
+  Future<Response> getEventById(String id) async {
+    return await _dio.get('/events/$id');
+  }
+
   Future<Response> getMyBillings() async {
     return await _dio.get('/billing/my');
   }
@@ -201,9 +209,22 @@ class ApiService {
   Future<Response> updateEvent(String id, Map<String, dynamic> data) async {
     return await _dio.put('/events/$id', data: data);
   }
+
+  Future<Response> processPayment({required String billingId, required String paymentMethod}) async {
+    return await _dio.post('/billing/pay', data: {
+      'billingId': billingId,
+      'paymentMethod': paymentMethod,
+      'externalId': 'TRX-${DateTime.now().millisecondsSinceEpoch}',
+    });
+  }
+
+  Future<Response> verifyPayment({required String billingId}) async {
+    return await _dio.post('/billing/verify', data: {
+      'billingId': billingId,
+    });
+  }
+
+  Future<Response> deleteBilling(String id) async {
+    return await _dio.delete('/billing/$id');
+  }
 }
-
-
-
-
-

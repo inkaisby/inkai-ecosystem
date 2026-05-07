@@ -1,0 +1,67 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1100;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #1e1e24;
+  border-radius: 24px;
+  padding: 32px;
+  width: calc(100% - 48px);
+  max-width: 400px;
+  z-index: 1101;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.message {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.cancelBtn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.confirmBtn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  background-color: var(--primary-gold);
+  color: black;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.dangerous {
+  background-color: #ef4444;
+  color: white;
+}

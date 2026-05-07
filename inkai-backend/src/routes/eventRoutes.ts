@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/authMiddleware';
 const router = Router();
 
 router.get('/', eventController.getAllEvents);
+router.get('/my/registrations', authenticate, eventController.getMyEvents);
 router.get('/:id', eventController.getEventById);
 router.post('/', authenticate, eventController.createEvent);
 router.post('/register', authenticate, eventController.registerForEvent);

@@ -1,0 +1,40 @@
+.toast {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1e1e24;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  min-width: 300px;
+  max-width: 90vw;
+}
+
+.iconWrapper {
+  flex-shrink: 0;
+}
+
+.iconSuccess { color: #4ade80; }
+.iconError { color: #ef4444; }
+.iconInfo { color: #60a5fa; }
+
+.message {
+  flex: 1;
+  font-size: 14px;
+  color: white;
+  font-weight: 500;
+}
+
+.closeBtn {
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}

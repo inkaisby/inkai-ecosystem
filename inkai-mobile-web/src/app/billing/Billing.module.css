@@ -1,0 +1,267 @@
+.container {
+  min-height: 100vh;
+  background-color: var(--background-dark);
+}
+
+.header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backBtn {
+  color: white;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.summaryCard {
+  margin: 0 24px 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #2c2c34, #1e1e24);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.totalAmount {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--primary-gold);
+  margin-bottom: 24px;
+}
+
+.payBtn {
+  width: 100%;
+  padding: 16px;
+  background-color: var(--primary-gold);
+  color: black;
+  border-radius: 12px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.payBtn:disabled {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.waiting {
+  background-color: rgba(168, 85, 247, 0.1) !important;
+  color: #a855f7 !important;
+}
+
+.section {
+  padding: 0 24px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.billItem {
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.statusIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paid { background-color: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.waitingIcon { background-color: rgba(168, 85, 247, 0.1); color: #a855f7; }
+.pending { background-color: rgba(234, 179, 8, 0.1); color: #eab308; }
+
+.billInfo {
+  flex: 1;
+}
+
+.billTitle {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.billMeta {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.metaPaid { color: #4ade80; }
+.metaWaiting { color: #c084fc; }
+
+.billRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.amount {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.amountPaid {
+  color: var(--text-muted);
+}
+
+.deleteBtn {
+  color: #ef4444;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 100;
+}
+
+.modal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #1e1e24;
+  border-radius: 24px 24px 0 0;
+  padding: 32px;
+  z-index: 101;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 24px;
+}
+
+.modalSummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.modalAmount {
+  font-weight: bold;
+  color: white;
+}
+
+.methodLabel {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.methodItem {
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.methodSelected {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: var(--primary-gold);
+}
+
+.methodIcon {
+  color: var(--text-muted);
+}
+
+.methodSelected .methodIcon {
+  color: var(--primary-gold);
+}
+
+.methodText {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.methodSelected .methodText {
+  color: white;
+  font-weight: bold;
+}
+
+.checkIcon {
+  color: var(--primary-gold);
+}
+
+.confirmBtn {
+  width: 100%;
+  padding: 16px;
+  background-color: var(--primary-gold);
+  color: black;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+  color: var(--primary-gold);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

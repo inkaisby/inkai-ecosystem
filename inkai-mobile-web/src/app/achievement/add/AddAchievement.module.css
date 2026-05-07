@@ -1,0 +1,147 @@
+.container {
+  min-height: 100vh;
+  background-color: var(--background-dark);
+}
+
+.header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backBtn {
+  color: white;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: bold;
+  flex: 1;
+  text-align: center;
+  margin-right: 40px;
+}
+
+.form {
+  padding: 0 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-muted);
+  padding-left: 4px;
+}
+
+.selectWrapper {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 16px;
+}
+
+.select {
+  width: 100%;
+  padding: 16px 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  outline: none;
+}
+
+.select option {
+  background-color: #1e1e24;
+  color: white;
+}
+
+.inputWrapper {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+}
+
+.inputIcon {
+  color: var(--primary-gold);
+  opacity: 0.5;
+}
+
+.input {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 16px 0;
+  color: white;
+  font-size: 14px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.uploadBox {
+  width: 100%;
+  padding: 32px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.uploadIcon {
+  color: var(--primary-gold);
+  opacity: 0.5;
+}
+
+.uploadText {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 16px;
+  background-color: var(--primary-gold);
+  color: black;
+  border-radius: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
