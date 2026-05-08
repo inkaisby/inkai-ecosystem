@@ -1,0 +1,202 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { User, LogOut, Bell, ChevronDown, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
+
+export default function TopBar() {
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await api.notifications.getNotifications();
+      setNotifications(res.data);
+      setUnreadCount(res.data.filter((n: any) => !n.isRead).length);
+    } catch (err) {
+      console.error('Failed to fetch notifications', err);
+    }
+  };
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+    fetchNotifications();
+    
+    // Refresh notifications every 1 minute
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/login');
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await api.notifications.markAsRead(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error('Failed to mark as read', err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const unread = notifications.filter(n => !n.isRead);
+      await Promise.all(unread.map(n => api.notifications.markAsRead(n.id)));
+      fetchNotifications();
+    } catch (err) {
+      console.error('Failed to mark all as read', err);
+    }
+  };
+
+  const getTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diff = now.getTime() - then.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    return `${days}d`;
+  };
+
+  const getRoleBadge = (user: any) => {
+    const role = user?.roles?.[0];
+    const branchName = user?.managedBranchName;
+    const provinceName = user?.managedProvinceName;
+
+    switch (role) {
+      case 'ADMINISTRATOR': return 'Super Admin';
+      case 'ADMIN_PUSAT': return 'PP INKAI';
+      case 'ADMIN_PROVINCE': return `PENGPROV ${provinceName || ''}`;
+      case 'ADMIN_BRANCH': return `PENGCAB ${branchName || ''}`;
+      default: return role || 'Admin';
+    }
+  };
+
+  return (
+    <header className="h-20 border-b border-white/5 bg-[#0a0a0c]/50 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between px-8">
+      <div>
+        {/* Placeholder for dynamic breadcrumbs or search if needed */}
+      </div>
+
+      <div className="flex items-center gap-6">
+        {/* Notifications */}
+        <div className="relative">
+          <button 
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              if (!showNotifications) fetchNotifications();
+            }}
+            className={`p-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all relative ${showNotifications ? 'bg-white/10 text-white' : ''}`}
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border-2 border-[#0a0a0c]"></span>
+            )}
+          </button>
+
+          {showNotifications && (
+            <div className="absolute right-0 mt-2 w-80 bg-[#16161a] border border-white/10 rounded-2xl shadow-2xl z-50 p-4 animate-in fade-in zoom-in duration-200">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold">Notifikasi</h4>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase">
+                    {unreadCount} BARU
+                  </span>
+                )}
+              </div>
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                {notifications.length > 0 ? (
+                  notifications.map((n) => (
+                    <div 
+                      key={n.id} 
+                      onClick={() => !n.isRead && handleMarkAsRead(n.id)}
+                      className={`p-3 rounded-xl border transition-all relative group ${
+                        n.isRead 
+                          ? 'bg-transparent border-white/5 opacity-60' 
+                          : 'bg-white/5 border-white/10 hover:border-white/20 cursor-pointer'
+                      }`}
+                    >
+                      {!n.isRead && (
+                        <div className="absolute top-3 right-3 w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                      )}
+                      <p className={`text-sm font-bold ${n.isRead ? 'text-gray-400' : 'text-white'}`}>{n.title}</p>
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.content}</p>
+                      <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold">{getTimeAgo(n.createdAt)} ago</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-gray-600 text-xs italic">Belum ada notifikasi.</p>
+                  </div>
+                )}
+              </div>
+              {unreadCount > 0 && (
+                <button 
+                  onClick={handleMarkAllAsRead}
+                  className="w-full mt-4 py-2 text-xs text-gray-500 hover:text-white transition-all flex items-center justify-center gap-2 border-t border-white/5 pt-4"
+                >
+                  <Check size={14} />
+                  Tandai Semua Sudah Dibaca
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* User Profile */}
+        <div className="flex items-center gap-4 pl-6 border-l border-white/10">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-bold text-white leading-tight">{user?.fullName || user?.email?.split('@')[0]}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mt-0.5">
+              {getRoleBadge(user)}
+            </p>
+          </div>
+          
+          <div className="group relative">
+            <button className="flex items-center gap-2 p-1 pr-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all">
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center text-black shadow-lg shadow-amber-500/20">
+                <User size={20} strokeWidth={2.5} />
+              </div>
+              <ChevronDown size={16} className="text-gray-500 group-hover:text-white transition-all" />
+            </button>
+
+            {/* Dropdown Menu */}
+            <div className="absolute right-0 mt-2 w-48 bg-[#16161a] border border-white/10 rounded-2xl shadow-2xl opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all duration-200 p-2 overflow-hidden">
+              <button 
+                onClick={() => router.push('/settings')}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+              >
+                <User size={18} />
+                Profil Saya
+              </button>
+              <div className="h-px bg-white/5 my-1 mx-2" />
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+              >
+                <LogOut size={18} />
+                Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}

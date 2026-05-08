@@ -10,7 +10,7 @@ import CustomToast from "@/components/CustomToast/CustomToast";
 export default function AddAchievement() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' as const });
+  const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [formData, setFormData] = useState({
     type: 'SABUK',
     title: '',

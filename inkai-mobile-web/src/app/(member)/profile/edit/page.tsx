@@ -13,7 +13,7 @@ export default function EditProfile() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' as const });
+  const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [formData, setFormData] = useState({
     fullName: '',
     phoneNumber: '',
