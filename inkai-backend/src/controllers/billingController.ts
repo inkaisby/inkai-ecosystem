@@ -72,22 +72,66 @@ export const processPayment = async (req: Request, res: Response) => {
   }
 };
 
-export const verifyPayment = async (req: Request, res: Response) => {
+export const getAllBillings = async (req: any, res: Response) => {
+  try {
+    const { status, type, page = 1, limit = 50 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (type) where.type = type;
+
+    // Regional Scoping
+    if (req.user) {
+      if (req.user.managedProvinceId) {
+        where.member = { dojo: { branch: { provinceId: req.user.managedProvinceId } } };
+      } else if (req.user.managedBranchId) {
+        where.member = { dojo: { branchId: req.user.managedBranchId } };
+      } else if (req.user.managedDojoId) {
+        where.member = { dojoId: req.user.managedDojoId };
+      }
+    }
+
+    const billings = await prisma.billing.findMany({
+      where,
+      include: { 
+        member: { select: { fullName: true, nia: true, dojo: { select: { name: true } } } },
+        payment: true 
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: Number(limit)
+    });
+
+    const total = await prisma.billing.count({ where });
+
+    res.json({ status: 'success', data: billings, meta: { total, page: Number(page), limit: Number(limit) } });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const verifyPayment = async (req: any, res: Response) => {
   try {
     const { billingId, adminNotes } = req.body;
+    const adminId = req.user.userId;
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Update billing status
       const billing = await tx.billing.update({
         where: { id: billingId },
-        data: { status: 'PAID' }
+        data: { 
+          status: 'PAID'
+        }
       });
 
-      // 2. Update payment record (set paidAt)
+      // 2. Update payment record (set paidAt and record verifier)
       await tx.payment.updateMany({
         where: { billingId: billingId },
         data: { 
-          paidAt: new Date()
+          paidAt: new Date(),
+          // Note: Add metadata to notes for audit trail
+          externalId: `Verified by Admin ${adminId}` 
         }
       });
 

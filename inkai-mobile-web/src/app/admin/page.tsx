@@ -12,8 +12,12 @@ import {
   Download,
   MessageSquare,
   Loader2,
-  TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  ChevronRight,
+  ChevronLeft,
+  LogOut,
+  Home
 } from 'lucide-react';
 import StatCard from '@/components/admin/StatCard';
 import { api } from '@/lib/api';
@@ -26,6 +30,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const [user, setUser] = useState<any>(null);
+  const [showStats, setShowStats] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -65,10 +70,10 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center">
+      <div className="flex items-center justify-center p-8 h-[60vh]">
         <div className="text-center space-y-4">
-          <Loader2 className="animate-spin text-amber-500 mx-auto" size={48} />
-          <p className="text-gray-500 animate-pulse">Memuat data organisasi...</p>
+          <Loader2 className="animate-spin text-amber-500 mx-auto" size={40} />
+          <p className="text-gray-500 text-sm animate-pulse">Sinkronisasi data organisasi...</p>
         </div>
       </div>
     );
@@ -76,29 +81,29 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center">
-        <div className="glass-card max-w-md w-full text-center space-y-6 border-red-500/20 bg-red-500/5">
-          <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto border border-red-500/20">
-            <AlertCircle size={40} className="text-red-500" />
+      <div className="p-6">
+        <div className="glass-card text-center space-y-6 border-red-500/20 bg-red-500/5">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto border border-red-500/20">
+            <AlertCircle size={32} className="text-red-500" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-bold text-white">Terjadi Kesalahan</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">{error}</p>
+            <h3 className="text-lg font-bold text-white">Terjadi Kesalahan</h3>
+            <p className="text-gray-400 text-xs leading-relaxed">{error}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3">
             <button 
               onClick={() => {
                 localStorage.removeItem('inkai_token'); localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 router.push('/admin/login');
               }}
-              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium text-gray-300 flex-1"
+              className="btn-secondary text-sm w-full"
             >
               Logout / Ganti Akun
             </button>
             <button 
               onClick={() => window.location.reload()}
-              className="btn-primary flex-1"
+              className="btn-primary w-full text-sm"
             >
               Coba Lagi
             </button>
@@ -108,186 +113,227 @@ export default function Dashboard() {
     );
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('inkai_token');
+    localStorage.removeItem('user');
+    router.push('/admin/login');
+  };
+
+  const getStatScopeLabel = (type: 'members' | 'org') => {
+    if (!user) return '...';
+    const role = user.roles?.[0];
+    
+    if (type === 'members') {
+      if (role === 'ADMIN_DOJO') return user.managedDojoName || 'Dojo';
+      if (role === 'ADMIN_BRANCH') return user.managedBranchName || 'Cabang';
+      if (role === 'ADMIN_PROVINCE') return user.managedProvinceName || 'Provinsi';
+      return 'Nasional';
+    } else {
+      if (role === 'ADMIN_DOJO') return 'Status Aktif';
+      if (role === 'ADMIN_BRANCH') return `${stats?.totalDojos || 0} Dojo`;
+      if (role === 'ADMIN_PROVINCE') return `${stats?.totalBranches || 0} Cabang`;
+      return `${stats?.totalProvinces || 0} Prov`;
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="p-6 space-y-8 animate-in fade-in duration-700">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold">Dashboard Overview</h2>
-          <p className="text-gray-500">
-            Selamat datang kembali, {
-              user?.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
-              user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Administrator Pusat' :
-              user?.roles?.[0] === 'ADMIN_PROVINCE' ? 'Administrator Provinsi' :
-              user?.roles?.[0] === 'ADMIN_BRANCH' ? 'Administrator Cabang' :
-              'Administrator'
-            }.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium text-gray-300">
-            <Download size={18} />
-            Export Report
-          </button>
-          <button className="btn-primary text-sm">
-            + Tambah Anggota
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          label="Total Anggota" 
-          value={stats?.totalMembers?.toLocaleString() || '0'} 
-          subValue="Aktif Nasional" 
-          icon={Users} 
-          trend="up" 
-        />
-        <StatCard 
-          label="Total Dojo" 
-          value={stats?.totalDojos?.toLocaleString() || '0'} 
-          subValue={`Di ${stats?.totalProvinces || 0} Provinsi`} 
-          icon={MapPin} 
-        />
-        <StatCard 
-          label="Iuran Masuk" 
-          value={`Rp ${(stats?.iuranTotal / 1000000).toFixed(1)}M`} 
-          subValue="Akumulasi Terverifikasi" 
-          icon={CreditCard} 
-          trend="up"
-        />
-        <StatCard 
-          label="Pending Approval" 
-          value={stats?.pendingVerifications || '0'} 
-          subValue="Verifikasi dokumen" 
-          icon={Clock} 
-        />
-      </div>
-
-      {/* Heatmap Preview - New Analytics Feature */}
-      <div className="glass-card">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              Aktivitas Latihan Nasional
-              <TrendingUp size={18} className="text-green-500" />
-            </h3>
-            <p className="text-xs text-gray-500">Intensitas kehadiran dojo dalam 30 hari terakhir.</p>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex items-center gap-1.5 mr-4">
-              <span className="text-[10px] text-gray-500 uppercase font-bold">Low</span>
-              <div className="flex gap-1">
-                <div className="w-3 h-3 rounded bg-white/5" />
-                <div className="w-3 h-3 rounded bg-amber-500/20" />
-                <div className="w-3 h-3 rounded bg-amber-500/40" />
-                <div className="w-3 h-3 rounded bg-amber-500/60" />
-                <div className="w-3 h-3 rounded bg-amber-500" />
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => router.push('/')}
+              className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+              title="Ke Portal Anggota"
+            >
+              <Home size={20} />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center border-2 border-white/10 shadow-lg shadow-amber-500/20">
+              <span className="text-black font-black text-sm">
+                {user?.fullName?.charAt(0) || user?.email?.charAt(0).toUpperCase() || 'A'}
+              </span>
+            </div>
+            <div>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 leading-none mb-1.5 truncate max-w-[150px]">
+                {user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Pengurus Pusat' :
+                 user?.roles?.[0] === 'ADMIN_PROVINCE' ? (user?.managedProvinceName || 'Provinsi') :
+                 user?.roles?.[0] === 'ADMIN_BRANCH' ? (user?.managedBranchName || 'Cabang') :
+                 user?.roles?.[0] === 'ADMIN_DOJO' ? (user?.managedDojoName || 'Dojo / Ranting') :
+                 'Administrator'}
+              </h2>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div>
+                <p className="text-[9px] font-bold text-white/60 tracking-wider">
+                  {user?.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
+                   user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Admin Pusat' :
+                   user?.roles?.[0] === 'ADMIN_PROVINCE' ? 'Admin Provinsi' :
+                   user?.roles?.[0] === 'ADMIN_BRANCH' ? 'Admin Cabang' :
+                   user?.roles?.[0] === 'ADMIN_DOJO' ? 'Admin Dojo' :
+                   'Administrator'}
+                </p>
               </div>
-              <span className="text-[10px] text-gray-500 uppercase font-bold ml-1">High</span>
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-12 sm:grid-cols-24 md:grid-cols-32 gap-1">
-          {Array.from({ length: 150 }).map((_, i) => (
-            <div 
-              key={i} 
-              className={`aspect-square rounded-sm transition-all hover:scale-150 cursor-pointer ${
-                i % 7 === 0 ? 'bg-amber-500' : 
-                i % 5 === 0 ? 'bg-amber-500/60' : 
-                i % 3 === 0 ? 'bg-amber-500/20' : 'bg-white/5'
-              }`}
-              title={`Aktivitas: ${Math.floor(Math.random() * 100)}%`}
+          <div className="flex gap-2">
+            <button 
+              onClick={handleLogout}
+              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-all shadow-xl"
+              title="Logout"
+            >
+              <LogOut size={20} />
+            </button>
+          </div>
+        </div>
+        
+        <button 
+          onClick={() => router.push('/admin/members?showAdd=true')}
+          className="btn-primary w-full text-sm"
+        >
+          <Plus size={18} />
+          Tambah Anggota Baru
+        </button>
+      </div>
+
+      {/* Stats Section with Collapse Toggle */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center px-1">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Key Performance Indicators</h3>
+          <button 
+            onClick={() => setShowStats(!showStats)}
+            className="text-[10px] text-amber-500 font-bold bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/10"
+          >
+            {showStats ? 'Collapse' : 'Expand'}
+          </button>
+        </div>
+
+        {showStats && (
+          <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
+            <StatCard 
+              label="Total Anggota" 
+              value={stats?.totalMembers?.toLocaleString() || '0'} 
+              subValue={getStatScopeLabel('members')} 
+              icon={Users} 
+              trend="up" 
+              onClick={() => router.push('/admin/members')}
             />
+            <StatCard 
+              label={user?.roles?.[0] === 'ADMIN_DOJO' ? 'Peringkat Dojo' : 'Total Dojo'} 
+              value={user?.roles?.[0] === 'ADMIN_DOJO' ? '#' : stats?.totalDojos?.toLocaleString() || '0'} 
+              subValue={getStatScopeLabel('org')} 
+              icon={MapPin} 
+              onClick={() => router.push('/admin/organization')}
+            />
+            <StatCard 
+              label="Iuran Masuk" 
+              value={`Rp ${(stats?.iuranTotal / 1000000 || 0).toFixed(1)}M`} 
+              subValue="Terverifikasi" 
+              icon={CreditCard} 
+              trend="up"
+              onClick={() => router.push('/admin/billing')} 
+            />
+            <StatCard 
+              label="Pending" 
+              value={stats?.pendingVerifications || '0'} 
+              subValue="Menunggu" 
+              icon={Clock} 
+              onClick={() => router.push('/admin/verification')}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Recent Members Area - List instead of Table for Mobile */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-bold text-white">Anggota Terbaru</h3>
+          <button className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+            Lihat Semua
+          </button>
+        </div>
+
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+          <input 
+            type="text" 
+            placeholder="Cari NIA atau Nama..." 
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/50 text-white placeholder:text-gray-600"
+          />
+        </div>
+
+        <div className="space-y-3">
+          {recentMembers.length > 0 ? recentMembers.map((member, i) => (
+            <div key={i} className="glass-card p-4 flex items-center justify-between border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10">
+                  <span className="text-amber-500 font-bold text-xs">
+                    {member.fullName?.charAt(0)}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">{member.fullName}</h4>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-gray-500 font-mono">{member.nia || 'N/A'}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-700" />
+                    <span className="text-[10px] text-amber-500 font-bold">{member.currentRank}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className={`text-[10px] px-2 py-0.5 rounded-full inline-block ${
+                  member.status === 'Active' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+                }`}>
+                  {member.status}
+                </div>
+                <p className="text-[9px] text-gray-600 mt-1">{member.dojo?.name || 'Umum'}</p>
+              </div>
+            </div>
+          )) : (
+            <div className="glass-card p-8 text-center text-gray-500 text-xs italic">
+              Belum ada aktivitas pendaftaran terbaru.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Announcements Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold text-white">Pengumuman</h3>
+        <div className="grid gap-3">
+          {[
+            { title: 'Instruksi Seragam Baru', date: '01 Mei 2026', target: 'Semua Anggota', color: 'amber' },
+            { title: 'Update Iuran 2026', date: '28 Apr 2026', target: 'Ketua Cabang', color: 'green' },
+          ].map((news, i) => (
+            <div key={i} className="glass-card flex items-center gap-4 border-white/5 p-4">
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-400">
+                <MessageSquare size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start">
+                  <span className="text-[9px] text-amber-500 uppercase font-bold tracking-widest">{news.target}</span>
+                  <span className="text-[9px] text-gray-600">{news.date}</span>
+                </div>
+                <h4 className="text-xs font-medium text-white truncate mt-0.5">{news.title}</h4>
+              </div>
+              <ChevronRight size={14} className="text-gray-600" />
+            </div>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Table Area */}
-        <div className="lg:col-span-2 glass-card space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">Anggota Terbaru</h3>
-            <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                <input 
-                  type="text" 
-                  placeholder="Cari NIA/Nama..." 
-                  className="bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-amber-500/50 w-64 text-white"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
-                <tr>
-                  <th className="pb-4 font-medium">Nama Anggota</th>
-                  <th className="pb-4 font-medium">NIA</th>
-                  <th className="pb-4 font-medium">Sabuk</th>
-                  <th className="pb-4 font-medium">Dojo</th>
-                  <th className="pb-4 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {recentMembers.map((member, i) => (
-                  <tr key={i} className="hover:bg-white/[0.02] transition-all group">
-                    <td className="py-4 font-medium text-white">{member.fullName}</td>
-                    <td className="py-4 text-gray-400 font-mono">{member.nia}</td>
-                    <td className="py-4">
-                      <span className="px-2 py-1 bg-amber-500/10 text-amber-500 rounded text-[10px] font-bold uppercase">
-                        {member.currentRank}
-                      </span>
-                    </td>
-                    <td className="py-4 text-gray-400">{member.dojo?.name || 'Umum'}</td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${member.status === 'Active' ? 'bg-green-500' : 'bg-red-500'}`} />
-                        <span className="text-xs">{member.status}</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right Sidebar Area */}
-        <div className="space-y-8">
-          <div className="glass-card">
-            <h3 className="text-xl font-bold mb-4">Pengumuman Terakhir</h3>
-            <div className="space-y-4">
-              {[
-                { title: 'Instruksi Seragam Baru', date: '01 Mei 2026', target: 'Semua Anggota' },
-                { title: 'Update Iuran 2026', date: '28 Apr 2026', target: 'Ketua Cabang' },
-                { title: 'Jadwal Kejurnas JKT', date: '25 Apr 2026', target: 'Semua Anggota' },
-              ].map((news, i) => (
-                <div key={i} className="p-4 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-all cursor-pointer">
-                  <p className="text-[10px] text-amber-500 uppercase font-bold tracking-widest">{news.target}</p>
-                  <h4 className="font-medium mt-1">{news.title}</h4>
-                  <p className="text-xs text-gray-500 mt-1">{news.date}</p>
-                </div>
-              ))}
-            </div>
-            <button className="w-full mt-6 py-2 text-sm text-gray-500 hover:text-white transition-all">
-              Lihat Semua Pengumuman
-            </button>
-          </div>
-
-          <div className="glass-card bg-gradient-to-br from-amber-500/20 to-transparent">
-            <h3 className="text-xl font-bold mb-2">Pusat Bantuan</h3>
-            <p className="text-sm text-gray-400 mb-6">Butuh panduan teknis pengelolaan organisasi?</p>
-            <button className="w-full btn-primary text-sm flex items-center justify-center gap-2">
-              <MessageSquare size={18} />
-              Hubungi Support
-            </button>
-          </div>
-        </div>
+      {/* Support Card */}
+      <div className="glass-card bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/10 p-5">
+        <h3 className="text-base font-bold text-white mb-1">Pusat Bantuan</h3>
+        <p className="text-[10px] text-gray-400 mb-4 leading-relaxed">Butuh panduan teknis pengelolaan organisasi? Tim support kami siap membantu.</p>
+        <button className="btn-secondary w-full text-xs py-2">
+          <MessageSquare size={14} />
+          Hubungi Support INKAI
+        </button>
       </div>
     </div>
   );
 }
+

@@ -95,7 +95,12 @@ export const login = async (req: Request, res: Response) => {
 
     if (!user) {
       console.log(`User NOT found: ${identifier}`);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Kredensial tidak valid' });
+    }
+
+    if (!user.isActive) {
+      console.log(`User DEACTIVATED: ${user.email}`);
+      return res.status(403).json({ message: 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.' });
     }
 
     console.log(`User found: ${user.email}. Checking password...`);
@@ -122,8 +127,10 @@ export const login = async (req: Request, res: Response) => {
         permissions: uniquePermissions,
         managedProvinceId: user.managedProvinceId,
         managedBranchId: user.managedBranchId,
+        managedDojoId: user.managedDojoId,
         managedProvinceName: user.managedProvince?.name,
-        managedBranchName: user.managedBranch?.name
+        managedBranchName: user.managedBranch?.name,
+        managedDojoName: user.managedDojo?.name
       },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '7d' }
@@ -143,13 +150,117 @@ export const login = async (req: Request, res: Response) => {
           permissions: uniquePermissions,
           managedProvinceId: user.managedProvinceId,
           managedBranchId: user.managedBranchId,
+          managedDojoId: user.managedDojoId,
           managedProvinceName: user.managedProvince?.name,
-          managedBranchName: user.managedBranch?.name
+          managedBranchName: user.managedBranch?.name,
+          managedDojoName: user.managedDojo?.name
         }
       }
     });
   } catch (error: any) {
     console.error('Login Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const adminLogin = async (req: Request, res: Response) => {
+  try {
+    const { identifier, password } = req.body;
+
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: identifier, mode: 'insensitive' } },
+          { member: { nia: identifier } }
+        ]
+      },
+      include: { 
+        member: true,
+        managedProvince: { select: { name: true } },
+        managedBranch: { select: { name: true } },
+        managedDojo: { select: { name: true } },
+        roles: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Kredensial tidak valid' });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Akses Ditolak: Akun administrator Anda telah dinonaktifkan.' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Kredensial tidak valid' });
+    }
+
+    // Validate Admin Roles and Managed Territories
+    const userRoleNames = user.roles.map(r => r.name);
+    
+    const isSuperAdmin = userRoleNames.includes('ADMINISTRATOR') || userRoleNames.includes('ADMIN_PUSAT');
+    const isProvinceAdmin = userRoleNames.includes('ADMIN_PROVINCE') && user.managedProvinceId;
+    const isBranchAdmin = userRoleNames.includes('ADMIN_BRANCH') && user.managedBranchId;
+    const isDojoAdmin = userRoleNames.includes('ADMIN_DOJO') && user.managedDojoId;
+
+    if (!isSuperAdmin && !isProvinceAdmin && !isBranchAdmin && !isDojoAdmin) {
+      return res.status(403).json({ 
+        message: 'Akses Ditolak: Akun Anda tidak memiliki wewenang administratif yang valid pada wilayah manapun.' 
+      });
+    }
+
+    const permissions = user.roles.flatMap(role => 
+      role.permissions.map(rp => rp.permission.slug)
+    );
+    const uniquePermissions = Array.from(new Set(permissions));
+
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        memberId: user.member?.id,
+        roles: userRoleNames,
+        permissions: uniquePermissions,
+        managedProvinceId: user.managedProvinceId,
+        managedBranchId: user.managedBranchId,
+        managedDojoId: user.managedDojoId,
+        managedProvinceName: user.managedProvince?.name,
+        managedBranchName: user.managedBranch?.name,
+        managedDojoName: user.managedDojo?.name
+      },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      status: 'success',
+      token,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.member?.fullName || user.fullName,
+          nia: user.member?.nia,
+          roles: userRoleNames,
+          permissions: uniquePermissions,
+          managedProvinceId: user.managedProvinceId,
+          managedBranchId: user.managedBranchId,
+          managedDojoId: user.managedDojoId,
+          managedProvinceName: user.managedProvince?.name,
+          managedBranchName: user.managedBranch?.name,
+          managedDojoName: user.managedDojo?.name
+        }
+      }
+    });
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
@@ -261,7 +372,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'Token tidak valid atau sudah kadaluarsa' });
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const passwordHash = await bcrypt.hash(newPassword, 12);
 
     await prisma.user.update({
       where: { id: user.id },

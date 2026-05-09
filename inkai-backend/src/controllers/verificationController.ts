@@ -40,6 +40,16 @@ export const processClaim = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
 
+    const existingVerification = await prisma.verification.findUnique({ where: { id } });
+    
+    if (!existingVerification) {
+      return res.status(404).json({ status: 'error', message: 'Claim not found' });
+    }
+
+    if (existingVerification.status !== 'PENDING') {
+      return res.status(400).json({ status: 'error', message: 'Claim has already been processed' });
+    }
+
     const verification = await prisma.verification.update({
       where: { id },
       data: { status, adminNotes },

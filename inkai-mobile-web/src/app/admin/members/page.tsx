@@ -101,6 +101,12 @@ function MembersContent() {
   }, [dojoId]);
 
   useEffect(() => {
+    if (searchParams.get('showAdd') === 'true') {
+      setShowAddModal(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (showAddModal && (!dojoId || isEdit)) {
       api.org.getProvinces().then((res: any) => setProvinces(res.data));
     }
@@ -180,71 +186,57 @@ function MembersContent() {
   };
 
   return (
-    <div suppressHydrationWarning className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div suppressHydrationWarning className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Area */}
-      <div>
-        {dojoId && (
-          <button 
-            onClick={handleBack}
-            className="flex items-center gap-2 text-gray-500 hover:text-amber-500 transition-colors mb-4 group"
-          >
-            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">Kembali ke Daftar Dojo</span>
-          </button>
-        )}
-        <div className="flex justify-between items-end">
-          <div>
-            <div className="flex items-center gap-2 text-amber-500 mb-2">
-              <Users size={20} />
-              <span className="text-sm font-bold uppercase tracking-widest">
-                {dojoId ? `Anggota Dojo ${dojoName}` : 'Database Nasional'}
-              </span>
-            </div>
-            <h2 className="text-3xl font-bold uppercase">
-              {dojoId ? dojoName : 'Daftar Anggota'}
-            </h2>
-            {dojoId ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 bg-amber-500/5 rounded-2xl border border-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-500">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">Kecamatan</p>
-                  <p className="text-xs font-bold text-gray-300 uppercase">{dojoInfo?.kecamatan || '...'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">Tempat Latihan</p>
-                  <p className="text-xs font-bold text-gray-300 uppercase line-clamp-1">{dojoInfo?.tempatLatihan || '...'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">No. WhatsApp</p>
-                  <p className="text-xs font-bold text-amber-500 uppercase">{dojoInfo?.phoneNumber || '...'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-gray-500 tracking-tighter">Jadwal Latihan</p>
-                  <p className="text-xs font-bold text-gray-300 uppercase line-clamp-1">{dojoInfo?.schedule || '...'}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-500 mt-1">
-                Kelola data keanggotaan INKAI di seluruh wilayah Indonesia.
-              </p>
-            )}
-          </div>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">
-              <Download size={18} />
-              Export Data
-            </button>
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
             <button 
-              onClick={() => {
-                resetForm();
-                setShowAddModal(true);
-              }}
-              className="btn-primary flex items-center gap-2 text-sm"
+              onClick={() => router.back()}
+              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90"
             >
-              <Plus size={18} />
-              Anggota Baru
+              <ChevronLeft size={20} />
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 text-amber-500 mb-0.5">
+                <Users size={14} />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate">
+                  {dojoId ? `Dojo ${dojoName}` : 'Database Nasional'}
+                </span>
+              </div>
+              <h2 className="text-xl font-black uppercase text-white truncate leading-tight">
+                {dojoId ? dojoName : 'Anggota'}
+              </h2>
+            </div>
+            <button className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all">
+              <Download size={18} />
             </button>
           </div>
         </div>
+
+        <button 
+          onClick={() => {
+            resetForm();
+            setShowAddModal(true);
+          }}
+          className="btn-primary w-full py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-amber-500/20"
+        >
+          <Plus size={20} />
+          Tambah Anggota
+        </button>
+
+        {dojoId && (
+          <div className="grid grid-cols-2 gap-3 p-4 bg-amber-500/5 rounded-2xl border border-amber-500/10">
+            <div className="space-y-0.5">
+              <p className="text-[9px] font-black uppercase text-gray-500">Wilayah</p>
+              <p className="text-[11px] font-bold text-gray-300 uppercase truncate">{dojoInfo?.kecamatan || '...'}</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-[9px] font-black uppercase text-gray-500">Kontak</p>
+              <p className="text-[11px] font-bold text-amber-500 uppercase truncate">{dojoInfo?.phoneNumber || '...'}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Quick View */}
@@ -260,127 +252,106 @@ function MembersContent() {
         </div>
       </div>
 
-      {/* Filter & Table Area */}
-      <div className="glass-card space-y-6">
-        <form onSubmit={handleSearch} className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex gap-3 flex-1 min-w-[300px]">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-              <input 
-                type="text" 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari berdasarkan Nama, NIA, atau Email..." 
-                className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/50 transition-all"
-              />
-            </div>
-            <button type="submit" className="flex items-center gap-2 px-6 py-2 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all text-sm">
-              <Search size={18} />
-              Cari
-            </button>
+      {/* Filter & List Area */}
+      <div className="space-y-6">
+        <form onSubmit={handleSearch} className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+            <input 
+              type="text" 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari Nama, NIA, atau Email..." 
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-white"
+            />
           </div>
-          {dojoId && (
-            <button 
-              type="button"
-              onClick={() => router.push('/admin/members')}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 rounded-xl transition-all text-sm font-bold"
-            >
-              <X size={18} />
-              Hapus Filter Dojo
+          <div className="flex gap-2">
+            <button type="submit" className="btn-primary flex-1 text-xs py-2.5">
+              <Search size={16} />
+              Cari Anggota
             </button>
-          )}
+            {dojoId && (
+              <button 
+                type="button"
+                onClick={() => router.push('/admin/members')}
+                className="btn-secondary text-xs py-2.5 px-3"
+                title="Hapus Filter Dojo"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
         </form>
 
-        <div className="overflow-x-auto relative min-h-[400px]">
+        <div className="space-y-3 relative min-h-[200px]">
           {loading && (
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl">
-              <Loader2 className="animate-spin text-amber-500" size={40} />
+            <div className="absolute inset-0 bg-[#0A0A0C] flex items-center justify-center z-10 rounded-2xl">
+              <Loader2 className="animate-spin text-amber-500" size={32} />
             </div>
           )}
 
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
-                <th className="pb-4 pl-2 font-medium">Informasi Anggota</th>
-                <th className="pb-4 font-medium">NIA</th>
-                <th className="pb-4 font-medium">Wilayah / Dojo</th>
-                <th className="pb-4 font-medium">Tingkatan</th>
-                <th className="pb-4 font-medium">Status</th>
-                <th className="pb-4 text-right pr-2 font-medium">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {members.map((member) => (
-                <tr 
-                  key={member.id} 
-                  onClick={() => {
-                    setSelectedMember(member);
-                    setShowDetailModal(true);
-                  }}
-                  className="hover:bg-white/[0.02] transition-all group cursor-pointer"
-                >
-                  <td className="py-5 pl-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center font-bold text-black text-xs">
-                        {member.fullName.split(' ').map((n: string) => n[0]).join('')}
-                      </div>
-                      <div>
-                        <p className="font-bold text-white group-hover:text-amber-500 transition-colors">{member.fullName}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-5 text-gray-400 font-mono text-xs">{member.nia}</td>
-                  <td className="py-5">
-                    <p className="text-white text-xs">{member.dojo?.branch?.province?.name || '-'}</p>
-                    <p className="text-gray-500 text-[10px] mt-0.5">{member.dojo?.name}</p>
-                  </td>
-                  <td className="py-5">
-                    <span className="px-2 py-1 bg-amber-500/10 text-amber-500 rounded text-[10px] font-bold uppercase border border-amber-500/20">
-                      {member.currentRank}
-                    </span>
-                  </td>
-                  <td className="py-5">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-1.5 h-1.5 rounded-full ${member.status === 'Active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`} />
-                      <span className={`text-[10px] font-medium ${member.status === 'Active' ? 'text-green-500' : 'text-red-500'}`}>{member.status}</span>
-                    </div>
-                  </td>
-                  <td className="py-5 text-right pr-2">
-                    <button className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all">
-                      <MoreVertical size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {members.length === 0 && !loading && (
-            <div className="py-20 text-center text-gray-500">
+          {members.length > 0 ? members.map((member) => (
+            <div 
+              key={member.id} 
+              onClick={() => {
+                setSelectedMember(member);
+                setShowDetailModal(true);
+              }}
+              className="glass-card p-4 flex items-center justify-between border-white/5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10">
+                  <span className="text-amber-500 font-bold text-xs">
+                    {member.fullName?.charAt(0)}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold text-white truncate">{member.fullName}</h4>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-gray-500 font-mono">{member.nia || 'N/A'}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-700" />
+                    <span className="text-[10px] text-amber-500 font-bold truncate">{member.currentRank}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className={`text-[9px] px-2 py-0.5 rounded-full inline-block font-bold ${
+                  member.status === 'Active' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+                }`}>
+                  {member.status}
+                </div>
+                <p className="text-[9px] text-gray-600 mt-1 truncate max-w-[80px]">{member.dojo?.name || 'Umum'}</p>
+              </div>
+            </div>
+          )) : !loading && (
+            <div className="glass-card p-12 text-center text-gray-500 text-xs italic border-dashed border-white/5">
               Tidak ada data anggota ditemukan.
             </div>
           )}
         </div>
 
         {/* Pagination */}
-        <div className="flex justify-between items-center pt-6 border-t border-white/5">
-          <p className="text-xs text-gray-500">
-            Menampilkan <span className="text-white font-medium">{members.length}</span> dari <span className="text-white font-medium">{meta.total}</span> anggota
+        <div className="flex justify-between items-center px-1">
+          <p className="text-[10px] text-gray-500 uppercase font-black">
+            Total: <span className="text-white">{meta.total}</span> Anggota
           </p>
           <div className="flex gap-2">
             <button 
               disabled={meta.page === 1}
               onClick={() => fetchMembers(meta.page - 1)}
-              className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-500 hover:text-white disabled:opacity-30"
+              className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-500 disabled:opacity-20"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
+            <div className="flex items-center px-3 bg-white/5 rounded-xl border border-white/10 text-[10px] font-bold text-gray-400">
+              {meta.page}
+            </div>
             <button 
               disabled={meta.page * meta.limit >= meta.total}
               onClick={() => fetchMembers(meta.page + 1)}
-              className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-500 hover:text-white disabled:opacity-30"
+              className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-500 disabled:opacity-20"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
@@ -388,15 +359,15 @@ function MembersContent() {
 
       {/* Form Modal (Add / Edit) */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="glass-card w-full max-w-lg p-8 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-[#0A0A0C] animate-in fade-in">
+          <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold uppercase tracking-tight">
-                {isEdit ? 'Ubah Data Anggota' : 'Daftarkan Anggota Baru'}
+              <h3 className="text-lg font-black uppercase tracking-widest text-white">
+                {isEdit ? 'Ubah Anggota' : 'Anggota Baru'}
               </h3>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white/5 transition-all"
+                className="p-1.5 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -416,87 +387,59 @@ function MembersContent() {
                 fetchMembers(1, search);
                 toast.success(isEdit ? 'Data anggota berhasil diperbarui!' : 'Anggota baru berhasil terdaftar!');
               } catch (err: any) {
-                toast.error(err.message || 'Gagal memproses data');
+                const msg = err.response?.data?.message || err.message || 'Gagal memproses data';
+                toast.error(msg);
               } finally {
                 setIsSubmitting(false);
               }
-            }} className="space-y-6">
+            }} className="space-y-5">
               <div className="space-y-4">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Nama Lengkap</label>
+                  <label className="text-10 font-black uppercase text-amber-500 tracking-widest mb-2 block ml-1 opacity-80">Nama Lengkap</label>
                     <input 
                       type="text" 
                       required
-                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Harap isi nama lengkap anggota')}
-                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value.toUpperCase() })}
                       placeholder="CONTOH: BUDI SANTOSO"
-                      className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all uppercase"
+                      className="glass-input w-full px-4 py-3 text-sm focus-outline-none uppercase font-bold tracking-tight"
                     />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Jenis Kelamin</label>
+                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Jenis Kelamin</label>
                     <div className="relative">
                       <select 
                         value={formData.gender}
                         onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                        className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
+                        className="glass-input w-full px-4 py-3 text-sm appearance-none cursor-pointer font-bold focus-outline-none"
                         style={{ colorScheme: 'dark' }}
                       >
-                        <option value="Laki-laki" className="bg-[#1e1e24] text-white">Laki-laki</option>
-                        <option value="Perempuan" className="bg-[#1e1e24] text-white">Perempuan</option>
+                        <option value="Laki-laki">Laki-laki</option>
+                        <option value="Perempuan">Perempuan</option>
                       </select>
-                      <ChevronRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none" />
+                      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Tanggal Lahir</label>
-                    <div className="relative group">
+                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Tanggal Lahir</label>
+                    <div className="relative">
                       <input 
                         type="text" 
                         placeholder="DD/MM/YYYY"
+                        readOnly
                         value={dateInput || (formData.birthDate ? formData.birthDate.split('-').reverse().join('/') : '')}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setDateInput(val);
-                          const parts = val.split('/');
-                          if (parts.length === 3 && parts[2].length === 4) {
-                            const isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                            if (!isNaN(Date.parse(isoDate))) {
-                              setFormData({ ...formData, birthDate: isoDate });
-                            }
-                          }
-                        }}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                          const pastedData = e.clipboardData.getData('text');
-                          const parts = pastedData.split('/');
-                          if (parts.length === 3) {
-                            const isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                            if (!isNaN(Date.parse(isoDate))) {
-                              setFormData({ ...formData, birthDate: isoDate });
-                              setDateInput(pastedData);
-                            }
-                          }
-                        }}
-                        className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
-                      />
-                      <button 
-                        type="button"
                         onClick={(e) => {
-                          const input = e.currentTarget.nextElementSibling as HTMLInputElement;
-                          if (input.showPicker) input.showPicker();
+                          const input = e.currentTarget.nextElementSibling?.nextElementSibling as HTMLInputElement;
+                          if (input && input.showPicker) input.showPicker();
                         }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-amber-500 transition-colors"
-                      >
-                        <Calendar size={18} />
-                      </button>
+                        className="glass-input w-full px-4 py-3 text-sm cursor-pointer font-bold focus-outline-none"
+                      />
+                      <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                       <input 
                         type="date"
-                        className="absolute inset-0 opacity-0 pointer-events-none"
+                        className="absolute inset-0 opacity-0 pointer-events-none w-0 h-0"
                         value={formData.birthDate}
                         onChange={(e) => {
                           setFormData({ ...formData, birthDate: e.target.value });
@@ -510,89 +453,89 @@ function MembersContent() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Tingkatan (Sabuk)</label>
+                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Sabuk</label>
                     <div className="relative">
                         <select 
                           value={formData.currentRank}
                           onChange={(e) => setFormData({ ...formData, currentRank: e.target.value })}
-                          className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
+                          className="glass-input w-full px-4 py-3 text-sm appearance-none cursor-pointer font-bold focus-outline-none"
                           style={{ colorScheme: 'dark' }}
                         >
-                          <optgroup label="Sabuk Putih" className="bg-[#1e1e24]">
+                          <optgroup label="Sabuk Putih">
                             <option value="Putih (Kyu 10)">Putih (Kyu 10)</option>
                             <option value="Putih (Kyu 9)">Putih (Kyu 9)</option>
                           </optgroup>
-                          <optgroup label="Sabuk Kuning" className="bg-[#1e1e24]">
+                          <optgroup label="Sabuk Kuning">
                             <option value="Kuning (Kyu 8)">Kuning (Kyu 8)</option>
                             <option value="Kuning (Kyu 7)">Kuning (Kyu 7)</option>
                           </optgroup>
-                          <optgroup label="Sabuk Hijau" className="bg-[#1e1e24]">
+                          <optgroup label="Sabuk Hijau">
                             <option value="Hijau (Kyu 6)">Hijau (Kyu 6)</option>
                           </optgroup>
-                          <optgroup label="Sabuk Biru" className="bg-[#1e1e24]">
+                          <optgroup label="Sabuk Biru">
                             <option value="Biru (Kyu 5)">Biru (Kyu 5)</option>
                             <option value="Biru (Kyu 4)">Biru (Kyu 4)</option>
                           </optgroup>
-                          <optgroup label="Sabuk Coklat" className="bg-[#1e1e24]">
+                          <optgroup label="Sabuk Coklat">
                             <option value="Coklat (Kyu 3)">Coklat (Kyu 3)</option>
                             <option value="Coklat (Kyu 2)">Coklat (Kyu 2)</option>
                             <option value="Coklat (Kyu 1)">Coklat (Kyu 1)</option>
                           </optgroup>
-                          <optgroup label="Sabuk Hitam (DAN)" className="bg-[#1e1e24]">
+                          <optgroup label="Sabuk Hitam (DAN)">
                             {[...Array(10)].map((_, i) => (
                               <option key={i} value={`Hitam (DAN ${i + 1})`}>Hitam (DAN {i + 1})</option>
                             ))}
                           </optgroup>
                         </select>
-                      <ChevronRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none" />
+                      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">NIA (Opsional)</label>
+                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">NIA (Opsional)</label>
                     <input 
                       type="text" 
                       value={formData.nia}
                       onChange={(e) => setFormData({ ...formData, nia: e.target.value })}
-                      placeholder="Nomor Induk Anggota"
-                      className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
+                      placeholder="Nomor Induk"
+                      className="glass-input w-full px-4 py-3 text-sm font-bold focus-outline-none"
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-white/5 space-y-4">
-                  <label className="text-[10px] font-black uppercase text-amber-500 tracking-widest block">Kredensial Login (Opsional)</label>
+                <div className="pt-5 border-t border-white-5 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Mail size={12} className="text-amber-500" />
+                    <label className="text-10 font-black uppercase text-amber-500 tracking-widest block leading-none">Kredensial Login</label>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Email</label>
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                        <input 
-                          type="email" 
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          placeholder="nama@email.com"
-                          className="w-full bg-[#1e1e24] border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
-                        />
-                      </div>
+                      <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Email</label>
+                      <input 
+                        type="email" 
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="nama@email.com"
+                        className="glass-input w-full px-4 py-3 text-sm font-bold focus-outline-none"
+                      />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">
-                        {isEdit ? 'Kata Sandi Baru' : 'Kata Sandi'}
+                      <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">
+                        {isEdit ? 'Sandi Baru' : 'Kata Sandi'}
                       </label>
                       <input 
                         type="password" 
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder={isEdit ? 'Kosongkan jika tidak diubah' : 'Min. 6 karakter'}
-                        className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
+                        placeholder={isEdit ? 'Kosongkan jika tetap' : 'Min. 6 karakter'}
+                        className="glass-input w-full px-4 py-3 text-sm font-bold focus-outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
                 {(!dojoId || isEdit) ? (
-                  <div className="space-y-4 pt-2 border-t border-white/5">
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest block">Wilayah & Dojo</label>
+                  <div className="space-y-4 pt-5 border-t border-white-5">
+                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest block ml-1 opacity-80">Penempatan Dojo</label>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="relative">
                           <select 
@@ -604,12 +547,10 @@ function MembersContent() {
                               setFormData(prev => ({ ...prev, dojoId: '' }));
                             }}
                             required
-                            onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Harap pilih provinsi')}
-                            onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
-                            className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 appearance-none"
+                            className="glass-input w-full px-4 py-3 text-sm appearance-none font-bold focus-outline-none"
                             style={{ colorScheme: 'dark' }}
                           >
-                          <option value="">Pilih salah satu provinsi...</option>
+                          <option value="">Provinsi...</option>
                           {provinces.map(p => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                           ))}
@@ -624,13 +565,11 @@ function MembersContent() {
                             setFormData(prev => ({ ...prev, dojoId: '' }));
                           }}
                           required
-                          onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Harap pilih pengcab')}
-                          onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                           disabled={!selectedProvinceId}
-                          className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 appearance-none disabled:opacity-30"
+                          className="glass-input w-full px-4 py-3 text-sm appearance-none disabled:opacity-30 font-bold focus-outline-none"
                           style={{ colorScheme: 'dark' }}
                         >
-                          <option value="">Pilih salah satu pengcab...</option>
+                          <option value="">Pengcab...</option>
                           {branches.map(b => (
                             <option key={b.id} value={b.id}>{b.name}</option>
                           ))}
@@ -643,13 +582,11 @@ function MembersContent() {
                         value={formData.dojoId}
                         onChange={(e) => setFormData({ ...formData, dojoId: e.target.value })}
                         required
-                        onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Harap pilih dojo')}
-                        onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                         disabled={!selectedBranchId}
-                        className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 appearance-none disabled:opacity-30"
+                        className="glass-input w-full px-4 py-3 text-sm appearance-none disabled:opacity-30 font-bold focus-outline-none"
                         style={{ colorScheme: 'dark' }}
                       >
-                        <option value="">Pilih salah satu dojo...</option>
+                        <option value="">Pilih Dojo...</option>
                         {dojos.map(d => (
                           <option key={d.id} value={d.id}>{d.name}</option>
                         ))}
@@ -658,24 +595,24 @@ function MembersContent() {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-amber-500/5 rounded-2xl border border-amber-500/10 space-y-3">
+                  <div className="p-4 bg-amber-500-10 rounded-2xl border border-amber-500-10 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">Provinsi</p>
-                        <p className="text-xs font-bold text-gray-300 uppercase">
+                        <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-1.5">Wilayah</p>
+                        <p className="text-[12px] font-black text-gray-200 uppercase leading-none">
                           {isEdit ? selectedMember?.dojo?.branch?.province?.name : dojoInfo?.branch?.province?.name || '-'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">Pengcab</p>
-                        <p className="text-xs font-bold text-gray-300 uppercase">
+                        <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-1.5">Pengcab</p>
+                        <p className="text-[12px] font-black text-gray-200 uppercase leading-none">
                           {isEdit ? selectedMember?.dojo?.branch?.name : dojoInfo?.branch?.name || '-'}
                         </p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">Dojo Tujuan</p>
-                      <p className="text-sm font-bold text-amber-500 uppercase">
+                      <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-1.5">Dojo Sekarang</p>
+                      <p className="text-sm font-black text-amber-500 uppercase leading-none">
                         {isEdit ? selectedMember?.dojo?.name : dojoName}
                       </p>
                     </div>
@@ -683,26 +620,26 @@ function MembersContent() {
                 )}
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-6">
                 <button 
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all text-gray-400"
+                  className="btn-secondary flex-1 py-3 text-xs font-bold uppercase tracking-widest"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting || (!dojoId && !formData.dojoId)}
-                  className="flex-[2] py-3 rounded-xl bg-amber-500 text-black text-sm font-black uppercase tracking-widest hover:bg-amber-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="btn-primary flex-[1.5] py-3 shadow-amber-20 text-xs font-black uppercase tracking-widest"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Memproses...
+                      <Loader2 size={16} className="animate-spin" />
+                      ...
                     </>
                   ) : (
-                    isEdit ? 'Simpan Perubahan' : 'Daftarkan Anggota'
+                    isEdit ? 'Simpan' : 'Daftar'
                   )}
                 </button>
               </div>
@@ -713,19 +650,19 @@ function MembersContent() {
 
       {/* Member Detail Modal */}
       {showDetailModal && selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="glass-card w-full max-w-2xl p-0 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0A0C] animate-in fade-in">
+          <div className="glass-card w-full max-w-2xl p-0 overflow-hidden animate-in">
             {/* Modal Header/Banner */}
-            <div className="h-32 bg-gradient-to-r from-amber-500 to-amber-700 relative">
+            <div className="h-32 bg-amber-500 relative">
               <button 
                 onClick={() => setShowDetailModal(false)}
-                className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-all z-10"
+                className="absolute top-4 right-4 p-2 bg-black-20 hover:bg-black-40 text-white rounded-full backdrop-blur-md transition-all z-10"
               >
                 <X size={20} />
               </button>
               <div className="absolute -bottom-12 left-8">
-                <div className="w-24 h-24 rounded-2xl bg-[#1e1e24] p-1 border-4 border-[#1e1e24] shadow-xl">
-                  <div className="w-full h-full rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center font-bold text-black text-3xl">
+                <div className="w-24 h-24 rounded-2xl bg-dark-card p-1 border-4 border-white-5 shadow-xl">
+                  <div className="w-full h-full rounded-xl bg-amber-500 flex items-center justify-center font-bold text-black text-3xl">
                     {selectedMember.fullName.split(' ').map((n: string) => n[0]).join('')}
                   </div>
                 </div>
@@ -737,7 +674,7 @@ function MembersContent() {
                 <div>
                   <h3 className="text-2xl font-bold uppercase tracking-tight text-white mb-1">{selectedMember.fullName}</h3>
                   <div className="flex items-center gap-3">
-                    <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded text-[10px] font-bold uppercase border border-amber-500/20">
+                    <span className="px-2 py-0-5 bg-amber-500-10 text-amber-500 rounded text-xs font-bold uppercase border border-amber-500-20">
                       {selectedMember.currentRank}
                     </span>
                     <span className="text-gray-500 text-xs font-mono">{selectedMember.nia || 'Belum ada NIA'}</span>
@@ -745,31 +682,31 @@ function MembersContent() {
                 </div>
                 <div className="text-right">
                   <div className="flex items-center gap-2 justify-end mb-1">
-                    <div className={`w-2 h-2 rounded-full ${selectedMember.status === 'Active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`} />
+                    <div className={`w-2 h-2 rounded-full ${selectedMember.status === 'Active' ? 'bg-green-500 shadow-lg' : 'bg-red-500'}`} />
                     <span className={`text-xs font-bold uppercase ${selectedMember.status === 'Active' ? 'text-green-500' : 'text-red-500'}`}>
                       {selectedMember.status === 'Active' ? 'Aktif' : 'Non-Aktif'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-500 uppercase font-black">Status Keanggotaan</p>
+                  <p className="text-10 text-gray-500 uppercase font-black">Status Keanggotaan</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div>
-                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-3">Informasi Personal</p>
+                    <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-3">Informasi Personal</p>
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 text-gray-300">
-                        <div className="p-2 bg-white/5 rounded-lg"><Users size={16} className="text-amber-500" /></div>
+                        <div className="p-2 bg-white-5 rounded-lg"><Users size={16} className="text-amber-500" /></div>
                         <div>
-                          <p className="text-[10px] text-gray-500 uppercase">Jenis Kelamin</p>
+                          <p className="text-10 text-gray-500 uppercase">Jenis Kelamin</p>
                           <p className="text-sm font-medium">{selectedMember.gender || '-'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 text-gray-300">
-                        <div className="p-2 bg-white/5 rounded-lg"><Calendar size={16} className="text-amber-500" /></div>
+                        <div className="p-2 bg-white-5 rounded-lg"><Calendar size={16} className="text-amber-500" /></div>
                         <div>
-                          <p className="text-[10px] text-gray-500 uppercase">Tanggal Lahir</p>
+                          <p className="text-10 text-gray-500 uppercase">Tanggal Lahir</p>
                           <p className="text-sm font-medium">
                             {selectedMember.birthDate ? new Date(selectedMember.birthDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
                           </p>
@@ -781,18 +718,18 @@ function MembersContent() {
 
                 <div className="space-y-6">
                   <div>
-                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-3">Wilayah & Dojo</p>
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-4">
+                    <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-3">Wilayah & Dojo</p>
+                    <div className="p-4 bg-white-5 rounded-2xl border border-white-5 space-y-4">
                       <div>
-                        <p className="text-[10px] text-gray-500 uppercase">Provinsi</p>
+                        <p className="text-10 text-gray-500 uppercase">Provinsi</p>
                         <p className="text-sm font-bold text-gray-200">{selectedMember.dojo?.branch?.province?.name || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-500 uppercase">Pengcab</p>
+                        <p className="text-10 text-gray-500 uppercase">Pengcab</p>
                         <p className="text-sm font-bold text-gray-200">{selectedMember.dojo?.branch?.name || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-500 uppercase">Dojo</p>
+                        <p className="text-10 text-gray-500 uppercase">Dojo</p>
                         <p className="text-sm font-bold text-amber-500">{selectedMember.dojo?.name || '-'}</p>
                       </div>
                     </div>
@@ -800,18 +737,39 @@ function MembersContent() {
                 </div>
               </div>
 
-              <div className="mt-10 flex gap-3">
+              <div className="mt-10 flex flex-wrap gap-3">
                 <button 
                   onClick={() => setShowDetailModal(false)}
-                  className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all text-gray-400"
+                  className="btn-secondary flex-1 py-3 text-xs font-bold"
                 >
                   Tutup
                 </button>
                 <button 
-                  onClick={() => handleEdit(selectedMember)}
-                  className="flex-[2] py-3 rounded-xl bg-amber-500 text-black text-sm font-black uppercase tracking-widest hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20"
+                  onClick={async () => {
+                    const newPassword = prompt('Masukkan password baru (default: 123456):', '123456');
+                    if (newPassword) {
+                      setIsSubmitting(true);
+                      try {
+                        await api.members.update(selectedMember.id, { password: newPassword });
+                        toast.success(`Sandi ${selectedMember.fullName} berhasil direset!`);
+                      } catch (err: any) {
+                        toast.error(err.message || 'Gagal reset sandi');
+                      } finally {
+                        setIsSubmitting(false);
+                      }
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-xs font-black uppercase tracking-widest border border-red-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                  Ubah Data Anggota
+                  {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+                  Reset Sandi
+                </button>
+                <button 
+                  onClick={() => handleEdit(selectedMember)}
+                  className="btn-primary flex-[2] py-3 shadow-amber-20 text-xs"
+                >
+                  Ubah Data Lengkap
                 </button>
               </div>
             </div>

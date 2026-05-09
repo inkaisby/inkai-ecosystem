@@ -9,45 +9,70 @@ import {
   Trash2, 
   AlertTriangle,
   Loader2,
-  Box
+  Box,
+  ChevronLeft
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 export default function InventoryPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const response = await api.inventory.getAll();
+      setProducts(response.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('http://localhost:5001/v1/inventory'); // Simple fetch for now
-        const data = await response.json();
-        setProducts(data.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProducts();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus produk ini dari inventaris?')) return;
+    try {
+      await api.inventory.delete(id);
+      setProducts(products.filter(p => p.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
-      <div className="flex justify-between items-end">
-        <div>
-          <div className="flex items-center gap-2 text-amber-500 mb-2">
-            <Package size={20} />
-            <span className="text-sm font-bold uppercase tracking-widest">INKAI Store</span>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => router.back()}
+            className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 text-amber-500 mb-0.5">
+              <Package size={14} />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">INKAI Store</span>
+            </div>
+            <h2 className="text-xl font-black uppercase text-white leading-tight">Inventaris</h2>
           </div>
-          <h2 className="text-3xl font-bold">Manajemen Inventaris</h2>
-          <p className="text-gray-500 mt-1">Kelola stok peralatan karate, seragam, dan merchandise resmi.</p>
+          <button 
+            className="p-2.5 rounded-xl bg-amber-500 text-black shadow-lg shadow-amber-500/20 active:scale-90 transition-all"
+            title="Tambah Produk"
+          >
+            <Plus size={20} />
+          </button>
         </div>
-        <button className="btn-primary flex items-center gap-2 text-sm">
-          <Plus size={18} />
-          Tambah Produk Baru
-        </button>
+        
+        <p className="text-[11px] text-gray-500 leading-relaxed">Kelola stok peralatan karate, seragam, dan merchandise resmi.</p>
       </div>
 
       {loading ? (
@@ -116,7 +141,10 @@ export default function InventoryPage() {
                           <button className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all">
                             <Edit size={16} />
                           </button>
-                          <button className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-all">
+                          <button 
+                            onClick={() => handleDelete(item.id)}
+                            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                          >
                             <Trash2 size={16} />
                           </button>
                         </div>

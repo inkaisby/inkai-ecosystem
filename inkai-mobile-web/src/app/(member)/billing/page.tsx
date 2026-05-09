@@ -20,7 +20,7 @@ export default function Billing() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState('VA');
   const [mounted, setMounted] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' as const });
+  const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [confirmModal, setConfirmModal] = useState({ show: false, id: '', title: '', message: '' });
 
   useEffect(() => {

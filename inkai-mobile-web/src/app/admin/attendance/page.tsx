@@ -8,11 +8,14 @@ import {
   Users, 
   Clock, 
   Calendar,
-  Loader2
+  Loader2,
+  ChevronLeft
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 export default function AttendancePage() {
+  const router = useRouter();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,16 +37,22 @@ export default function AttendancePage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
-      <div className="flex justify-between items-end">
-        <div>
-          <div className="flex items-center gap-2 text-amber-500 mb-2">
-            <ClipboardCheck size={20} />
-            <span className="text-sm font-bold uppercase tracking-widest">Monitoring Latihan</span>
+      <div className="flex items-center gap-4">
+        <button 
+          onClick={() => router.back()}
+          className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 text-amber-500 mb-0.5">
+            <ClipboardCheck size={14} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Monitoring Latihan</span>
           </div>
-          <h2 className="text-3xl font-bold">Presensi Kehadiran</h2>
-          <p className="text-gray-500 mt-1">Pantau kehadiran anggota di setiap dojo secara real-time.</p>
+          <h2 className="text-xl font-black uppercase text-white leading-tight">Presensi</h2>
         </div>
       </div>
+      <p className="text-[11px] text-gray-500 leading-relaxed">Pantau kehadiran anggota di setiap dojo secara real-time.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="glass-card p-4">
@@ -68,7 +77,7 @@ export default function AttendancePage() {
 
         <div className="overflow-x-auto relative min-h-[300px]">
           {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-10 rounded-xl">
+            <div className="absolute inset-0 flex items-center justify-center bg-[#0A0A0C] z-10 rounded-xl">
               <Loader2 className="animate-spin text-amber-500" size={40} />
             </div>
           ) : error ? (

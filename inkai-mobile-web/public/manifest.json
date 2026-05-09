@@ -1,0 +1,23 @@
+{
+  "name": "INKAI Mobile Ecosystem",
+  "short_name": "INKAI",
+  "description": "Aplikasi Resmi Institut Karate-Do Indonesia (INKAI) untuk Anggota dan Administrator.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0C",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

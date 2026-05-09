@@ -22,7 +22,7 @@ export const getMyEvents = async (req: any, res: Response) => {
   try {
     const memberId = req.user.memberId;
     if (!memberId) {
-      return res.status(400).json({ status: 'error', message: 'User is not a member' });
+      return res.json({ status: 'success', data: [] });
     }
 
     const registrations = await prisma.eventRegistration.findMany({
@@ -212,6 +212,7 @@ export const updateRegistration = async (req: Request, res: Response) => {
       const existingBilling = await prisma.billing.findFirst({
         where: { 
           memberId: registration.memberId,
+          registrationId: registration.id,
           type: 'EVENT_FEE',
           status: 'PENDING'
         }

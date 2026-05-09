@@ -9,6 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (identifier: string, password: string) => Promise<boolean>;
   logout: () => void;
+  updateUser: (data: any) => void;
   isAuthenticated: boolean;
 }
 
@@ -68,8 +69,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('inkai_token');
   };
 
+  const updateUser = (newData: any) => {
+    setUser((prev: any) => ({ ...prev, ...newData }));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

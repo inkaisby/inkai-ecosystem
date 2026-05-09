@@ -15,7 +15,7 @@ export default function TopBar() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await api.notifications.getNotifications();
+      const res = await api.notifications.getMy();
       setNotifications(res.data);
       setUnreadCount(res.data.filter((n: any) => !n.isRead).length);
     } catch (err) {

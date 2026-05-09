@@ -19,7 +19,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [userRegistration, setUserRegistration] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' as const });
+  const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
   useEffect(() => {
     setMounted(true);

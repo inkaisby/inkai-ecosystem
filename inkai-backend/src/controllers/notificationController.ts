@@ -27,24 +27,53 @@ export const markAsRead = async (req: any, res: Response) => {
   }
 };
 
-export const broadcastNotification = async (req: Request, res: Response) => {
+export const broadcastNotification = async (req: any, res: Response) => {
   try {
-    const { title, content, type } = req.body;
+    const { title, content, type, targetRole, dojoId, branchId } = req.body;
+    const admin = req.user;
+
+    // Build filter for recipients
+    const where: any = { isActive: true };
     
-    // For simplicity, broadcast creates a notification for all users
-    // In a real app, you might use a separate Broadcast model or a message queue
-    const users = await prisma.user.findMany({ select: { id: true } });
+    // 1. Apply Regional Constraints from the Sender (Security Policy)
+    if (admin.managedProvinceId) {
+      where.member = { dojo: { branch: { provinceId: admin.managedProvinceId } } };
+    } else if (admin.managedBranchId) {
+      where.member = { dojo: { branchId: admin.managedBranchId } };
+    } else if (admin.managedDojoId) {
+      where.member = { dojoId: admin.managedDojoId };
+    }
+
+    // 2. Apply optional filters from Request Body (if within scope)
+    if (targetRole) {
+      where.roles = { some: { name: targetRole } };
+    }
+    if (dojoId && !admin.managedBranchId && !admin.managedProvinceId) {
+      where.member = { dojoId };
+    }
+
+    const users = await prisma.user.findMany({ 
+      where,
+      select: { id: true } 
+    });
+
+    if (users.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'Tidak ada target user yang ditemukan untuk filter ini.' });
+    }
     
     await prisma.notification.createMany({
       data: users.map(user => ({
         title,
         content,
-        type,
+        type: type || 'INFO',
         userId: user.id
       }))
     });
 
-    res.json({ status: 'success', message: 'Broadcast sent successfully' });
+    res.json({ 
+      status: 'success', 
+      message: `Broadcast berhasil dikirim ke ${users.length} pengguna.` 
+    });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });
   }

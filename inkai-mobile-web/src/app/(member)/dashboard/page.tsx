@@ -103,8 +103,12 @@ export default function Dashboard() {
             <Image src="/logo.png" alt="Inkai Logo" width={40} height={40} className={styles.avatar} />
           </div>
           <div className={styles.userInfo}>
-            <h1 className={styles.greeting}>Oss, {user.fullName?.split(' ')[0]}!</h1>
-            <p className={styles.role}>{user.roles?.map((r: any) => r.name).includes('ADMINISTRATOR') ? 'Administrator' : 'Anggota Aktif'}</p>
+            <h1 className={styles.greeting}>Oss, {user.fullName ? user.fullName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Member')}!</h1>
+            <p className={styles.role}>
+              {(user.roles?.includes('ADMINISTRATOR') || (Array.isArray(user.roles) && user.roles.some((r: any) => r === 'ADMINISTRATOR' || r.name === 'ADMINISTRATOR')))
+                ? 'Administrator' 
+                : (user.status === 'PENDING' ? 'Anggota Pending' : 'Anggota Aktif')}
+            </p>
           </div>
         </div>
         <div className={styles.headerActions}>

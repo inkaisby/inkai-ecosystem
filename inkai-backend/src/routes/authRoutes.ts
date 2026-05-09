@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, register, changePassword, uploadProfilePhoto, forgotPassword, resetPassword } from '../controllers/authController';
+import { login, adminLogin, register, changePassword, uploadProfilePhoto, forgotPassword, resetPassword } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
 import multer from 'multer';
 import path from 'path';
@@ -23,6 +23,7 @@ const router = Router();
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/admin-login', adminLogin);
 router.put('/change-password', authenticate, changePassword);
 router.post('/upload-photo', authenticate, upload.single('photo'), uploadProfilePhoto);
 router.post('/forgot-password', forgotPassword);

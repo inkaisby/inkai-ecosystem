@@ -50,7 +50,26 @@ export const updateProduct = async (req: Request, res: Response) => {
       where: { id },
       data
     });
+
+    if (product.stock < 5) {
+      await notifyAdmins({
+        title: '⚠️ Stok Menipis!',
+        content: `Stok produk "${product.name}" tersisa ${product.stock} unit. Segera lakukan restock.`,
+        type: 'WARNING'
+      });
+    }
+
     res.json({ status: 'success', data: product });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const deleteProduct = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.product.delete({ where: { id } });
+    res.json({ status: 'success', message: 'Product deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });
   }

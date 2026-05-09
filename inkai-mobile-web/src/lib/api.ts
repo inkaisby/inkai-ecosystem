@@ -2,15 +2,15 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://127.0.0.1:5001/v1';
 
-const api = axios.create({
+const apiInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
 });
 
 // Interceptor for token
-api.interceptors.request.use((config) => {
+apiInstance.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('inkai_token');
+    const token = localStorage.getItem('inkai_token') || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -18,33 +18,128 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export default api;
-
 export const authApi = {
   login: (identifier: string, password: string) => 
-    api.post('/auth/login', { identifier, password }),
+    apiInstance.post('/auth/login', { identifier, password }),
   getProfile: () => 
-    api.get('/members/me'),
+    apiInstance.get('/members/me'),
   getConnectedProfiles: () => 
-    api.get('/members/me/children'),
+    apiInstance.get('/members/me/children'),
 };
 
 export const eventApi = {
   getEvents: () => 
-    api.get('/events'),
+    apiInstance.get('/events'),
   getEvent: (id: string) => 
-    api.get(`/events/${id}`),
+    apiInstance.get(`/events/${id}`),
   getMyEvents: () => 
-    api.get('/events/my/registrations'),
+    apiInstance.get('/events/my/registrations'),
   registerEvent: (data: { eventId: string, memberId: string, categoryId?: string }) =>
-    api.post('/events/register', data),
+    apiInstance.post('/events/register', data),
 };
 
 export const billingApi = {
   getMyBillings: () => 
-    api.get('/billing/my'),
+    apiInstance.get('/billing/my'),
   processPayment: (data: { billingId: string, paymentMethod: string }) =>
-    api.post('/billing/pay', data),
+    apiInstance.post('/billing/pay', data),
   deleteBilling: (id: string) =>
-    api.delete(`/billing/${id}`),
+    apiInstance.delete(`/billing/${id}`),
 };
+
+export interface Member {
+  id: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  dojoId?: string;
+  userId?: string;
+  role?: string;
+  password?: string;
+}
+
+export interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  location?: string;
+  categories?: any[];
+}
+
+// Create the combined api object
+export const api = Object.assign(apiInstance, {
+  auth: {
+    login: (data: { identifier: string; password: string }) => apiInstance.post('/auth/login', data).then(res => res.data),
+    adminLogin: (data: { identifier: string; password: string }) => apiInstance.post('/auth/admin-login', data).then(res => res.data),
+    register: (data: any) => apiInstance.post('/auth/register', data).then(res => res.data),
+    profile: () => apiInstance.get('/auth/profile').then(res => res.data),
+  },
+  members: {
+    getAll: (params?: Record<string, any>) => apiInstance.get('/members', { params }).then(res => res.data),
+    create: (data: Partial<Member>) => apiInstance.post('/members', data).then(res => res.data),
+    update: (id: string, data: Partial<Member>) => apiInstance.patch(`/members/${id}`, data).then(res => res.data),
+    getDetail: (id: string) => apiInstance.get(`/members/${id}`).then(res => res.data),
+  },
+  org: {
+    getProvinces: () => apiInstance.get('/org/provinces').then(res => res.data),
+    getBranches: (provinceId: string) => apiInstance.get(`/org/branches/${provinceId}`).then(res => res.data),
+    getDojos: (branchId: string) => apiInstance.get(`/org/dojos/${branchId}`).then(res => res.data),
+    getDojoDetail: (id: string) => apiInstance.get(`/org/dojo/${id}`).then(res => res.data),
+    createProvince: (data: { name: string; headName?: string; adminEmail?: string; adminPassword?: string; code?: string }) => apiInstance.post('/org/provinces', data).then(res => res.data),
+    updateProvince: (id: string, data: { name?: string; headName?: string; adminEmail?: string; adminPassword?: string; code?: string }) => apiInstance.patch(`/org/provinces/${id}`, data).then(res => res.data),
+    createBranch: (data: { name: string; provinceId: string; headName?: string; adminEmail?: string; adminPassword?: string; code?: string }) => apiInstance.post('/org/branches', data).then(res => res.data),
+    updateBranch: (id: string, data: { name?: string; provinceId?: string; headName?: string; adminEmail?: string; adminPassword?: string; code?: string }) => apiInstance.patch(`/org/branches/${id}`, data).then(res => res.data),
+    createDojo: (data: { name: string; branchId: string; address?: string; contactPerson?: string; kecamatan?: string; tempatLatihan?: string; phoneNumber?: string; schedule?: string; adminEmail?: string; adminPassword?: string }) => apiInstance.post('/org/dojos', data).then(res => res.data),
+    updateDojo: (id: string, data: { name?: string; branchId?: string; address?: string; contactPerson?: string; kecamatan?: string; tempatLatihan?: string; phoneNumber?: string; schedule?: string; adminEmail?: string; adminPassword?: string }) => apiInstance.patch(`/org/dojos/${id}`, data).then(res => res.data),
+  },
+  dashboard: {
+    getStats: () => apiInstance.get('/dashboard/stats').then(res => res.data),
+    getRecentActivities: () => apiInstance.get('/dashboard/recent-activities').then(res => res.data),
+  },
+  events: {
+    getAll: () => apiInstance.get('/events').then(res => res.data),
+    getDetail: (id: string) => apiInstance.get(`/events/${id}`).then(res => res.data),
+    create: (data: Partial<Event>) => apiInstance.post('/events', data).then(res => res.data),
+    delete: (id: string) => apiInstance.delete(`/events/${id}`).then(res => res.data),
+    update: (id: string, data: Partial<Event>) => apiInstance.patch(`/events/${id}`, data).then(res => res.data),
+  },
+  attendance: {
+    getLogs: () => apiInstance.get('/attendance/logs').then(res => res.data),
+    checkIn: (data: { memberId?: string; dojoId: string; method?: string; latitude?: number; longitude?: number }) => apiInstance.post('/attendance/checkin', data).then(res => res.data),
+  },
+  verifications: {
+    getPending: () => apiInstance.get('/verifications/pending').then(res => res.data),
+    process: (id: string, data: { status: 'APPROVED' | 'REJECTED'; adminNotes?: string }) => 
+      apiInstance.post(`/verifications/${id}/process`, data).then(res => res.data),
+  },
+  billing: {
+    getAll: (params?: any) => apiInstance.get('/billing', { params }).then(res => res.data),
+    verify: (data: { billingId: string; adminNotes?: string }) => apiInstance.post('/billing/verify', data).then(res => res.data),
+    delete: (id: string) => apiInstance.delete(`/billing/${id}`).then(res => res.data),
+    getMy: () => apiInstance.get('/billing/my').then(res => res.data),
+    pay: (data: { billingId: string; paymentMethod: string; externalId?: string }) => apiInstance.post('/billing/pay', data).then(res => res.data),
+  },
+  notifications: {
+    broadcast: (data: { title: string; content: string; type: string }) => 
+      apiInstance.post('/notifications/broadcast', data).then(res => res.data),
+    getMy: () => apiInstance.get('/notifications/my').then(res => res.data),
+    markAsRead: (id: string) => apiInstance.patch(`/notifications/${id}/read`).then(res => res.data),
+  },
+  inventory: {
+    getAll: () => apiInstance.get('/inventory').then(res => res.data),
+    create: (data: any) => apiInstance.post('/inventory', data).then(res => res.data),
+    update: (id: string, data: any) => apiInstance.patch(`/inventory/${id}`, data).then(res => res.data),
+    delete: (id: string) => apiInstance.delete(`/inventory/${id}`).then(res => res.data),
+  },
+  roles: {
+    getAll: () => apiInstance.get('/roles').then(res => res.data),
+    getPermissions: () => apiInstance.get('/roles/permissions').then(res => res.data),
+    updatePermissions: (id: string, data: { permissionIds: string[] }) => apiInstance.patch(`/roles/${id}/permissions`, data).then(res => res.data),
+  }
+});
+
+export default api;
+
+

@@ -47,9 +47,14 @@ model Dojo {
   schedule      String?
   tempatLatihan String?
   isDeleted     Boolean      @default(false)
+  headName      String?
+  latitude      Float?
+  longitude     Float?
+  geofenceRadius Int         @default(50) // Default 50 meters
   attendances   Attendance[]
   branch        Branch       @relation(fields: [branchId], references: [id])
   members       Member[]
+  admins        User[]       @relation("DojoAdmin")
 
   @@unique([name, branchId])
 }
@@ -66,6 +71,7 @@ model User {
   fullName          String?
   managedBranchId   String?
   managedProvinceId String?
+  managedDojoId     String?
   photoUrl          String?
   childrenMembers   Member[]       @relation("ParentChildren")
   member            Member?
@@ -73,6 +79,7 @@ model User {
   notifications     Notification[]
   managedBranch     Branch?        @relation("BranchAdmin", fields: [managedBranchId], references: [id])
   managedProvince   Province?      @relation("ProvinceAdmin", fields: [managedProvinceId], references: [id])
+  managedDojo       Dojo?          @relation("DojoAdmin", fields: [managedDojoId], references: [id])
   conversations     Conversation[] @relation("UserConversations")
   roles             Role[]         @relation("UserRoles")
   events            Event[]        @relation("UserEvents")
@@ -144,6 +151,8 @@ model Attendance {
   dojoId    String
   checkInAt DateTime @default(now())
   method    String   @default("QR_SCAN")
+  latitude  Float?
+  longitude Float?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   isDeleted Boolean  @default(false)

@@ -75,17 +75,18 @@ export default function Login() {
               type="button" 
               className={styles.togglePassword}
               onClick={() => setShowPassword(!showPassword)}
+              suppressHydrationWarning
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
         </div>
 
-        <button type="button" className={styles.forgotPassword}>
+        <button type="button" className={styles.forgotPassword} suppressHydrationWarning>
           Lupa Kata Sandi?
         </button>
 
-        <button type="submit" className={styles.loginBtn} disabled={!mounted || isLoading}>
+        <button type="submit" className={styles.loginBtn} disabled={!mounted || isLoading} suppressHydrationWarning>
           {(mounted && isLoading) ? <Loader2 className={styles.spinner} size={20} /> : "MASUK (LOGIN)"}
         </button>
       </form>
@@ -98,12 +99,12 @@ export default function Login() {
 
       <div className={styles.registerSection}>
         <p className={styles.registerPrompt}>Belum punya akun / Anggota baru?</p>
-        <button type="button" className={styles.outlineBtn}>DAFTAR SEKARANG</button>
+        <button type="button" className={styles.outlineBtn} suppressHydrationWarning>DAFTAR SEKARANG</button>
         
         <p className={styles.registerPrompt} style={{ marginTop: '24px' }}>
           Pendaftaran Orang Tua (Untuk Anak):
         </p>
-        <button type="button" className={styles.outlineBtn}>DAFTAR SEBAGAI ORANG TUA</button>
+        <button type="button" className={styles.outlineBtn} suppressHydrationWarning>DAFTAR SEBAGAI ORANG TUA</button>
       </div>
 
       <CustomToast 

@@ -15,6 +15,8 @@ export const getProvinces = async (req: AuthRequest, res: Response) => {
         where.id = req.user.managedProvinceId;
       } else if (req.user.managedBranchId) {
         where.branches = { some: { id: req.user.managedBranchId } };
+      } else if (req.user.managedDojoId) {
+        where.branches = { some: { dojos: { some: { id: req.user.managedDojoId } } } };
       }
     }
 
@@ -53,6 +55,8 @@ export const getBranches = async (req: AuthRequest, res: Response) => {
     if (req.user) {
       if (req.user.managedBranchId) {
         where.id = req.user.managedBranchId;
+      } else if (req.user.managedDojoId) {
+        where.dojos = { some: { id: req.user.managedDojoId } };
       }
     }
 
@@ -77,9 +81,16 @@ export const getDojos = async (req: AuthRequest, res: Response) => {
       where.branchId = branchId;
     }
 
+    if (req.user && req.user.managedDojoId) {
+      where.id = req.user.managedDojoId;
+    }
+
     const dojos = await prisma.dojo.findMany({
       where,
-      include: { _count: { select: { members: true } } }
+      include: { 
+        _count: { select: { members: true } },
+        admins: { select: { email: true } }
+      }
     });
     res.json({ status: 'success', data: dojos });
   } catch (error: any) {
@@ -123,9 +134,41 @@ export const searchDojos = async (req: Request, res: Response) => {
 
 export const createProvince = async (req: Request, res: Response) => {
   try {
-    const { name, headName } = req.body;
+    const { name, headName, adminEmail, adminPassword } = req.body;
+
+    if (!adminEmail) {
+      return res.status(400).json({ status: 'error', message: 'Email Admin wilayah wajib diisi' });
+    }
+
     const province = await prisma.province.create({
       data: { name, headName }
+    });
+
+    // Create Admin User
+    const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {
+        passwordHash,
+        managedProvinceId: province.id,
+        roles: {
+          connectOrCreate: {
+            where: { name: 'ADMIN_PROVINCE' },
+            create: { name: 'ADMIN_PROVINCE' }
+          }
+        }
+      },
+      create: {
+        email: adminEmail,
+        passwordHash,
+        managedProvinceId: province.id,
+        roles: {
+          connectOrCreate: {
+            where: { name: 'ADMIN_PROVINCE' },
+            create: { name: 'ADMIN_PROVINCE' }
+          }
+        }
+      }
     });
 
     // Notify PP INKAI
@@ -144,10 +187,42 @@ export const createProvince = async (req: Request, res: Response) => {
 
 export const createBranch = async (req: Request, res: Response) => {
   try {
-    const { name, headName, provinceId } = req.body;
+    const { name, headName, provinceId, adminEmail, adminPassword } = req.body;
+
+    if (!adminEmail) {
+      return res.status(400).json({ status: 'error', message: 'Email Admin cabang wajib diisi' });
+    }
+
     const branch = await prisma.branch.create({
       data: { name, headName, provinceId },
       include: { province: true }
+    });
+
+    // Create Admin User
+    const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {
+        passwordHash,
+        managedBranchId: branch.id,
+        roles: {
+          connectOrCreate: {
+            where: { name: 'ADMIN_BRANCH' },
+            create: { name: 'ADMIN_BRANCH' }
+          }
+        }
+      },
+      create: {
+        email: adminEmail,
+        passwordHash,
+        managedBranchId: branch.id,
+        roles: {
+          connectOrCreate: {
+            where: { name: 'ADMIN_BRANCH' },
+            create: { name: 'ADMIN_BRANCH' }
+          }
+        }
+      }
     });
 
     // Notify PENGPROV
@@ -167,10 +242,41 @@ export const createBranch = async (req: Request, res: Response) => {
 
 export const createDojo = async (req: Request, res: Response) => {
   try {
-    const { name, contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule, branchId } = req.body;
+    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, branchId, adminEmail, adminPassword } = req.body;
+    
+    if (!adminEmail) {
+      return res.status(400).json({ status: 'error', message: 'Email Admin dojo wajib diisi' });
+    }
+
     const dojo = await prisma.dojo.create({
-      data: { name, contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule, branchId },
+      data: { name, contactPerson, headName: headName || contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule, branchId },
       include: { branch: true }
+    });
+
+    const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {
+        passwordHash,
+        managedDojoId: dojo.id,
+        roles: {
+          connectOrCreate: {
+            where: { name: 'ADMIN_DOJO' },
+            create: { name: 'ADMIN_DOJO' }
+          }
+        }
+      },
+      create: {
+        email: adminEmail,
+        passwordHash,
+        managedDojoId: dojo.id,
+        roles: {
+          connectOrCreate: {
+            where: { name: 'ADMIN_DOJO' },
+            create: { name: 'ADMIN_DOJO' }
+          }
+        }
+      }
     });
 
     // Notify PENGCAB
@@ -200,6 +306,12 @@ export const updateProvince = async (req: Request, res: Response) => {
     });
 
     if (adminEmail) {
+      // Unlink existing admins for this province
+      await prisma.user.updateMany({
+        where: { managedProvinceId: id },
+        data: { managedProvinceId: null }
+      });
+
       const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : undefined;
       await prisma.user.upsert({
         where: { email: adminEmail },
@@ -229,6 +341,7 @@ export const updateProvince = async (req: Request, res: Response) => {
 
     res.json({ status: 'success', data: province });
   } catch (error: any) {
+    console.error('Update Province Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -245,6 +358,12 @@ export const updateBranch = async (req: Request, res: Response) => {
     });
 
     if (adminEmail) {
+      // Unlink existing admins for this branch
+      await prisma.user.updateMany({
+        where: { managedBranchId: id },
+        data: { managedBranchId: null }
+      });
+
       const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : undefined;
       await prisma.user.upsert({
         where: { email: adminEmail },
@@ -274,6 +393,7 @@ export const updateBranch = async (req: Request, res: Response) => {
 
     res.json({ status: 'success', data: branch });
   } catch (error: any) {
+    console.error('Update Branch Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -281,13 +401,49 @@ export const updateBranch = async (req: Request, res: Response) => {
 export const updateDojo = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule } = req.body;
+    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, adminEmail, adminPassword } = req.body;
     const dojo = await prisma.dojo.update({
       where: { id },
-      data: { name, contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule }
+      data: { name, contactPerson, headName: headName || contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule }
     });
+
+    if (adminEmail) {
+      // Unlink existing admins for this dojo
+      await prisma.user.updateMany({
+        where: { managedDojoId: id },
+        data: { managedDojoId: null }
+      });
+
+      const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : undefined;
+      await prisma.user.upsert({
+        where: { email: adminEmail },
+        update: {
+          ...(passwordHash && { passwordHash }),
+          managedDojoId: id,
+          roles: {
+            connectOrCreate: {
+              where: { name: 'ADMIN_DOJO' },
+              create: { name: 'ADMIN_DOJO' }
+            }
+          }
+        },
+        create: {
+          email: adminEmail,
+          passwordHash: passwordHash || (await bcrypt.hash('123456', 12)),
+          managedDojoId: id,
+          roles: {
+            connectOrCreate: {
+              where: { name: 'ADMIN_DOJO' },
+              create: { name: 'ADMIN_DOJO' }
+            }
+          }
+        }
+      });
+    }
+
     res.json({ status: 'success', data: dojo });
   } catch (error: any) {
+    console.error('Update Dojo Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };

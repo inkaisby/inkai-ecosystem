@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { Shield, Mail, Lock, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,74 +19,105 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await api.auth.login(formData);
+      const response = await api.auth.adminLogin(formData);
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      toast.success('Selamat datang kembali, Admin!');
       router.push('/admin');
     } catch (err: any) {
-      setError(err.message || 'Login gagal. Silakan periksa kembali kredensial Anda.');
+      const msg = err.response?.data?.message || err.message || 'Login gagal. Periksa kredensial Anda.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Ornaments */}
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-500/5 rounded-full blur-[120px]" />
+    <div className="min-h-screen bg-black flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Ambient Background Elements */}
+      <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[140px] animate-pulse-slow" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[140px] animate-pulse-slow stagger-3" />
+      
+      {/* Decorative Grid */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] opacity-20 pointer-events-none"></div>
 
-      <div className="w-full max-w-[450px] space-y-8 relative z-10">
-        <div className="text-center space-y-2">
-          <div className="mb-6 flex justify-center">
-            <Image 
-              src="/inkai-logo.png" 
-              alt="INKAI Logo" 
-              width={140} 
-              height={140} 
-              className="drop-shadow-[0_0_20px_rgba(245,158,11,0.2)] animate-pulse-slow rounded-full"
-              priority
-            />
+      <div className="w-full max-w-[420px] relative z-10">
+        {/* Header Section */}
+        <div className="text-center mb-10 animate-in">
+          <div className="inline-block relative mb-6 animate-float">
+            <div className="absolute inset-0 bg-amber-500/30 rounded-full blur-3xl"></div>
+            <div className="relative premium-glass p-1 rounded-full border-amber-500/20">
+              <Image 
+                src="/inkai-logo.png" 
+                alt="INKAI Logo" 
+                width={100} 
+                height={100} 
+                className="drop-shadow-[0_0_20px_rgba(245,158,11,0.3)] relative z-10"
+                priority
+              />
+            </div>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-white">INKAI</h1>
-          <p className="text-gray-500 font-medium uppercase tracking-[0.2em] text-xs">Institut Karate-do Indonesia</p>
+          
+          <div className="space-y-1">
+            <h1 className="text-5xl font-black tracking-[-0.05em] text-white leading-none">INKAI</h1>
+            <p className="text-amber-500 font-bold uppercase tracking-[0.4em] text-[10px] opacity-90">
+              Institut Karate-do Indonesia
+            </p>
+          </div>
         </div>
 
-        <div className="glass-card p-8 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px] shadow-2xl">
+        {/* Login Form Card */}
+        <div className="premium-glass inner-glow p-8 rounded-[40px] shadow-2xl animate-in stagger-1">
+          <div className="text-center mb-8">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-500 mb-1">Portal Login</h2>
+            <div className="h-0.5 w-12 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mx-auto"></div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-sm animate-in fade-in zoom-in duration-300">
-                <AlertCircle size={20} />
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-xs font-medium animate-in">
+                <AlertCircle size={18} />
                 <span>{error}</span>
               </div>
             )}
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Email atau NIA</label>
+            <div className="space-y-5">
+              {/* Email/NIA Field */}
+              <div className="space-y-2 animate-in stagger-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-widest opacity-70">
+                  Email atau NIA
+                </label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={20} />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-all duration-300">
+                    <Mail size={18} strokeWidth={2.5} />
+                  </div>
                   <input 
                     type="text" 
                     required
                     value={formData.identifier}
                     onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-[20px] pl-12 pr-4 py-4 text-sm text-white focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700"
-                    placeholder="nama@email.com atau 123.456.789"
+                    className="glass-input w-full pl-12 pr-4 py-4 text-sm font-semibold tracking-tight placeholder:text-gray-700/50"
+                    placeholder="Masukkan Email atau NIA"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Password</label>
+              {/* Password Field */}
+              <div className="space-y-2 animate-in stagger-3">
+                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-widest opacity-70">
+                  Kata Sandi
+                </label>
                 <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={20} />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-all duration-300">
+                    <Lock size={18} strokeWidth={2.5} />
+                  </div>
                   <input 
                     type="password" 
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-[20px] pl-12 pr-4 py-4 text-sm text-white focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700"
+                    className="glass-input w-full pl-12 pr-4 py-4 text-sm font-semibold tracking-tight placeholder:text-gray-700/50"
                     placeholder="••••••••"
                   />
                 </div>
@@ -95,17 +127,31 @@ export default function LoginPage() {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-4 rounded-[20px] transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_10px_40px_rgba(245,158,11,0.2)]"
+              className="btn-primary w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 mt-4 active:scale-[0.98] transition-transform duration-200"
             >
-              {loading ? <Loader2 className="animate-spin" size={24} /> : 'Masuk ke Portal'}
+              {loading ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>
+                  <Shield size={18} strokeWidth={2.5} />
+                  <span>Masuk Ke Portal</span>
+                  <ChevronRight size={16} className="opacity-50" />
+                </>
+              )}
             </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-white/5 text-center">
-            <p className="text-gray-600 text-xs">
-              Masalah login? Hubungi <span className="text-amber-500/60 font-medium">IT Support INKAI Pusat</span>
+          {/* Footer Info */}
+          <div className="mt-10 pt-8 border-t border-white/5 text-center animate-in stagger-4">
+            <p className="text-gray-600 text-[10px] font-bold uppercase tracking-tight leading-relaxed px-4">
+              Masalah login? Hubungi <span className="text-amber-500/60">IT Support INKAI Pusat</span>
             </p>
           </div>
+        </div>
+        
+        {/* Version Info */}
+        <div className="text-center mt-8 animate-in stagger-5">
+          <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.5em]">Admin Dashboard v2.0</p>
         </div>
       </div>
     </div>

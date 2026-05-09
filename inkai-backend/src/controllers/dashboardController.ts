@@ -9,6 +9,7 @@ export const getStats = async (req: AuthRequest, res: Response) => {
   try {
     const where: any = {};
     const dojoWhere: any = {};
+    const branchWhere: any = {};
     const provinceWhere: any = {};
 
     if (req.user) {
@@ -21,11 +22,15 @@ export const getStats = async (req: AuthRequest, res: Response) => {
         dojoWhere.branchId = req.user.managedBranchId;
         // For branch admin, provinces might not be directly relevant, 
         // but we can show the parent province if needed.
+      } else if (req.user.managedDojoId) {
+        where.dojoId = req.user.managedDojoId;
+        dojoWhere.id = req.user.managedDojoId;
       }
     }
 
     const totalMembers = await prisma.member.count({ where });
     const totalDojos = await prisma.dojo.count({ where: dojoWhere });
+    const totalBranches = await prisma.branch.count({ where: branchWhere });
     const totalProvinces = await prisma.province.count({ where: provinceWhere });
     
     // Summary of monthly iuran
@@ -45,6 +50,7 @@ export const getStats = async (req: AuthRequest, res: Response) => {
       data: {
         totalMembers,
         totalDojos,
+        totalBranches,
         totalProvinces,
         iuranTotal: iuranSum._sum.amount || 0,
         pendingVerifications
@@ -63,6 +69,8 @@ export const getRecentActivities = async (req: AuthRequest, res: Response) => {
         where.dojo = { branch: { provinceId: req.user.managedProvinceId } };
       } else if (req.user.managedBranchId) {
         where.dojo = { branchId: req.user.managedBranchId };
+      } else if (req.user.managedDojoId) {
+        where.dojoId = req.user.managedDojoId;
       }
     }
 

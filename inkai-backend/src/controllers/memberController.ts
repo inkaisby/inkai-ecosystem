@@ -289,11 +289,14 @@ export const createMember = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Full Name and Dojo are required' });
     }
 
+    // Convert empty NIA to null for uniqueness
+    const finalNia = nia && nia.trim() !== '' ? nia.trim() : null;
+
     // Check if NIA already exists if provided
-    if (nia) {
-      const existingMember = await prisma.member.findUnique({ where: { nia } });
+    if (finalNia) {
+      const existingMember = await prisma.member.findUnique({ where: { nia: finalNia } });
       if (existingMember) {
-        return res.status(400).json({ message: 'NIA already exists' });
+        return res.status(400).json({ message: 'NIA sudah digunakan oleh anggota lain' });
       }
     }
 
@@ -331,7 +334,7 @@ export const createMember = async (req: Request, res: Response) => {
           gender,
           birthDate: birthDate ? new Date(birthDate) : undefined,
           currentRank: currentRank || 'Putih',
-          nia,
+          nia: finalNia,
           status,
           userId
         },
@@ -384,15 +387,18 @@ export const updateMember = async (req: Request, res: Response) => {
       status
     } = req.body;
 
-    if (nia) {
+    // Convert empty NIA to null for uniqueness
+    const finalNia = nia && nia.trim() !== '' ? nia.trim() : null;
+
+    if (finalNia) {
       const existingMember = await prisma.member.findFirst({ 
         where: { 
-          nia,
+          nia: finalNia,
           NOT: { id }
         } 
       });
       if (existingMember) {
-        return res.status(400).json({ message: 'NIA already exists' });
+        return res.status(400).json({ message: 'NIA sudah digunakan oleh anggota lain' });
       }
     }
 
@@ -410,13 +416,20 @@ export const updateMember = async (req: Request, res: Response) => {
         if (userId) {
           // Update existing user
           const userData: any = {};
-          if (email) userData.email = email;
+          if (email && email !== currentMember.user?.email) {
+            // Check if email is already taken by ANOTHER user
+            const existingUser = await tx.user.findUnique({ where: { email } });
+            if (existingUser) throw new Error('Email sudah terdaftar di akun lain');
+            userData.email = email;
+          }
           if (password) userData.passwordHash = await bcrypt.hash(password, 12);
           
-          await tx.user.update({
-            where: { id: userId },
-            data: userData
-          });
+          if (Object.keys(userData).length > 0) {
+            await tx.user.update({
+              where: { id: userId },
+              data: userData
+            });
+          }
         } else if (email) {
           // Create new user if email provided but no user exists
           const existingUser = await tx.user.findUnique({ where: { email } });
@@ -440,15 +453,24 @@ export const updateMember = async (req: Request, res: Response) => {
         }
       }
 
+      // Handle birthDate carefully
+      let finalBirthDate = undefined;
+      if (birthDate) {
+        const d = new Date(birthDate);
+        if (!isNaN(d.getTime())) {
+          finalBirthDate = d;
+        }
+      }
+
       return await tx.member.update({
         where: { id },
         data: {
           fullName,
           dojoId,
           gender,
-          birthDate: birthDate ? new Date(birthDate) : undefined,
+          birthDate: finalBirthDate,
           currentRank,
-          nia,
+          nia: finalNia,
           status,
           userId
         },
@@ -473,7 +495,8 @@ export const updateMember = async (req: Request, res: Response) => {
 
     res.json({ status: 'success', data: updatedMember });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('Update Member Error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 

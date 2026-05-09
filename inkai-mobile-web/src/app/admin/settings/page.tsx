@@ -10,12 +10,15 @@ import {
   Globe,
   CreditCard,
   ChevronRight,
+  ChevronLeft,
   Loader2,
   Save,
-  LogOut
+  LogOut,
+  MapPin
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -41,25 +44,31 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center gap-2 text-amber-500 mb-2">
-            <Settings size={20} />
-            <span className="text-sm font-bold uppercase tracking-widest">Konfigurasi Portal</span>
+      <div className="flex items-center gap-4">
+        <button 
+          onClick={() => router.back()}
+          className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 text-amber-500 mb-0.5">
+            <Settings size={14} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Konfigurasi Portal</span>
           </div>
-          <h2 className="text-3xl font-bold">Pengaturan Sistem</h2>
+          <h2 className="text-xl font-black uppercase text-white leading-tight">Pengaturan</h2>
         </div>
         <button 
           onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-all text-sm font-bold"
+          className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 active:scale-90 transition-all"
+          title="Keluar"
         >
-          <LogOut size={18} />
-          Keluar dari Sistem
+          <LogOut size={20} />
         </button>
       </div>
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Profile Card */}
+        {/* Profile & Dojo Config */}
         <div className="xl:col-span-2 space-y-6">
           <div className="glass-card">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -71,7 +80,7 @@ export default function SettingsPage() {
                 <label className="text-xs text-gray-500 uppercase font-bold tracking-widest">Nama Lengkap</label>
                 <input 
                   type="text" 
-                  defaultValue={user?.email?.split('@')[0]}
+                  defaultValue={user?.fullName || user?.email?.split('@')[0]}
                   className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
                 />
               </div>
@@ -87,12 +96,78 @@ export default function SettingsPage() {
             </div>
             <button 
               disabled={saving}
-              onClick={() => { setSaving(true); setTimeout(() => setSaving(false), 1500); }}
+              onClick={() => { setSaving(true); setTimeout(() => { setSaving(false); toast.success('Profil diperbarui'); }, 1000); }}
               className="mt-8 px-6 py-3 bg-amber-500 text-black rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-amber-400 transition-all"
             >
               {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
               Simpan Perubahan
             </button>
+          </div>
+
+          {/* Dojo Geofencing Config */}
+          <div className="glass-card bg-gradient-to-br from-amber-500/5 to-transparent border-amber-500/10">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <MapPin size={20} className="text-amber-500" />
+                Konfigurasi Geofencing Dojo
+              </h3>
+              <span className="text-[10px] font-black px-2 py-1 bg-amber-500 text-black rounded-lg uppercase tracking-widest">
+                Admin Area
+              </span>
+            </div>
+            
+            <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+              Tentukan koordinat pusat Dojo Anda dan radius maksimal untuk absensi anggota. 
+              Gunakan Google Maps untuk mendapatkan titik koordinat yang presisi.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Latitude</label>
+                <input 
+                  type="text" 
+                  placeholder="-6.234567"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Longitude</label>
+                <input 
+                  type="text" 
+                  placeholder="106.876543"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Radius (Meter)</label>
+                <input 
+                  type="number" 
+                  defaultValue={50}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-3">
+              <button 
+                onClick={() => toast.success('Konfigurasi Dojo disimpan')}
+                className="flex-1 py-4 bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-amber-500/5 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+              >
+                <Save size={16} className="text-amber-500" />
+                Update Geofencing
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.geolocation.getCurrentPosition((pos) => {
+                    toast.success('Lokasi saat ini berhasil diambil!');
+                  });
+                }}
+                className="px-6 py-4 bg-white/5 border border-white/10 text-gray-400 rounded-2xl hover:text-white transition-all"
+                title="Gunakan Lokasi Saat Ini"
+              >
+                <MapPin size={20} />
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

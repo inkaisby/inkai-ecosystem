@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/authMiddleware';
 
 const router = Router();
 
+router.get('/', authenticate, billingController.getAllBillings);
 router.get('/my', authenticate, billingController.getMyBillings);
 router.get('/member/:memberId', authenticate, billingController.getMemberBillings);
 router.post('/', authenticate, billingController.createBilling);

@@ -29,7 +29,7 @@ export default function EventParticipantsPage() {
       try {
         // Assuming we can get event details which includes registrations
         // Or we might need a dedicated api.events.getParticipants(id)
-        const response = await api.events.getById(id as string);
+        const response = await api.events.getDetail(id as string);
         if (response.status === 'success' && response.data.registrations) {
           setParticipants(response.data.registrations);
         }
