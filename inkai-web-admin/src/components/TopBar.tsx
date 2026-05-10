@@ -13,6 +13,18 @@ export default function TopBar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const fetchUserProfile = async () => {
+    try {
+      const res = await api.members.getProfile();
+      if (res.data) {
+        setUser(res.data);
+        localStorage.setItem('user', JSON.stringify(res.data));
+      }
+    } catch (err) {
+      console.error('Failed to fetch user profile', err);
+    }
+  };
+
   const fetchNotifications = async () => {
     try {
       const res = await api.notifications.getNotifications();
@@ -28,10 +40,13 @@ export default function TopBar() {
     if (userData) {
       setUser(JSON.parse(userData));
     }
+    
+    // Fetch fresh data immediately
+    fetchUserProfile();
     fetchNotifications();
     
-    // Refresh notifications every 1 minute
-    const interval = setInterval(fetchNotifications, 60000);
+    // Refresh notifications every 30 seconds for better real-time feel
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -170,8 +185,18 @@ export default function TopBar() {
           
           <div className="group relative">
             <button className="flex items-center gap-2 p-1 pr-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center text-black shadow-lg shadow-amber-500/20">
-                <User size={20} strokeWidth={2.5} />
+              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/20">
+                {user?.photoUrl ? (
+                  <img 
+                    src={user.photoUrl.startsWith('http') ? user.photoUrl : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/v1').replace('/v1', '').replace(/\/$/, '')}${user.photoUrl}`} 
+                    alt={user.fullName} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-black">
+                    <User size={20} strokeWidth={2.5} />
+                  </div>
+                )}
               </div>
               <ChevronDown size={16} className="text-gray-500 group-hover:text-white transition-all" />
             </button>

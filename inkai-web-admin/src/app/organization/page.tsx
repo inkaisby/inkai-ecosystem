@@ -1350,17 +1350,6 @@ function OrganizationContent() {
         </div>
       )}
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed bottom-8 right-8 z-[100] animate-in slide-in-from-right-10 duration-500`}>
-          <div className={`glass-card flex items-center gap-3 px-6 py-4 shadow-2xl border ${toast.type === 'success' ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${toast.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-              {toast.type === 'success' ? <UserCheck size={18} /> : <Filter size={18} />}
-            </div>
-            <p className="font-bold text-sm">{toast.message}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
