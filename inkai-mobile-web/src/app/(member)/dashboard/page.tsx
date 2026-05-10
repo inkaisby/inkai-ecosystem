@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, LogOut, MessageCircle, QrCode, Wallet, BookOpen, ShoppingBag, Award, Scroll, GraduationCap, ArrowRightLeft, FileText, CalendarCheck, ChevronRight, Trophy, Loader2 } from "lucide-react";
+import { Bell, LogOut, MessageCircle, QrCode, Wallet, BookOpen, ShoppingBag, Award, Scroll, GraduationCap, ArrowRightLeft, FileText, CalendarCheck, ChevronRight, Trophy, Loader2, Lock } from "lucide-react";
 import styles from "./Dashboard.module.css";
 import MemberCard from "@/components/MemberCard/MemberCard";
 import BottomNav from "@/components/BottomNav/BottomNav";
@@ -9,11 +9,11 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventApi } from "@/lib/api";
+import { eventApi, getAssetUrl } from "@/lib/api";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, logout, isLoading: isAuthLoading } = useAuth();
+  const { user, logout, isLoading: isAuthLoading, isProfileComplete, isDocumentComplete } = useAuth();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
@@ -100,7 +100,13 @@ export default function Dashboard() {
       <header className={styles.header}>
         <div className={styles.userProfile}>
           <div className={styles.avatarWrapper}>
-            <Image src="/logo.png" alt="Inkai Logo" width={40} height={40} className={styles.avatar} />
+            <Image 
+              src={user?.photoUrl ? getAssetUrl(user.photoUrl) : "/logo.png"} 
+              alt={user?.fullName || "Member"} 
+              width={40} 
+              height={40} 
+              className={styles.avatar} 
+            />
           </div>
           <div className={styles.userInfo}>
             <h1 className={styles.greeting}>Oss, {user.fullName ? user.fullName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Member')}!</h1>
@@ -122,12 +128,25 @@ export default function Dashboard() {
           </button>
         </div>
       </header>
+      
+      {user.status === 'PENDING' && (
+        <section className={styles.section}>
+          <div className={styles.pendingNotice}>
+            <Bell size={24} className={styles.pulse} />
+            <div>
+              <p><b>Akun Sedang Diverifikasi</b></p>
+              <p>Pemberitahuan telah dikirimkan ke <b>Ketua Ranting</b> Anda untuk proses aktivasi NIA.</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className={styles.section}>
         <MemberCard 
-          nia={user.nia || "N/A"} 
+          nia={user.nia || "MEMPROSES NIA..."} 
           name={user.fullName || "Anggota"} 
           dojo={user.dojo ? `${user.dojo.name} - ${user.dojo.branch?.province?.name || 'Pusat'}` : 'Dojo INKAI - Pusat'} 
+          qrValue={typeof window !== 'undefined' ? `${window.location.origin}/v/${user.nia || user.id}` : user.id}
         />
       </section>
 
@@ -168,7 +187,15 @@ export default function Dashboard() {
           <button className={styles.seeAll} onClick={() => router.push("/events")}>Lihat Semua</button>
         </div>
         <div className={styles.eventList}>
-          {isEventsLoading ? (
+          {!user.nia ? (
+            <div className={styles.lockedState}>
+               <Lock size={32} className={styles.lockedIcon} />
+               <p className={styles.lockedText}>
+                 Event terdekat belum dapat diakses.<br/>
+                 Tunggu sampai <b>NIA</b> Anda aktif untuk dapat mendaftar.
+               </p>
+            </div>
+          ) : isEventsLoading ? (
              <div className={styles.loaderSmall}><Loader2 className={styles.spinner} size={24} /></div>
           ) : upcomingEvents.length > 0 ? (
             upcomingEvents.map((event) => renderEventItem(event))
@@ -180,6 +207,28 @@ export default function Dashboard() {
 
       <div style={{ height: '100px' }} />
       <BottomNav />
+
+      {(!isProfileComplete || !isDocumentComplete) && (
+        <div className={styles.profileLockOverlay}>
+          <div className={styles.profileLockContent}>
+            <Award size={48} color="#ffc107" style={{ marginBottom: '16px' }} />
+            <h2 style={{ fontSize: '20px', marginBottom: '8px', fontWeight: '600' }}>
+              {!isProfileComplete ? 'Profil Belum Lengkap' : 'Dokumen Belum Lengkap'}
+            </h2>
+            <p style={{ fontSize: '14px', color: '#ccc', marginBottom: '24px', lineHeight: '1.5' }}>
+              {!isProfileComplete 
+                ? 'Silakan lengkapi data diri Anda (Foto, No WA, Tempat & Tanggal Lahir, Alamat, serta Dojo/Ranting) untuk dapat menggunakan fitur INKAI Mobile.'
+                : 'Data diri Anda sudah lengkap. Sekarang silakan lengkapi Dokumen Keanggotaan Anda (Akte Kelahiran & BPJS) untuk menggunakan fitur sepenuhnya.'}
+            </p>
+            <button 
+              className={styles.primaryBtn} 
+              onClick={() => router.push(!isProfileComplete ? '/profile/edit' : '/documents')}
+            >
+              {!isProfileComplete ? 'Lengkapi Profil Anda Sekarang' : 'Lengkapi Dokumen Keanggotaan'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

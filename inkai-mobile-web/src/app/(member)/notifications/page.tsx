@@ -7,50 +7,52 @@ import BottomNav from "@/components/BottomNav/BottomNav";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
+import api from "@/lib/api";
 
 export default function Notifications() {
   const router = useRouter();
   const { user, isLoading: isAuthLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user]);
 
-  if (!mounted || isAuthLoading || !user) {
+  const fetchNotifications = async () => {
+    try {
+      const res = await api.notifications.getMy();
+      if (res.status === 'success') {
+        setNotifications(res.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRead = async (id: string, isRead: boolean) => {
+    if (isRead) return;
+    try {
+      await api.notifications.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  };
+
+  if (!mounted || isAuthLoading || isLoading) {
     return (
       <div className={styles.loadingContainer}>
         <Loader2 className={styles.spinner} size={40} />
       </div>
     );
   }
-
-  const notifications = [
-    {
-      id: "1",
-      title: "Pendaftaran Berhasil",
-      content: "Pendaftaran Anda untuk UKT Sabuk Hitam telah diterima. Silakan selesaikan pembayaran.",
-      type: "SUCCESS",
-      time: "2 jam yang lalu",
-      read: false
-    },
-    {
-      id: "2",
-      title: "Pengumuman Gashuku",
-      content: "Gashuku Wilayah Timur akan dilaksanakan pada tanggal 15 Juni 2026 di Surabaya.",
-      type: "INFO",
-      time: "1 hari yang lalu",
-      read: true
-    },
-    {
-      id: "3",
-      title: "Tagihan Iuran",
-      content: "Iuran bulanan bulan Mei belum dibayar. Mohon segera melakukan pembayaran.",
-      type: "WARNING",
-      time: "3 hari yang lalu",
-      read: true
-    }
-  ];
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -70,23 +72,31 @@ export default function Notifications() {
       </header>
 
       <div className={styles.list}>
-        {notifications.map((notif, i) => (
+        {notifications.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666', fontSize: '14px' }}>
+            Belum ada notifikasi
+          </div>
+        ) : notifications.map((notif, i) => (
           <motion.div 
             key={notif.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
-            className={`${styles.item} ${!notif.read ? styles.unread : ''}`}
+            className={`${styles.item} ${!notif.isRead ? styles.unread : ''}`}
+            onClick={() => handleRead(notif.id, notif.isRead)}
+            style={{ cursor: 'pointer' }}
           >
             <div className={styles.itemIcon}>{getIcon(notif.type)}</div>
             <div className={styles.itemContent}>
               <div className={styles.itemHeader}>
                 <h3 className={styles.itemTitle}>{notif.title}</h3>
-                <span className={styles.itemTime}>{notif.time}</span>
+                <span className={styles.itemTime}>
+                  {new Date(notif.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
               <p className={styles.itemText}>{notif.content}</p>
             </div>
-            {!notif.read && <div className={styles.unreadDot} />}
+            {!notif.isRead && <div className={styles.unreadDot} />}
           </motion.div>
         ))}
       </div>

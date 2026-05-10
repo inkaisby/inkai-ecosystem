@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { getAssetUrl } from "@/lib/api";
 
 export default function Profile() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function Profile() {
       <section className={styles.profileHeader}>
         <div className={styles.avatarWrapper}>
           {user.photoUrl ? (
-            <Image src={user.photoUrl} alt={user.fullName} width={100} height={100} className={styles.avatar} />
+            <Image src={getAssetUrl(user.photoUrl)} alt={user.fullName} width={100} height={100} className={styles.avatar} />
           ) : (
             <div className={styles.avatarPlaceholder}>
               {user.fullName?.substring(0, 1).toUpperCase()}
@@ -52,7 +53,39 @@ export default function Profile() {
           )}
         </div>
         <h2 className={styles.name}>{user.fullName}</h2>
-        <p className={styles.nia}>NIA: {user.nia || user.member?.nia || "-"}</p>
+        <p className={styles.nia}>NIA: {user.nia || "-"}</p>
+        <div className={styles.statusBadge}>Anggota Aktif</div>
+      </section>
+      
+      <section className={styles.infoSection}>
+        <div className={styles.infoCard}>
+          <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>NIK (Nomor Induk Kependudukan)</span>
+            <span className={styles.infoValue}>{user.nik || "-"}</span>
+          </div>
+          <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>Tempat, Tanggal Lahir</span>
+            <span className={styles.infoValue}>
+              {user.birthPlace || "-"}, {user.birthDate ? new Date(user.birthDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
+            </span>
+          </div>
+          <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>Jenis Kelamin</span>
+            <span className={styles.infoValue}>
+              {user.gender === 'MALE' ? 'Laki-laki' : user.gender === 'FEMALE' ? 'Perempuan' : '-'}
+            </span>
+          </div>
+          <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>Alamat Lengkap</span>
+            <span className={styles.infoValue}>{user.address || "-"}</span>
+          </div>
+          <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>Dojo / Ranting</span>
+            <span className={styles.infoValue}>
+              {user.dojo?.name || "-"} ({user.dojo?.branch?.province?.name || "-"})
+            </span>
+          </div>
+        </div>
       </section>
 
       <section className={styles.menuSection}>
@@ -75,7 +108,7 @@ export default function Profile() {
         </div>
       </section>
 
-      {user.roles?.includes('PARENT') && (
+      {(user.roles?.includes('PARENT') || (Array.isArray(user.roles) && user.roles.some((r: any) => r === 'PARENT' || r.name === 'PARENT'))) && (
         <section className={styles.menuSection}>
           <p className={styles.sectionLabel}>AKUN TERHUBUNG:</p>
           <div className={styles.emptyConnected}>

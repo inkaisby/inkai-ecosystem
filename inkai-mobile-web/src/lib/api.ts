@@ -18,6 +18,13 @@ apiInstance.interceptors.request.use((config) => {
   return config;
 });
 
+export const getAssetUrl = (path?: string) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const baseUrl = API_BASE_URL.replace('/v1', '');
+  return `${baseUrl}${path}`;
+};
+
 export const authApi = {
   login: (identifier: string, password: string) => 
     apiInstance.post('/auth/login', { identifier, password }),
@@ -51,11 +58,17 @@ export interface Member {
   id: string;
   fullName: string;
   email?: string;
-  phone?: string;
+  phoneNumber?: string;
+  gender?: string;
+  birthPlace?: string;
+  birthDate?: string;
+  address?: string;
   dojoId?: string;
   userId?: string;
   role?: string;
-  password?: string;
+  nia?: string;
+  nik?: string;
+  status?: string;
 }
 
 export interface Event {
@@ -75,12 +88,17 @@ export const api = Object.assign(apiInstance, {
     adminLogin: (data: { identifier: string; password: string }) => apiInstance.post('/auth/admin-login', data).then(res => res.data),
     register: (data: any) => apiInstance.post('/auth/register', data).then(res => res.data),
     profile: () => apiInstance.get('/auth/profile').then(res => res.data),
+    updateProfile: (data: any) => apiInstance.put('/auth/profile', data).then(res => res.data),
+    uploadPhoto: (formData: FormData) => apiInstance.post('/auth/upload-photo', formData).then(res => res.data),
+    uploadFile: (formData: FormData) => apiInstance.post('/auth/upload', formData).then(res => res.data),
   },
   members: {
     getAll: (params?: Record<string, any>) => apiInstance.get('/members', { params }).then(res => res.data),
     create: (data: Partial<Member>) => apiInstance.post('/members', data).then(res => res.data),
     update: (id: string, data: Partial<Member>) => apiInstance.patch(`/members/${id}`, data).then(res => res.data),
     getDetail: (id: string) => apiInstance.get(`/members/${id}`).then(res => res.data),
+    verify: (id: string) => apiInstance.get(`/members/verify/${id}`).then(res => res.data),
+    uploadDocument: (formData: FormData) => apiInstance.post('/members/upload-document', formData).then(res => res.data),
   },
   org: {
     getProvinces: () => apiInstance.get('/org/provinces').then(res => res.data),
@@ -113,6 +131,9 @@ export const api = Object.assign(apiInstance, {
     getPending: () => apiInstance.get('/verifications/pending').then(res => res.data),
     process: (id: string, data: { status: 'APPROVED' | 'REJECTED'; adminNotes?: string }) => 
       apiInstance.post(`/verifications/${id}/process`, data).then(res => res.data),
+    claim: (data: { type: string; data: string; proofUrl?: string }) => 
+      apiInstance.post('/verifications/claim', data).then(res => res.data),
+    getMy: () => apiInstance.get('/verifications/my').then(res => res.data),
   },
   billing: {
     getAll: (params?: any) => apiInstance.get('/billing', { params }).then(res => res.data),

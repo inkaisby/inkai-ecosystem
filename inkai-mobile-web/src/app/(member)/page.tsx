@@ -39,7 +39,7 @@ export default function Login() {
         animate={{ opacity: 1, scale: 1 }}
         className={styles.logoSection}
       >
-        <Image src="/logo.png" alt="Inkai Logo" width={120} height={120} className={styles.logo} />
+        <Image src="/logo.png" alt="Inkai Logo" width={120} height={120} className={styles.logo} priority />
         <h1 className={styles.title}>Institut Karate-Do Indonesia</h1>
       </motion.div>
 
@@ -99,12 +99,12 @@ export default function Login() {
 
       <div className={styles.registerSection}>
         <p className={styles.registerPrompt}>Belum punya akun / Anggota baru?</p>
-        <button type="button" className={styles.outlineBtn} suppressHydrationWarning>DAFTAR SEKARANG</button>
+        <button type="button" className={styles.outlineBtn} onClick={() => router.push('/register')} suppressHydrationWarning>DAFTAR SEKARANG</button>
         
         <p className={styles.registerPrompt} style={{ marginTop: '24px' }}>
           Pendaftaran Orang Tua (Untuk Anak):
         </p>
-        <button type="button" className={styles.outlineBtn} suppressHydrationWarning>DAFTAR SEBAGAI ORANG TUA</button>
+        <button type="button" className={styles.outlineBtn} onClick={() => router.push('/register-parent')} suppressHydrationWarning>DAFTAR SEBAGAI ORANG TUA</button>
       </div>
 
       <CustomToast 

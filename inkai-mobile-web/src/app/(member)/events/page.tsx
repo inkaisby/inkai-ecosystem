@@ -1,6 +1,7 @@
 "use client";
+import { useAuth } from "@/context/AuthContext";
 
-import { Award, Trophy, ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
+import { Award, Trophy, ChevronRight, ArrowLeft, Loader2, Lock } from "lucide-react";
 import styles from "./Events.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import { useRouter } from "next/navigation";
@@ -9,6 +10,7 @@ import { eventApi } from "@/lib/api";
 
 export default function Events() {
   const router = useRouter();
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +45,15 @@ export default function Events() {
       </header>
 
       <section className={styles.listSection}>
-        {isLoading ? (
+        {!user?.nia ? (
+          <div className={styles.lockedState}>
+            <Lock size={48} className={styles.lockedIcon} />
+            <p className={styles.lockedText}>
+              Agenda kegiatan belum dapat diakses.<br/>
+              Tunggu sampai <b>NIA</b> Anda aktif untuk dapat mengikuti kegiatan INKAI.
+            </p>
+          </div>
+        ) : isLoading ? (
           <div className={styles.loadingWrapper}><Loader2 className={styles.spinner} size={32} /></div>
         ) : events.length > 0 ? (
           events.map((event, i) => {

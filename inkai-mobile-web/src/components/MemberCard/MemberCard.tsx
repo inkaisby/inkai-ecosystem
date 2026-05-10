@@ -9,9 +9,10 @@ interface MemberCardProps {
   nia: string;
   name: string;
   dojo: string;
+  qrValue?: string;
 }
 
-export default function MemberCard({ nia, name, dojo }: MemberCardProps) {
+export default function MemberCard({ nia, name, dojo, qrValue }: MemberCardProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -36,7 +37,7 @@ export default function MemberCard({ nia, name, dojo }: MemberCardProps) {
 
         <div className={styles.qrContainer}>
           <div className={styles.qrWrapper}>
-            <QRCodeSVG value={nia} size={100} />
+            <QRCodeSVG value={qrValue || nia || "N/A"} size={100} />
           </div>
         </div>
       </div>

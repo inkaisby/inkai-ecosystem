@@ -26,17 +26,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 0 40px;
+  padding: 32px 0 40px;
+  background: radial-gradient(circle at top, rgba(245, 158, 11, 0.05) 0%, transparent 70%);
 }
 
 .avatarWrapper {
-  width: 100px;
-  height: 100px;
+  position: relative;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-gold), #b8860b);
-  padding: 4px;
-  margin-bottom: 16px;
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+  padding: 3px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #f59e0b, #92400e);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(245, 158, 11, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.avatarWrapper::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  animation: pulse-ring 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
 .avatar {
@@ -45,30 +63,104 @@
   border-radius: 50%;
   object-fit: cover;
   border: 4px solid var(--background-dark);
+  background-color: #1a1a1a;
 }
 
 .avatarPlaceholder {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-color: var(--primary-gold);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
-  font-weight: bold;
+  font-size: 44px;
+  font-weight: 800;
   color: black;
+  border: 4px solid var(--background-dark);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
 }
 
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 0.3; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+
 .name {
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 4px;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  background: linear-gradient(to right, #fff, #999);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .nia {
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--primary-gold);
+  font-weight: 600;
+  letter-spacing: 1px;
+  background-color: rgba(245, 158, 11, 0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.statusBadge {
+  margin-top: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statusBadge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.infoSection {
+  margin-top: 24px;
+  padding: 0 20px;
+}
+
+.infoCard {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoLabel {
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.infoValue {
+  font-size: 14px;
+  color: white;
+  font-weight: 600;
 }
 
 .menuSection {

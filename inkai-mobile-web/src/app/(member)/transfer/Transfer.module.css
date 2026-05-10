@@ -1,0 +1,354 @@
+.container {
+  min-height: 100vh;
+  background-color: var(--background-dark);
+  color: white;
+  padding-bottom: 100px;
+}
+
+.header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  background-color: rgba(10, 10, 12, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: white;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 800;
+  flex: 1;
+  text-align: center;
+  margin-right: 40px;
+  letter-spacing: 1px;
+}
+
+.content {
+  padding: 0 24px;
+}
+
+.infoBox {
+  margin-top: 16px;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.infoLabel {
+  font-size: 10px;
+  font-weight: 800;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.infoValue {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.formSection {
+  margin-top: 32px;
+}
+
+.sectionToggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.toggleIcon {
+  color: var(--primary-gold);
+  transition: transform 0.3s ease;
+}
+
+.pendingNotice {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.1);
+  border-radius: 16px;
+  color: #f59e0b;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.sectionHeading {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary-gold);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 20px;
+}
+
+.fieldGroup {
+  margin-bottom: 24px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.selectWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select {
+  width: 100%;
+  padding: 16px 40px 16px 16px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  color: white;
+  font-size: 14px;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--primary-gold);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selectIcon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary-gold);
+  pointer-events: none;
+}
+
+.textarea {
+  width: 100%;
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  color: white;
+  font-size: 14px;
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-gold);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: black;
+  border: none;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 10px 20px -5px rgba(217, 119, 6, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s;
+  margin-top: 32px;
+}
+
+.submitBtn:active {
+  transform: scale(0.98);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.workflowSection {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workflowTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 20px;
+}
+
+.workflowList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workflowItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.workflowIcon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workflowLabel {
+  font-size: 13px;
+  color: #888;
+}
+
+.workflowLabelActive {
+  color: white;
+  font-weight: 600;
+}
+
+.historySection {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.historyCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.historyType {
+  font-size: 11px;
+  font-weight: 800;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.historyStatus {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  text-transform: uppercase;
+}
+
+.statusPENDING {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.statusAPPROVED {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.statusREJECTED {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.historyDate {
+  font-size: 13px;
+  color: white;
+  font-weight: 600;
+}
+
+.historyDetails {
+  font-size: 12px;
+  color: #aaa;
+  line-height: 1.5;
+}
+
+.adminNotes {
+  margin-top: 8px;
+  padding: 12px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  font-size: 12px;
+  border-left: 3px solid var(--primary-gold);
+}
+
+.emptyHistory {
+  text-align: center;
+  padding: 40px 0;
+  color: #555;
+  font-size: 14px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+  color: var(--primary-gold);
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
