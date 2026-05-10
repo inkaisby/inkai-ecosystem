@@ -6,7 +6,7 @@ import prisma from '../utils/prisma';
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, fullName, phoneNumber, dojoId } = req.body;
+    const { email, password, fullName, phoneNumber, dojoId, isParent } = req.body;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -19,19 +19,19 @@ export const register = async (req: Request, res: Response) => {
 
     // Create User and (optionally) Member in a transaction
     const result = await prisma.$transaction(async (tx) => {
+      const roleName = isParent ? 'PARENT' : 'MEMBER';
       const user = await tx.user.create({
         data: {
           email,
           passwordHash: hashedPassword,
           phoneNumber,
           fullName,
-          // If no dojoId, assume it's a PARENT role
-          roles: !dojoId ? {
+          roles: {
             connectOrCreate: {
-              where: { name: 'PARENT' },
-              create: { name: 'PARENT' }
+              where: { name: roleName },
+              create: { name: roleName }
             }
-          } : undefined,
+          },
         },
       });
 
@@ -145,6 +145,8 @@ export const login = async (req: Request, res: Response) => {
           id: user.id,
           email: user.email,
           fullName: user.member?.fullName || user.fullName,
+          phoneNumber: user.phoneNumber,
+          photoUrl: user.photoUrl,
           nia: user.member?.nia,
           roles: user.roles.map(r => r.name),
           permissions: uniquePermissions,
@@ -248,6 +250,8 @@ export const adminLogin = async (req: Request, res: Response) => {
           id: user.id,
           email: user.email,
           fullName: user.member?.fullName || user.fullName,
+          phoneNumber: user.phoneNumber,
+          photoUrl: user.photoUrl,
           nia: user.member?.nia,
           roles: userRoleNames,
           permissions: uniquePermissions,
@@ -311,6 +315,24 @@ export const uploadProfilePhoto = async (req: any, res: Response) => {
       status: 'success', 
       message: 'Foto profil berhasil diperbarui',
       photoUrl: fileUrl 
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const uploadFile = async (req: any, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+
+    res.json({ 
+      status: 'success', 
+      message: 'File berhasil diunggah',
+      fileUrl: fileUrl 
     });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });
@@ -388,6 +410,114 @@ export const resetPassword = async (req: Request, res: Response) => {
       message: 'Kata sandi berhasil diperbarui'
     });
   } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const updateProfile = async (req: any, res: Response) => {
+  try {
+    const userId = req.user.userId;
+    const { fullName, phoneNumber, gender, birthPlace, birthDate, address, birthCertificateUrl, bpjsCardUrl, dojoId, nik } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { member: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User tidak ditemukan' });
+    }
+
+    console.log('[UpdateProfile] Body:', req.body);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: (fullName !== undefined && fullName !== '') ? fullName : user.fullName,
+        phoneNumber: (phoneNumber !== undefined && phoneNumber !== '') ? phoneNumber : user.phoneNumber
+      }
+    });
+
+    let memberRecord;
+    
+    // Process birthDate safely
+    let finalBirthDate: Date | undefined | null = undefined;
+    if (birthDate === '' || birthDate === null) {
+      finalBirthDate = null;
+    } else if (birthDate) {
+      const d = new Date(birthDate);
+      if (!isNaN(d.getTime())) {
+        finalBirthDate = d;
+      }
+    }
+
+    if (user.member) {
+      memberRecord = await prisma.member.update({
+        where: { id: user.member.id },
+        data: {
+          fullName: (fullName !== undefined && fullName !== '') ? fullName : user.member.fullName,
+          gender: gender !== undefined ? gender : user.member.gender,
+          birthPlace: birthPlace !== undefined ? birthPlace : user.member.birthPlace,
+          birthDate: finalBirthDate !== undefined ? finalBirthDate : user.member.birthDate,
+          address: address !== undefined ? address : user.member.address,
+          birthCertificateUrl: birthCertificateUrl !== undefined ? birthCertificateUrl : user.member.birthCertificateUrl,
+          bpjsCardUrl: bpjsCardUrl !== undefined ? bpjsCardUrl : user.member.bpjsCardUrl,
+          dojoId: (dojoId !== undefined && dojoId !== '') ? dojoId : user.member.dojoId,
+          nik: nik !== undefined ? nik : user.member.nik
+        },
+        include: { dojo: true }
+      });
+    } else if (dojoId && dojoId !== '') {
+      // Create member record if it doesn't exist but dojo is provided
+      memberRecord = await prisma.member.create({
+        data: {
+          userId: user.id,
+          dojoId: dojoId,
+          fullName: (fullName !== undefined && fullName !== '') ? fullName : user.fullName || 'Anggota',
+          gender: gender || 'MALE',
+          birthPlace: birthPlace,
+          birthDate: finalBirthDate || undefined,
+          address: address,
+          birthCertificateUrl: birthCertificateUrl,
+          bpjsCardUrl: bpjsCardUrl,
+          nik: nik,
+          status: 'PENDING'
+        },
+        include: { dojo: true }
+      });
+    }
+
+    if (memberRecord) {
+      // Notify admins that the member has updated/completed their profile
+      try {
+        const { notifyAdmins } = require('../utils/notification');
+        
+        if (memberRecord.dojo) {
+          await notifyAdmins({
+            title: 'Profil Anggota Diperbarui',
+            content: `${memberRecord.fullName} telah memperbarui/melengkapi profil di Dojo ${memberRecord.dojo.name}`,
+            type: 'INFO',
+            branchId: memberRecord.dojo.branchId
+          });
+        }
+      } catch (err) {
+        console.error('Failed to notify admins on profile update:', err);
+      }
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Profil berhasil diperbarui'
+    });
+  } catch (error: any) {
+    console.error('[UpdateProfile] FATAL ERROR:', error);
+    if (error.code === 'P2002') {
+      const field = error.meta?.target?.[0] || 'data';
+      return res.status(400).json({ 
+        status: 'error', 
+        message: `${field === 'nik' ? 'NIK' : 'Nomor WhatsApp'} sudah digunakan oleh akun lain` 
+      });
+    }
     res.status(500).json({ status: 'error', message: error.message });
   }
 };

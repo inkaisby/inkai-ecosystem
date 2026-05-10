@@ -20,6 +20,7 @@ const upload = multer({
 });
 
 const router = Router();
+router.get('/verify/:id', memberController.verifyMember);
 
 router.get('/', authenticate, memberController.getAllMembers);
 router.post('/', authenticate, memberController.createMember);

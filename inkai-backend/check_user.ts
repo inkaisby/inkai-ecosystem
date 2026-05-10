@@ -1,15 +1,17 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 async function main() {
   const prisma = new PrismaClient();
-  const userId = '0e6f3599-75e1-4c62-8d5e-426e021f227b';
+  const email = 'cabangsby@gmail.com';
   
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { member: true, roles: true }
+  const passwordHash = await bcrypt.hash('inkai123', 12);
+  await prisma.user.update({
+    where: { email },
+    data: { passwordHash }
   });
   
-  console.log('User:', JSON.stringify(user, null, 2));
+  console.log('Password reset to inkai123');
   
   await prisma.$disconnect();
 }

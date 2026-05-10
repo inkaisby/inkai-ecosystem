@@ -113,9 +113,12 @@ model Member {
   userId              String?             @unique
   dojoId              String
   nia                 String?             @unique
+  nik                 String?             @unique
   fullName            String
   gender              String?
+  birthPlace          String?
   birthDate           DateTime?
+  address             String?
   currentRank         String              @default("Putih")
   status              String              @default("Active")
   createdAt           DateTime            @default(now())

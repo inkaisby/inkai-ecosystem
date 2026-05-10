@@ -37,6 +37,8 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
           ...user.member, 
           email: user.email,
           photoUrl: user.photoUrl,
+          phoneNumber: user.phoneNumber,
+          nik: user.member.nik,
           roles: user.roles.map(r => r.name),
           managedProvinceName: user.managedProvince?.name,
           managedBranchName: user.managedBranch?.name
@@ -51,6 +53,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
         fullName: user.fullName,
         email: user.email,
         photoUrl: user.photoUrl,
+        phoneNumber: user.phoneNumber,
         roles: user.roles.map(r => r.name),
         managedProvinceName: user.managedProvince?.name,
         managedBranchName: user.managedBranch?.name,
@@ -66,7 +69,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
 
 export const updateMyProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const { fullName, phoneNumber, gender, birthDate } = req.body;
+    const { fullName, phoneNumber, gender, birthDate, nik } = req.body;
     const userId = req.user.userId;
 
     if (!userId) {
@@ -106,6 +109,7 @@ export const updateMyProfile = async (req: AuthRequest, res: Response) => {
       if (fullName && fullName !== member.fullName) memberData.fullName = fullName;
       if (gender) memberData.gender = gender;
       if (birthDate) memberData.birthDate = new Date(birthDate);
+      if (nik) memberData.nik = nik;
 
       if (Object.keys(memberData).length > 0) {
         await prisma.member.update({
@@ -128,9 +132,10 @@ export const updateMyProfile = async (req: AuthRequest, res: Response) => {
     console.error('[UpdateProfile] FATAL ERROR:', error);
     
     if (error.code === 'P2002') {
+      const field = error.meta?.target?.[0] || 'data';
       return res.status(400).json({ 
         status: 'error', 
-        message: 'Nomor WhatsApp ini sudah terdaftar di akun lain.' 
+        message: `${field === 'nik' ? 'NIK' : 'Nomor WhatsApp'} ini sudah terdaftar di akun lain.` 
       });
     }
 
@@ -208,6 +213,46 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const verifyMember = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const member = await prisma.member.findFirst({
+      where: {
+        OR: [
+          { id: id },
+          { nia: id }
+        ]
+      },
+      include: {
+        dojo: { include: { branch: { include: { province: true } } } },
+        user: { select: { photoUrl: true } }
+      }
+    });
+
+    if (!member) {
+      return res.status(404).json({ status: 'error', message: 'Anggota tidak ditemukan.' });
+    }
+
+    res.json({
+      status: 'success',
+      data: {
+        fullName: member.fullName,
+        nia: member.nia,
+        currentRank: member.currentRank,
+        status: member.status,
+        dojoName: member.dojo.name,
+        branchName: member.dojo.branch.name,
+        provinceName: member.dojo.branch.province.name,
+        photoUrl: member.user?.photoUrl,
+        joinedAt: member.createdAt
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
