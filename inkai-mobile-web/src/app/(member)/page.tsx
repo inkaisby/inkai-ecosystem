@@ -6,7 +6,6 @@ import Image from "next/image";
 import { Eye, EyeOff, Loader2, Mail, Lock, ChevronRight, UserPlus, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import CustomToast from "@/components/CustomToast/CustomToast";
-import { motion } from "framer-motion";
 
 export default function Login() {
   const [mounted, setMounted] = useState(false);
@@ -35,12 +34,13 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center px-6 py-10 font-sans">
+      {/* CSS untuk Autofill Stability */}
       <style jsx global>{`
         input:-webkit-autofill,
         input:-webkit-autofill:hover, 
         input:-webkit-autofill:focus,
         input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 30px #1A1A1D inset !important;
+          -webkit-box-shadow: 0 0 0 30px #1A1D1F inset !important;
           -webkit-text-fill-color: white !important;
           transition: background-color 5000s ease-in-out 0s;
         }
@@ -62,20 +62,18 @@ export default function Login() {
 
       <div className="w-full max-w-[360px] space-y-10">
         
-        {/* Section 1: Login Form Group */}
-        <section className="bg-[#0F0F12] p-6 rounded-[32px] border border-white/[0.03] shadow-xl">
-          <form className="space-y-5" onSubmit={handleLogin}>
-            {/* Identifier Field */}
+        {/* Grup 1: Form Login */}
+        <section className="bg-[#0F0F12] p-6 rounded-[32px] border border-white/[0.03]">
+          <form className="space-y-6" onSubmit={handleLogin}>
+            {/* Input Identifier */}
             <div className="space-y-2">
-              <label className="text-[13px] font-medium text-gray-400 ml-1">
-                Email atau Nomor Anggota (NIA)
-              </label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-amber-500 transition-colors" size={18} />
+              <label className="text-[13px] font-semibold text-gray-400 ml-1">Email atau NIA</label>
+              <div className="relative flex items-center">
+                <Mail className="absolute left-4 text-gray-600" size={18} />
                 <input 
                   type="text" 
                   placeholder="email@contoh.com"
-                  className="w-full bg-[#1A1A1D] border border-transparent rounded-2xl pl-12 pr-5 py-4 text-white text-[14px] focus:outline-none focus:border-amber-500/50 focus:bg-[#202024] transition-all placeholder:text-gray-700"
+                  className="w-full bg-[#1A1D1F] border border-transparent rounded-2xl pl-12 pr-5 h-[56px] text-white text-[14px] focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   required
@@ -83,24 +81,22 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password Field */}
+            {/* Input Password */}
             <div className="space-y-2">
-              <label className="text-[13px] font-medium text-gray-400 ml-1">
-                Kata Sandi
-              </label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-amber-500 transition-colors" size={18} />
+              <label className="text-[13px] font-semibold text-gray-400 ml-1">Kata Sandi</label>
+              <div className="relative flex items-center">
+                <Lock className="absolute left-4 text-gray-600" size={18} />
                 <input 
                   type={showPassword ? "text" : "password"} 
                   placeholder="••••••••"
-                  className="w-full bg-[#1A1A1D] border border-transparent rounded-2xl pl-12 pr-12 py-4 text-white text-[14px] focus:outline-none focus:border-amber-500/50 focus:bg-[#202024] transition-all placeholder:text-gray-700"
+                  className="w-full bg-[#1A1D1F] border border-transparent rounded-2xl pl-12 pr-12 h-[56px] text-white text-[14px] focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
                 <button 
                   type="button" 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-amber-500"
+                  className="absolute right-4 text-gray-600 hover:text-amber-500"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -109,22 +105,21 @@ export default function Login() {
             </div>
 
             <div className="flex justify-end !mt-3">
-              <button type="button" className="text-amber-500 text-xs font-bold hover:text-amber-400 transition-colors">
-                Lupa Kata Sandi?
-              </button>
+              <button type="button" className="text-amber-500 text-xs font-bold">Lupa Kata Sandi?</button>
             </div>
 
+            {/* Tombol Aksi Utama */}
             <button 
               type="submit" 
-              className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold h-[54px] rounded-2xl text-[14px] transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+              className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black h-[56px] rounded-2xl text-[14px] transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10"
               disabled={isLoading}
             >
-              {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Masuk Sekarang"}
+              {isLoading ? <Loader2 className="animate-spin" size={20} /> : "MASUK SEKARANG"}
             </button>
           </form>
         </section>
 
-        {/* Section 2: Registration Group */}
+        {/* Grup 2: Kartu Pendaftaran */}
         <section className="space-y-4">
           <div className="flex items-center gap-3 px-2">
             <div className="flex-grow border-t border-white/[0.05]"></div>
@@ -133,7 +128,7 @@ export default function Login() {
           </div>
 
           <div className="space-y-3">
-            {/* Register Card 1 */}
+            {/* Kartu Anggota Baru */}
             <button 
               onClick={() => router.push('/register')}
               className="w-full flex items-center gap-4 bg-[#0F0F12] p-4 rounded-2xl border border-white/[0.03] hover:bg-[#16161A] transition-all active:scale-[0.98] group"
@@ -148,7 +143,7 @@ export default function Login() {
               <ChevronRight size={16} className="text-gray-700 group-hover:text-amber-500 transition-colors" />
             </button>
 
-            {/* Register Card 2 */}
+            {/* Kartu Orang Tua */}
             <button 
               onClick={() => router.push('/register-parent')}
               className="w-full flex items-center gap-4 bg-[#0F0F12] p-4 rounded-2xl border border-white/[0.03] hover:bg-[#16161A] transition-all active:scale-[0.98] group"
