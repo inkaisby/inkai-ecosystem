@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5001/v1';
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname.includes('vercel.app')) {
+      return 'https://inkai-ecosystem.vercel.app/v1';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5001/v1';
+};
+
+const API_BASE_URL = getBaseUrl();
+
 
 const apiInstance = axios.create({
   baseURL: API_BASE_URL,

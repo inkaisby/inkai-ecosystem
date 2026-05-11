@@ -125,15 +125,12 @@ export default function Documents() {
 
   return (
     <div className={styles.container}>
-      <AnimatePresence>
-        {toast.show && (
-          <CustomToast 
-            message={toast.message} 
-            type={toast.type} 
-            onClose={() => setToast({ ...toast, show: false })} 
-          />
-        )}
-      </AnimatePresence>
+      <CustomToast 
+        isVisible={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ ...toast, show: false })} 
+      />
 
       <AnimatePresence>
         {preview && (

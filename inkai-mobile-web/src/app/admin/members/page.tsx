@@ -378,7 +378,7 @@ function MembersContent() {
               setIsSubmitting(true);
               try {
                 if (isEdit && editId) {
-                  await api.members.update(editId, formData); 
+                  await api.members.update(editId, formData as any); 
                 } else {
                   await api.members.create(formData);
                 }
@@ -750,7 +750,7 @@ function MembersContent() {
                     if (newPassword) {
                       setIsSubmitting(true);
                       try {
-                        await api.members.update(selectedMember.id, { password: newPassword });
+                        await api.members.update(selectedMember.id, { password: newPassword } as any);
                         toast.success(`Sandi ${selectedMember.fullName} berhasil direset!`);
                       } catch (err: any) {
                         toast.error(err.message || 'Gagal reset sandi');

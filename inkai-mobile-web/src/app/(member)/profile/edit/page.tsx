@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { ArrowLeft, User, Phone, MapPin, Calendar, Loader2, AlertTriangle, CheckCircle2, Home, MapPinned, ShieldCheck } from "lucide-react";
 import styles from "./EditProfile.module.css";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,7 +10,7 @@ import CustomToast from "@/components/CustomToast/CustomToast";
 import api, { getAssetUrl } from "@/lib/api";
 import { compressImage } from "@/lib/imageUtils";
 
-export default function EditProfile() {
+function EditProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isNewUser = searchParams.get('new_user') === 'true';
@@ -564,5 +564,17 @@ export default function EditProfile() {
         onClose={() => setToast({ ...toast, show: false })} 
       />
     </div>
+  );
+}
+
+export default function EditProfile() {
+  return (
+    <Suspense fallback={
+      <div className={styles.loadingContainer}>
+        <Loader2 className={styles.spinner} size={40} />
+      </div>
+    }>
+      <EditProfileContent />
+    </Suspense>
   );
 }
