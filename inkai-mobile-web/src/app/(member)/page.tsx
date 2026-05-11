@@ -33,29 +33,41 @@ export default function Login() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#0f1115] flex flex-col items-center p-8">
-      {/* Logo Section */}
-      <div className="mt-12 mb-16">
+    <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center px-10 py-12">
+      <style jsx global>{`
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px #161618 inset !important;
+          -webkit-text-fill-color: white !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+      `}</style>
+      {/* Logo Section - Ukuran lebih proporsional */}
+      <div className="mb-12 mt-4">
         <Image 
           src="/logo.png" 
           alt="INKAI Logo" 
-          width={120} 
-          height={120} 
+          width={100} 
+          height={100} 
+          className="mx-auto"
           priority
         />
       </div>
 
-      <div className="w-full max-w-[400px]">
-        <form className="space-y-6" onSubmit={handleLogin}>
+      <div className="w-full max-w-[340px]">
+        <form className="space-y-8" onSubmit={handleLogin}>
           {/* Email/NIA Field */}
-          <div className="space-y-2">
-            <label className="text-[12px] font-bold text-gray-400">
+          <div className="space-y-3">
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">
               Email atau Nomor Anggota (NIA):
             </label>
             <input 
               type="text" 
               placeholder="email@contoh.com atau 123.456.789"
-              className="w-full bg-[#1c1f26] border border-[#2d3139] rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-all"
+              className="w-full bg-[#161618] border border-[#262626] rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-all placeholder:text-gray-700"
+              style={{ backgroundColor: '#161618', color: 'white' }}
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
@@ -63,22 +75,23 @@ export default function Login() {
           </div>
 
           {/* Password Field */}
-          <div className="space-y-2">
-            <label className="text-[12px] font-bold text-gray-400">
+          <div className="space-y-3">
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">
               Kata Sandi:
             </label>
             <div className="relative">
               <input 
                 type={showPassword ? "text" : "password"} 
                 placeholder="••••••••"
-                className="w-full bg-[#1c1f26] border border-[#2d3139] rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-all"
+                className="w-full bg-[#161618] border border-[#262626] rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-all placeholder:text-gray-700"
+                style={{ backgroundColor: '#161618', color: 'white' }}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
               <button 
                 type="button" 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-amber-500"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -87,8 +100,8 @@ export default function Login() {
           </div>
 
           {/* Forgot Password */}
-          <div className="text-right">
-            <button type="button" className="text-amber-500 text-sm font-semibold hover:underline">
+          <div className="text-right !mt-2">
+            <button type="button" className="text-amber-500 text-xs font-bold hover:text-amber-400">
               Lupa Kata Sandi?
             </button>
           </div>
@@ -96,38 +109,38 @@ export default function Login() {
           {/* Login Button */}
           <button 
             type="submit" 
-            className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black py-4 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black py-4 rounded-2xl text-[12px] uppercase tracking-widest transition-all active:scale-[0.97] shadow-lg shadow-amber-500/10"
             disabled={isLoading}
           >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : "MASUK (LOGIN)"}
+            {isLoading ? <Loader2 className="animate-spin mx-auto" size={20} /> : "MASUK (LOGIN)"}
           </button>
         </form>
 
         {/* Divider */}
-        <div className="relative flex items-center my-10">
-          <div className="flex-grow border-t border-[#2d3139]"></div>
-          <span className="flex-shrink mx-4 text-xs font-bold text-gray-600">ATAU</span>
-          <div className="flex-grow border-t border-[#2d3139]"></div>
+        <div className="relative flex items-center my-12">
+          <div className="flex-grow border-t border-[#1f1f22]"></div>
+          <span className="flex-shrink mx-4 text-[10px] font-black text-gray-700 tracking-widest uppercase">ATAU</span>
+          <div className="flex-grow border-t border-[#1f1f22]"></div>
         </div>
 
-        {/* Register Buttons */}
-        <div className="space-y-6">
+        {/* Register Buttons - Jarak lebih lega */}
+        <div className="space-y-10">
           <div className="text-center">
-            <p className="text-gray-500 text-sm mb-4">Belum punya akun / Anggota baru?</p>
+            <p className="text-gray-600 text-[11px] font-bold mb-4 uppercase tracking-wide">Belum punya akun / Anggota baru?</p>
             <button 
               type="button" 
-              className="w-full border border-gray-700 hover:bg-gray-800 text-white font-bold py-4 rounded-2xl text-sm transition-all active:scale-[0.98]"
+              className="w-full border border-[#262626] hover:bg-white/5 text-white font-bold py-4 rounded-2xl text-[12px] uppercase tracking-wider transition-all active:scale-[0.97]"
               onClick={() => router.push('/register')}
             >
               DAFTAR SEKARANG
             </button>
           </div>
 
-          <div className="text-center">
-            <p className="text-gray-500 text-sm mb-4">Pendaftaran Orang Tua (Untuk Anak):</p>
+          <div className="text-center pb-10">
+            <p className="text-gray-600 text-[11px] font-bold mb-4 uppercase tracking-wide">Pendaftaran Orang Tua (Untuk Anak):</p>
             <button 
               type="button" 
-              className="w-full border border-gray-700 hover:bg-gray-800 text-white font-bold py-4 rounded-2xl text-sm transition-all active:scale-[0.98]"
+              className="w-full border border-[#262626] hover:bg-white/5 text-white font-bold py-4 rounded-2xl text-[12px] uppercase tracking-wider transition-all active:scale-[0.97]"
               onClick={() => router.push('/register-parent')}
             >
               DAFTAR SEBAGAI ORANG TUA
