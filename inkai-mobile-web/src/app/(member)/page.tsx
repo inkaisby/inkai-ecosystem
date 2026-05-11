@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Eye, EyeOff, Loader2, Mail, Lock, ChevronRight, UserPlus, Users } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, UserPlus, Users, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import CustomToast from "@/components/CustomToast/CustomToast";
 
@@ -33,137 +33,125 @@ export default function Login() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center px-6 py-10 font-sans">
-      {/* CSS untuk Autofill Stability */}
-      <style jsx global>{`
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover, 
-        input:-webkit-autofill:focus,
-        input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 30px #1A1D1F inset !important;
-          -webkit-text-fill-color: white !important;
-          transition: background-color 5000s ease-in-out 0s;
-        }
-      `}</style>
-
-      {/* Header & Logo */}
-      <div className="mb-12 flex flex-col items-center">
-        <Image 
-          src="/logo.png" 
-          alt="INKAI Logo" 
-          width={80} 
-          height={80} 
-          className="mb-4"
-          priority
-        />
-        <h2 className="text-white text-lg font-bold tracking-tight">Ecosystem Digital INKAI</h2>
-        <p className="text-gray-500 text-xs font-medium">Masuk ke akun Anda</p>
+    <div className="min-h-screen bg-[#0f1115] flex flex-col items-center px-8 py-12">
+      {/* Logo Section */}
+      <div className="mb-8">
+        <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center p-4">
+          <Image 
+            src="/logo.png" 
+            alt="INKAI Logo" 
+            width={100} 
+            height={100} 
+            priority
+          />
+        </div>
       </div>
 
-      <div className="w-full max-w-[360px] space-y-10">
-        
-        {/* Grup 1: Form Login */}
-        <section className="bg-[#0F0F12] p-6 rounded-[32px] border border-white/[0.03]">
-          <form className="space-y-6" onSubmit={handleLogin}>
-            {/* Input Identifier */}
-            <div className="space-y-2">
-              <label className="text-[13px] font-semibold text-gray-400 ml-1">Email atau NIA</label>
-              <div className="relative flex items-center">
-                <Mail className="absolute left-4 text-gray-600" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="email@contoh.com"
-                  className="w-full bg-[#1A1D1F] border border-transparent rounded-2xl pl-12 pr-5 h-[56px] text-white text-[14px] focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
+      {/* Title Section */}
+      <div className="text-center mb-12">
+        <h1 className="text-2xl font-black text-white tracking-wider mb-2">ECOSYSTEM DIGITAL INKAI</h1>
+        <p className="text-gray-500 text-sm font-medium">Masuk ke akun anggota Anda</p>
+      </div>
 
-            {/* Input Password */}
-            <div className="space-y-2">
-              <label className="text-[13px] font-semibold text-gray-400 ml-1">Kata Sandi</label>
-              <div className="relative flex items-center">
-                <Lock className="absolute left-4 text-gray-600" size={18} />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="••••••••"
-                  className="w-full bg-[#1A1D1F] border border-transparent rounded-2xl pl-12 pr-12 h-[56px] text-white text-[14px] focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button 
-                  type="button" 
-                  className="absolute right-4 text-gray-600 hover:text-amber-500"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end !mt-3">
-              <button type="button" className="text-amber-500 text-xs font-bold">Lupa Kata Sandi?</button>
-            </div>
-
-            {/* Tombol Aksi Utama */}
-            <button 
-              type="submit" 
-              className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black h-[56px] rounded-2xl text-[14px] transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10"
-              disabled={isLoading}
-            >
-              {isLoading ? <Loader2 className="animate-spin" size={20} /> : "MASUK SEKARANG"}
-            </button>
-          </form>
-        </section>
-
-        {/* Grup 2: Kartu Pendaftaran */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3 px-2">
-            <div className="flex-grow border-t border-white/[0.05]"></div>
-            <span className="text-[11px] font-black text-gray-700 tracking-widest uppercase">Pendaftaran</span>
-            <div className="flex-grow border-t border-white/[0.05]"></div>
-          </div>
-
+      <div className="w-full max-w-[400px]">
+        <form className="space-y-8" onSubmit={handleLogin}>
+          {/* Email/NIA Field */}
           <div className="space-y-3">
-            {/* Kartu Anggota Baru */}
-            <button 
-              onClick={() => router.push('/register')}
-              className="w-full flex items-center gap-4 bg-[#0F0F12] p-4 rounded-2xl border border-white/[0.03] hover:bg-[#16161A] transition-all active:scale-[0.98] group"
-            >
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-                <UserPlus size={20} />
-              </div>
-              <div className="flex-grow text-left">
-                <h4 className="text-white text-[13px] font-bold">Anggota Baru</h4>
-                <p className="text-gray-600 text-[11px]">Daftar NIA dan akun baru</p>
-              </div>
-              <ChevronRight size={16} className="text-gray-700 group-hover:text-amber-500 transition-colors" />
-            </button>
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">
+              EMAIL ATAU NIA
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={20} />
+              <input 
+                type="text" 
+                placeholder="email@contoh.com"
+                className="w-full bg-[#1c1f26] border border-[#2d3139] rounded-2xl px-12 py-4 text-white text-sm focus:outline-none focus:border-orange-500 transition-all placeholder:text-gray-600"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-            {/* Kartu Orang Tua */}
-            <button 
-              onClick={() => router.push('/register-parent')}
-              className="w-full flex items-center gap-4 bg-[#0F0F12] p-4 rounded-2xl border border-white/[0.03] hover:bg-[#16161A] transition-all active:scale-[0.98] group"
-            >
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-                <Users size={20} />
-              </div>
-              <div className="flex-grow text-left">
-                <h4 className="text-white text-[13px] font-bold">Orang Tua</h4>
-                <p className="text-gray-600 text-[11px]">Daftarkan akun untuk anak</p>
-              </div>
-              <ChevronRight size={16} className="text-gray-700 group-hover:text-amber-500 transition-colors" />
+          {/* Password Field */}
+          <div className="space-y-3">
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">
+              KATA SANDI
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={20} />
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="••••••••"
+                className="w-full bg-[#1c1f26] border border-[#2d3139] rounded-2xl px-12 py-4 text-white text-sm focus:outline-none focus:border-orange-500 transition-all placeholder:text-gray-600"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button 
+                type="button" 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Forgot Password */}
+          <div className="text-right !mt-3">
+            <button type="button" className="text-orange-600 text-sm font-black hover:text-orange-500 transition-colors">
+              Lupa Kata Sandi?
             </button>
           </div>
-        </section>
 
-        {/* Footer */}
-        <p className="text-center text-[10px] text-gray-700 font-bold tracking-widest uppercase pb-6">
-          v2.0 • Institut Karate-Do Indonesia
-        </p>
+          {/* Login Button */}
+          <button 
+            type="submit" 
+            className="w-full bg-[#ff6b1a] hover:bg-[#ff7b30] text-black font-black py-5 rounded-3xl text-sm uppercase tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            disabled={isLoading}
+          >
+            {isLoading ? <Loader2 className="animate-spin" size={20} /> : "MASUK SEKARANG"}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative flex items-center my-12">
+          <div className="flex-grow border-t border-[#1c1f26]"></div>
+          <span className="flex-shrink mx-4 text-[10px] font-black text-gray-700 tracking-[0.3em] uppercase">PENDAFTARAN</span>
+          <div className="flex-grow border-t border-[#1c1f26]"></div>
+        </div>
+
+        {/* Registration Cards */}
+        <div className="space-y-4">
+          <div 
+            className="w-full bg-[#1c1f26] hover:bg-[#252a33] p-5 rounded-3xl flex items-center gap-4 cursor-pointer transition-all active:scale-[0.98] border border-transparent hover:border-white/5"
+            onClick={() => router.push('/register')}
+          >
+            <div className="w-12 h-12 bg-orange-600/10 rounded-2xl flex items-center justify-center">
+              <UserPlus className="text-orange-600" size={24} />
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="text-white font-bold text-base leading-tight">Anggota Baru</h3>
+              <p className="text-gray-500 text-xs">Daftar NIA dan akun baru</p>
+            </div>
+            <ChevronRight className="text-gray-700" size={20} />
+          </div>
+
+          <div 
+            className="w-full bg-[#1c1f26] hover:bg-[#252a33] p-5 rounded-3xl flex items-center gap-4 cursor-pointer transition-all active:scale-[0.98] border border-transparent hover:border-white/5"
+            onClick={() => router.push('/register-parent')}
+          >
+            <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center">
+              <Users className="text-blue-500" size={24} />
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="text-white font-bold text-base leading-tight">Orang Tua</h3>
+              <p className="text-gray-500 text-xs">Daftarkan akun untuk anak</p>
+            </div>
+            <ChevronRight className="text-gray-700" size={20} />
+          </div>
+        </div>
       </div>
 
       <CustomToast 
