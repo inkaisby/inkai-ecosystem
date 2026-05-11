@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Eye, EyeOff, User, Mail, Phone, Lock } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import CustomToast from "@/components/CustomToast/CustomToast";
 import api from "@/lib/api";
@@ -60,99 +60,52 @@ export default function RegisterParent() {
   if (!mounted) return null;
 
   return (
-    <div className="relative min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center overflow-hidden px-6 py-12">
-      {/* Dynamic Ambient Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <motion.div 
-          animate={{ 
-            scale: [1.2, 1, 1.2],
-            opacity: [0.1, 0.15, 0.1],
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] bg-red-600/5 blur-[150px] rounded-full" 
-        />
-      </div>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Ambient Background Elements */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] animate-pulse-slow" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] animate-pulse-slow stagger-3" />
 
-      <div className="w-full max-w-[440px] relative z-10">
+      <div className="w-full max-w-[420px] relative z-10">
         <button 
           onClick={() => router.back()} 
-          className="group flex items-center gap-3 text-gray-500 hover:text-white transition-all mb-10 text-[10px] font-black uppercase tracking-[0.3em]"
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8 text-sm font-bold uppercase tracking-widest"
           disabled={isLoading}
         >
-          <div className="p-2 bg-white/5 rounded-xl group-hover:bg-amber-500/10 transition-colors">
-            <ArrowLeft size={16} />
-          </div>
-          Kembali
+          <ArrowLeft size={18} /> Kembali
         </button>
 
         <motion.div 
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="premium-glass inner-glow p-10 rounded-[2.5rem] border-white/5 shadow-2xl"
+          className="premium-glass inner-glow p-8 rounded-[40px] shadow-2xl border border-white/5"
         >
-          <div className="mb-10">
-            <h1 className="text-2xl font-black tracking-tight text-white mb-2 uppercase">PENDAFTARAN ORANG TUA</h1>
-            <div className="h-[2px] w-12 bg-amber-500 mb-3" />
-            <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em]">Kelola keanggotaan anak melalui portal wali</p>
+          <div className="mb-8">
+            <h1 className="text-2xl font-black tracking-tight text-white mb-2">Pendaftaran Orang Tua</h1>
+            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em]">Daftarkan diri Anda sebagai wali untuk mengelola keanggotaan anak.</p>
           </div>
           
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Nama Wali / Orang Tua</label>
-              <div className="relative group">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={18} />
-                <input 
-                  type="text" 
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700 uppercase" 
-                  placeholder="Masukkan nama lengkap" 
-                  required 
-                  value={formData.name} 
-                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                  disabled={isLoading} 
-                />
-              </div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-widest opacity-70">Nama Wali / Orang Tua:</label>
+              <input type="text" className="glass-input w-full px-5 py-4 text-sm font-semibold" placeholder="Masukkan nama lengkap" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} disabled={isLoading} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Email Utama</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={18} />
-                <input 
-                  type="email" 
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700" 
-                  placeholder="email@contoh.com" 
-                  required 
-                  value={formData.email} 
-                  onChange={(e) => setFormData({...formData, email: e.target.value})} 
-                  disabled={isLoading} 
-                />
-              </div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-widest opacity-70">Email Utama:</label>
+              <input type="email" className="glass-input w-full px-5 py-4 text-sm font-semibold" placeholder="email@contoh.com" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} disabled={isLoading} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Nomor WhatsApp</label>
-              <div className="relative group">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={18} />
-                <input 
-                  type="tel" 
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700" 
-                  placeholder="08..." 
-                  required 
-                  value={formData.phone} 
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})} 
-                  disabled={isLoading} 
-                />
-              </div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-widest opacity-70">Nomor WA:</label>
+              <input type="tel" className="glass-input w-full px-5 py-4 text-sm font-semibold" placeholder="08..." required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} disabled={isLoading} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Kata Sandi</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={18} />
+              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-widest opacity-70">Kata Sandi:</label>
+              <div className="relative">
                 <input 
                   type={showPassword ? "text" : "password"} 
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-12 pr-12 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-700" 
+                  className="glass-input w-full px-5 py-4 text-sm font-semibold" 
                   placeholder="••••••••" 
                   required 
                   value={formData.password} 
@@ -161,7 +114,7 @@ export default function RegisterParent() {
                 />
                 <button 
                   type="button" 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-amber-500 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
                 >
@@ -170,13 +123,8 @@ export default function RegisterParent() {
               </div>
             </div>
 
-            <button 
-              type="button" 
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl shadow-amber-500/20 active:scale-[0.98] transition-all disabled:opacity-50 mt-4 text-xs" 
-              onClick={handleRegister} 
-              disabled={isLoading}
-            >
-              {isLoading ? <Loader2 className="animate-spin mx-auto" size={20} /> : "DAFTAR SEBAGAI ORANG TUA"}
+            <button type="button" className="btn-primary w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] mt-6 flex items-center justify-center gap-3" onClick={handleRegister} disabled={isLoading}>
+              {isLoading ? <Loader2 className="animate-spin" size={20} /> : "DAFTAR SEBAGAI ORANG TUA"}
             </button>
           </form>
         </motion.div>
@@ -191,3 +139,4 @@ export default function RegisterParent() {
     </div>
   );
 }
+

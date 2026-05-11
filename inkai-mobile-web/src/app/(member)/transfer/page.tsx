@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, ChevronDown, CheckCircle2, Circle, Loader2, Send, MapPin, Info } from "lucide-react";
+import { ArrowLeft, ChevronDown, CheckCircle2, Circle, Loader2, Send } from "lucide-react";
+import styles from "./Transfer.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import api from "@/lib/api";
 import { toast } from "react-hot-toast";
 
@@ -105,8 +106,8 @@ export default function Transfer() {
 
   if (!mounted || isAuthLoading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505]">
-        <Loader2 className="animate-spin text-amber-500" size={40} />
+      <div className={styles.loadingContainer}>
+        <Loader2 className={styles.spinner} size={40} />
       </div>
     );
   }
@@ -115,201 +116,172 @@ export default function Transfer() {
   const currentBranch = user.dojo?.branch?.name || "-";
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col relative overflow-x-hidden pb-32">
-      {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
-      
-      {/* Header */}
-      <header className="px-6 pt-10 pb-6 flex items-center gap-6 z-10 sticky top-0 bg-[#050505]/80 backdrop-blur-md">
-        <button 
-          onClick={() => router.back()} 
-          className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
-        >
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <button onClick={() => router.back()} className={styles.backBtn}>
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-sm font-black uppercase tracking-[0.2em] text-white">PENGAJUAN PINDAH DOJO</h1>
+        <h1 className={styles.title}>PENGAJUAN PINDAH DOJO</h1>
       </header>
 
-      <main className="px-6 space-y-10 z-10">
-        {/* Current Data Section */}
+      <main className={styles.content}>
         <motion.section 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="premium-glass inner-glow p-8 rounded-[2.5rem] border-white/5 relative overflow-hidden"
+          className={styles.infoBox}
         >
-          <div className="absolute top-0 right-0 p-8 opacity-5">
-            <MapPin size={80} />
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500 mb-4 block">DATA SAAT INI</span>
-          <div className="space-y-1">
-            <h2 className="text-xl font-black uppercase text-white">{currentDojo}</h2>
-            <p className="text-[11px] font-black uppercase tracking-widest text-gray-500">{currentBranch}</p>
+          <span className={styles.infoLabel}>DATA SAAT INI</span>
+          <div className={styles.infoValue}>
+            {currentDojo}<br/>
+            {currentBranch}
           </div>
         </motion.section>
 
-        {/* Form Section */}
-        <section className="space-y-6">
+        <section className={styles.formSection}>
           <button 
-            className="w-full flex justify-between items-center bg-white/5 p-6 rounded-[2rem] border border-white/5 group hover:bg-white/[0.08] transition-all"
+            className={styles.sectionToggle} 
             onClick={() => setIsFormOpen(!isFormOpen)}
           >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-                <Send size={18} />
-              </div>
-              <h2 className="text-xs font-black uppercase tracking-widest text-white">FORM PENGAJUAN PINDAH</h2>
-            </div>
+            <h2 className={styles.sectionHeading} style={{ margin: 0 }}>TUJUAN PINDAH:</h2>
             <ChevronDown 
               size={20} 
-              className={`text-gray-600 transition-transform duration-300 ${isFormOpen ? 'rotate-180' : ''}`}
+              className={styles.toggleIcon} 
+              style={{ transform: isFormOpen ? 'rotate(180deg)' : 'rotate(0)' }}
             />
           </button>
           
-          <AnimatePresence>
-            {isFormOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden"
-              >
-                <div className="premium-glass inner-glow p-8 rounded-[2.5rem] border-white/5 space-y-8">
-                  {/* Province Select */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">WILAYAH TUJUAN</label>
-                    <div className="relative group">
-                      <select 
-                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 appearance-none transition-all"
-                        value={selectedProvince}
-                        onChange={(e) => {
-                          setSelectedProvince(e.target.value);
-                          fetchBranches(e.target.value);
-                        }}
-                      >
-                        <option value="" className="bg-[#1a1a1f]">-- Pilih Wilayah --</option>
-                        {provinces.map(p => (
-                          <option key={p.id} value={p.id} className="bg-[#1a1a1f]">{p.name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-500 pointer-events-none" size={16} />
-                    </div>
-                  </div>
+          <motion.div
+            initial={false}
+            animate={{ 
+              height: isFormOpen ? 'auto' : 0,
+              opacity: isFormOpen ? 1 : 0,
+              marginTop: isFormOpen ? 20 : 0
+            }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Pilih Wilayah Tujuan:</label>
+              <div className={styles.selectWrapper}>
+                <select 
+                  className={styles.select}
+                  value={selectedProvince}
+                  onChange={(e) => {
+                    setSelectedProvince(e.target.value);
+                    fetchBranches(e.target.value);
+                  }}
+                >
+                  <option value="">-- Pilih Wilayah --</option>
+                  {provinces.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className={styles.selectIcon} size={16} />
+              </div>
+            </div>
 
-                  {/* Branch Select */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">CABANG TUJUAN</label>
-                    <div className="relative group">
-                      <select 
-                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 appearance-none transition-all disabled:opacity-30"
-                        value={selectedBranch}
-                        disabled={!selectedProvince}
-                        onChange={(e) => {
-                          setSelectedBranch(e.target.value);
-                          fetchDojos(e.target.value);
-                        }}
-                      >
-                        <option value="" className="bg-[#1a1a1f]">-- Pilih Cabang --</option>
-                        {branches.map(b => (
-                          <option key={b.id} value={b.id} className="bg-[#1a1a1f]">{b.name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-500 pointer-events-none" size={16} />
-                    </div>
-                  </div>
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Pilih Cabang Tujuan:</label>
+              <div className={styles.selectWrapper}>
+                <select 
+                  className={styles.select}
+                  value={selectedBranch}
+                  disabled={!selectedProvince}
+                  onChange={(e) => {
+                    setSelectedBranch(e.target.value);
+                    fetchDojos(e.target.value);
+                  }}
+                >
+                  <option value="">-- Pilih Cabang --</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className={styles.selectIcon} size={16} />
+              </div>
+            </div>
 
-                  {/* Dojo Select */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">DOJO TUJUAN</label>
-                    <div className="relative group">
-                      <select 
-                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 appearance-none transition-all disabled:opacity-30"
-                        value={selectedDojo}
-                        disabled={!selectedBranch}
-                        onChange={(e) => setSelectedDojo(e.target.value)}
-                      >
-                        <option value="" className="bg-[#1a1a1f]">-- Pilih Dojo --</option>
-                        {dojos.map(d => (
-                          <option key={d.id} value={d.id} className="bg-[#1a1a1f]">{d.name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-500 pointer-events-none" size={16} />
-                    </div>
-                  </div>
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Pilih Dojo Tujuan:</label>
+              <div className={styles.selectWrapper}>
+                <select 
+                  className={styles.select}
+                  value={selectedDojo}
+                  disabled={!selectedBranch}
+                  onChange={(e) => setSelectedDojo(e.target.value)}
+                >
+                  <option value="">-- Pilih Dojo --</option>
+                  {dojos.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className={styles.selectIcon} size={16} />
+              </div>
+            </div>
 
-                  {/* Reason Textarea */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">ALASAN KEPINDAHAN</label>
-                    <textarea 
-                      className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 transition-all min-h-[120px] placeholder:text-gray-700"
-                      placeholder="Tuliskan alasan Anda pindah..."
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                    />
-                  </div>
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Alasan Kepindahan:</label>
+              <textarea 
+                className={styles.textarea}
+                placeholder="Tuliskan alasan Anda pindah..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </div>
 
-                  {hasPending && (
-                    <div className="p-4 bg-amber-500/10 rounded-2xl flex gap-3 items-center">
-                      <Info size={16} className="text-amber-500 shrink-0" />
-                      <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider leading-relaxed">
-                        Pengajuan Anda sedang diproses. Silakan tunggu hingga selesai.
-                      </p>
-                    </div>
-                  )}
-
-                  <button 
-                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl shadow-amber-500/20 active:scale-[0.98] transition-all disabled:opacity-30 disabled:pointer-events-none text-xs flex items-center justify-center gap-3"
-                    onClick={handleSubmit}
-                    disabled={isLoading || !selectedDojo || !reason.trim() || hasPending}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="animate-spin" size={20} />
-                    ) : (
-                      <>
-                        <Send size={18} />
-                        {hasPending ? 'PENGAJUAN DIPROSES' : 'KIRIM PENGAJUAN'}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </motion.div>
+            {hasPending && (
+              <div className={styles.pendingNotice}>
+                Pengajuan Anda sedang diproses. Silakan tunggu hingga selesai sebelum mengajukan kembali.
+              </div>
             )}
-          </AnimatePresence>
+
+            <button 
+              className={styles.submitBtn}
+              onClick={handleSubmit}
+              disabled={isLoading || !selectedDojo || !reason.trim() || hasPending}
+            >
+              {isLoading ? (
+                <Loader2 className={styles.spinner} size={20} />
+              ) : (
+                <>
+                  <Send size={18} />
+                  {hasPending ? 'PENGAJUAN DIPROSES' : 'KIRIM PENGAJUAN'}
+                </>
+              )}
+            </button>
+          </motion.div>
         </section>
 
-        {/* Alur Verifikasi */}
-        <section className="space-y-6">
-          <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white/40 ml-1">ALUR VERIFIKASI</h2>
-          <div className="premium-glass inner-glow p-8 rounded-[2.5rem] border-white/5 space-y-6">
-            {[
-              { label: 'Diajukan oleh Anggota', active: true },
-              { label: 'Persetujuan Dojo Asal', active: false },
-              { label: 'Verifikasi Cabang', active: false },
-              { label: 'Update Otomatis NIA', active: false }
-            ].map((step, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${step.active ? 'border-amber-500 bg-amber-500/10 text-amber-500' : 'border-white/10 text-gray-600'}`}>
-                  {step.active ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-                </div>
-                <span className={`text-[11px] font-black uppercase tracking-widest ${step.active ? 'text-white' : 'text-gray-600'}`}>
-                  {i + 1}. {step.label}
-                </span>
-              </div>
-            ))}
+        <section className={styles.workflowSection}>
+          <h3 className={styles.workflowTitle}>ALUR VERIFIKASI:</h3>
+          <div className={styles.workflowList}>
+            <div className={styles.workflowItem}>
+              <div className={styles.workflowIcon}><CheckCircle2 size={16} color="#10b981" /></div>
+              <span className={`${styles.workflowLabel} ${styles.workflowLabelActive}`}>1. Diajukan oleh Anggota</span>
+            </div>
+            <div className={styles.workflowItem}>
+              <div className={styles.workflowIcon}><Circle size={16} color="#666" /></div>
+              <span className={styles.workflowLabel}>2. Persetujuan Dojo Asal (PIC)</span>
+            </div>
+            <div className={styles.workflowItem}>
+              <div className={styles.workflowIcon}><Circle size={16} color="#666" /></div>
+              <span className={styles.workflowLabel}>3. Verifikasi Cabang (Admin)</span>
+            </div>
+            <div className={styles.workflowItem}>
+              <div className={styles.workflowIcon}><Circle size={16} color="#666" /></div>
+              <span className={styles.workflowLabel}>4. Update Otomatis NIA/Dojo</span>
+            </div>
           </div>
         </section>
 
-        {/* History Section */}
-        <section className="space-y-6">
-          <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white/40 ml-1">RIWAYAT PENGAJUAN</h2>
+        <section className={styles.historySection}>
+          <h3 className={styles.sectionHeading}>RIWAYAT PENGAJUAN:</h3>
           {history.length === 0 ? (
-            <div className="premium-glass inner-glow p-10 rounded-[2.5rem] text-center text-[10px] font-black uppercase tracking-widest text-gray-600 border-dashed border-white/10">
-              Belum ada riwayat pengajuan
-            </div>
+            <div className={styles.emptyHistory}>Belum ada riwayat pengajuan</div>
           ) : (
-            <div className="space-y-4">
+            <div className={styles.historyList}>
               {history.map((item) => {
-                let details = "-";
+                let details = "Memuat data...";
                 try {
                   const parsedData = JSON.parse(item.data);
                   details = parsedData.reason || "-";
@@ -322,29 +294,23 @@ export default function Transfer() {
                     key={item.id}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="premium-glass inner-glow p-6 rounded-[2rem] border-white/5 space-y-4"
+                    className={styles.historyCard}
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">{item.type.replace('_', ' ')}</span>
-                      <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest ${
-                        item.status === 'PENDING' ? 'bg-amber-500/10 text-amber-500' : 
-                        item.status === 'APPROVED' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                      }`}>
-                        {item.status === 'PENDING' ? 'MENUNGGU' : item.status === 'APPROVED' ? 'DISETUJUI' : 'DITOLAK'}
+                    <div className={styles.historyHeader}>
+                      <span className={styles.historyType}>{item.type.replace('_', ' ')}</span>
+                      <span className={`${styles.historyStatus} ${styles['status' + item.status]}`}>
+                        {item.status === 'PENDING' ? 'Menunggu' : item.status === 'APPROVED' ? 'Disetujui' : 'Ditolak'}
                       </span>
                     </div>
-                    <div className="space-y-1">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                        {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </div>
-                      <div className="text-xs font-bold text-white leading-relaxed uppercase tracking-wider">
-                        {details}
-                      </div>
+                    <div className={styles.historyDate}>
+                      {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </div>
+                    <div className={styles.historyDetails}>
+                      <strong>Alasan:</strong> {details}
                     </div>
                     {item.adminNotes && (
-                      <div className="p-4 bg-white/[0.02] border-l-2 border-amber-500 rounded-r-xl">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-500 mb-1">Catatan Admin:</p>
-                        <p className="text-[10px] font-bold text-gray-400 leading-relaxed">{item.adminNotes}</p>
+                      <div className={styles.adminNotes}>
+                        <strong>Catatan Admin:</strong> {item.adminNotes}
                       </div>
                     )}
                   </motion.div>

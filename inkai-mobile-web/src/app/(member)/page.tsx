@@ -2,219 +2,165 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Loader2, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import Image from "next/image";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
 import CustomToast from "@/components/CustomToast/CustomToast";
 
-export default function MemberLogin() {
+export default function Login() {
   const [mounted, setMounted] = useState(false);
-  const router = useRouter();
-  const { login, user, isLoading: isAuthLoading } = useAuth();
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [isLoading, setIsLoading] = useState(false);
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: "", type: "info" as "success" | "error" | "info" });
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' as const });
+  const { login, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
-    if (user) router.replace("/dashboard");
-  }, [user, router]);
-
-  if (!mounted) return null;
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
-      setToast({ show: true, message: "Harap isi email dan kata sandi.", type: "error" });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const success = await login(formData.email, formData.password);
-      if (success) {
-        setToast({ show: true, message: "Selamat Datang Kembali!", type: "success" });
-        setTimeout(() => router.replace("/dashboard"), 1500);
-      } else {
-        setToast({ show: true, message: "Email atau kata sandi salah.", type: "error" });
-      }
-    } catch (err: any) {
-      setToast({ show: true, message: err.response?.data?.message || "Gagal masuk.", type: "error" });
-    } finally {
-      setIsLoading(false);
+    const success = await login(identifier, password);
+    if (success) {
+      router.push("/dashboard");
+    } else {
+      setToast({ show: true, message: "Login Gagal. Cek kembali data Anda.", type: 'error' });
     }
   };
 
+  if (!mounted) return null;
+
   return (
-    <div className="relative min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center overflow-hidden px-6 py-12">
-      {/* Dynamic Ambient Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <motion.div 
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.15, 0.25, 0.15],
-            x: [0, 50, 0],
-            y: [0, 30, 0]
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-500/20 blur-[120px] rounded-full" 
-        />
-        <motion.div 
-          animate={{ 
-            scale: [1.2, 1, 1.2],
-            opacity: [0.1, 0.2, 0.1],
-            x: [0, -40, 0],
-            y: [0, -50, 0]
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-[-15%] left-[-15%] w-[600px] h-[600px] bg-amber-600/10 blur-[150px] rounded-full" 
-        />
-      </div>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Ambient Background Elements */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] animate-pulse-slow" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] animate-pulse-slow stagger-3" />
+      
+      {/* Decorative Grid */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] opacity-20 pointer-events-none"></div>
 
-      {/* Header Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="flex flex-col items-center mb-12 z-10"
-      >
-        <div className="relative mb-6">
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-[-15px] border border-amber-500/20 rounded-full border-dashed"
-          />
-          <div className="w-24 h-24 rounded-full bg-white p-1 shadow-2xl shadow-amber-500/10 flex items-center justify-center z-10 relative">
-            <img src="/logo.png" alt="INKAI Logo" className="w-20 h-20 object-contain" />
+      <div className="w-full max-w-[420px] relative z-10 flex flex-col items-center">
+        {/* Header Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
+        >
+          <div className="inline-block relative mb-6 animate-float">
+            <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-3xl"></div>
+            <div className="relative premium-glass p-2 rounded-full border-white/5">
+              <Image 
+                src="/logo.png" 
+                alt="Inkai Logo" 
+                width={100} 
+                height={100} 
+                className="drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                priority 
+              />
+            </div>
           </div>
-        </div>
-        <div className="text-center">
-          <h1 className="text-2xl font-black tracking-[0.2em] text-white uppercase mb-2">
-            INSTITUT KARATE-DO INDONESIA
+          <h1 className="text-3xl font-black tracking-tight text-white leading-tight">
+            Institut Karate-Do Indonesia
           </h1>
-          <div className="h-[2px] w-12 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mb-3" />
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-amber-500/80">
-            PORTAL DIGITAL ANGGOTA
+          <p className="text-amber-500/60 font-bold uppercase tracking-[0.2em] text-[10px] mt-2">
+            Portal Digital Anggota
           </p>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* Main Login Card */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="w-full max-w-sm premium-glass inner-glow rounded-[2.5rem] p-10 z-10"
-      >
-        <form onSubmit={handleLogin} className="space-y-8">
-          <div className="space-y-6">
-            {/* Email Field */}
+        {/* Login Form Card */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className="w-full premium-glass inner-glow p-8 rounded-[40px] shadow-2xl border border-white/5"
+        >
+          <form className="space-y-6" onSubmit={handleLogin}>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
-                EMAIL ATAU NIA
+              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-widest opacity-70">
+                Email atau NIA:
               </label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={18} />
-                <input 
-                  type="text" 
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.05] transition-all placeholder:text-gray-700"
-                  placeholder="email@contoh.com atau 123.456.789"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
+              <input 
+                type="text" 
+                placeholder="email@contoh.com atau 123.456.789"
+                className="glass-input w-full px-5 py-4 text-sm font-semibold tracking-tight"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                required
+                disabled={isLoading}
+              />
             </div>
 
-            {/* Password Field */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
-                KATA SANDI
+              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-widest opacity-70">
+                Kata Sandi:
               </label>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors" size={18} />
                 <input 
                   type={showPassword ? "text" : "password"} 
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-12 pr-12 py-4 text-sm font-bold text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/[0.05] transition-all placeholder:text-gray-700"
                   placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="glass-input w-full px-5 py-4 text-sm font-semibold tracking-tight"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
                 />
                 <button 
-                  type="button"
+                  type="button" 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-amber-500 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              <div className="flex justify-end">
-                <button type="button" className="text-[10px] font-black uppercase tracking-widest text-amber-500/60 hover:text-amber-500 transition-colors">
-                  Lupa Kata Sandi?
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-4 pt-4">
-            <button 
-              type="submit" 
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl shadow-amber-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none text-xs"
-            >
-              {isLoading ? <Loader2 className="animate-spin mx-auto" size={20} /> : "MASUK KE PORTAL"}
+            <button type="button" className="text-amber-500 text-xs font-bold float-right mt-[-8px] hover:text-amber-400 transition-colors">
+              Lupa Kata Sandi?
             </button>
 
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/5"></div>
-              </div>
-              <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
-                <span className="bg-transparent px-4 text-gray-600">ATAU</span>
-              </div>
-            </div>
-
             <button 
-              type="button"
-              onClick={() => router.push("/register")}
-              className="w-full bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl active:scale-[0.98] transition-all text-xs"
+              type="submit" 
+              className="btn-primary w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 mt-8"
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="animate-spin" size={20} /> : "MASUK KE PORTAL"}
+            </button>
+          </form>
+
+          <div className="flex items-center gap-4 my-8">
+            <div className="flex-1 h-[1px] bg-white/5" />
+            <span className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">ATAU</span>
+            <div className="flex-1 h-[1px] bg-white/5" />
+          </div>
+
+          <div className="space-y-3">
+            <button 
+              type="button" 
+              className="w-full py-4 border border-white/10 rounded-2xl text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-white/5 transition-all active:scale-[0.98]"
+              onClick={() => router.push('/register')}
             >
               DAFTAR SEKARANG
             </button>
-          </div>
-
-          <div className="pt-6 text-center">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-4">
+            <p className="text-center text-[10px] text-gray-500 font-medium pt-2">
               Pendaftaran Orang Tua (Untuk Anak):
             </p>
             <button 
-              type="button"
-              onClick={() => router.push("/register-parent")}
-              className="text-[11px] font-black uppercase tracking-[0.15em] text-white/40 hover:text-amber-500 transition-colors underline underline-offset-8 decoration-amber-500/30 hover:decoration-amber-500"
+              type="button" 
+              className="w-full py-4 border border-amber-500/20 rounded-2xl text-[11px] font-bold uppercase tracking-[0.1em] text-amber-500/80 hover:bg-amber-500/5 transition-all active:scale-[0.98]"
+              onClick={() => router.push('/register-parent')}
             >
               DAFTAR SEBAGAI ORANG TUA
             </button>
           </div>
-        </form>
-      </motion.div>
+        </motion.div>
 
-      {/* Footer Info */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 0.8 }}
-        className="mt-12 text-center z-10"
-      >
-        <div className="flex items-center justify-center gap-2 mb-2 text-white/20">
-          <ShieldCheck size={12} />
-          <p className="text-[10px] font-black uppercase tracking-widest">
-            Secured Connection
-          </p>
-        </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/10">
-          INKAI DIGITAL ECOSYSTEM V2.0
+        <p className="mt-8 text-white/20 text-[9px] font-black uppercase tracking-[0.5em]">
+          INKAI Digital Ecosystem v2.0
         </p>
-      </motion.div>
+      </div>
 
       <CustomToast 
         isVisible={toast.show} 
@@ -225,3 +171,4 @@ export default function MemberLogin() {
     </div>
   );
 }
+

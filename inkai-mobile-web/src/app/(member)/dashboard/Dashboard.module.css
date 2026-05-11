@@ -1,0 +1,312 @@
+.container {
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatarWrapper {
+  padding: 2px;
+  border: 2px solid var(--primary-gold);
+  border-radius: 50%;
+  display: flex;
+}
+
+.avatar {
+  border-radius: 50%;
+  background-color: var(--card-dark);
+}
+
+.greeting {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.role {
+  font-size: 11px;
+  color: var(--primary-gold);
+  font-weight: 500;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.iconBtn {
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  display: flex;
+  color: white;
+}
+
+.logout {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px 12px;
+}
+
+.actionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionIcon {
+  width: 60px;
+  height: 60px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-gold);
+}
+
+.actionLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.seeAll {
+  font-size: 12px;
+  color: var(--primary-gold);
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventItem {
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.eventIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ukt {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+}
+
+.tourney {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--primary-gold);
+}
+
+.eventInfo {
+  flex: 1;
+}
+
+.eventTitle {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.eventMeta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.statusBadge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.paid {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+}
+
+.pending {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: #facc15;
+}
+
+.chevron {
+  color: var(--text-muted);
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+  color: var(--primary-gold);
+}
+
+.loaderSmall {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 24px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+  color: var(--primary-gold);
+}
+
+.profileLockOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(18, 18, 18, 0.95);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.profileLockContent {
+  background-color: #1e1e1e;
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, var(--primary-gold) 0%, #b8860b 100%);
+  color: white;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+}
+
+.pendingNotice {
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  padding: 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.5;
+}
+
+.pendingNotice b {
+  color: var(--primary-gold);
+}
+
+.lockedState {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  padding: 32px 24px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.lockedText {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.lockedText b {
+  color: var(--primary-gold);
+}
+
+.lockedIcon {
+  color: rgba(255, 255, 255, 0.1);
+}
