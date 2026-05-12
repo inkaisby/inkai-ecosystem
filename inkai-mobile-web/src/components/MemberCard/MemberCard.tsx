@@ -38,7 +38,19 @@ export default function MemberCard({ nia, name, dojo, qrValue }: MemberCardProps
         <div className={styles.qrContainer}>
           <div className={styles.qrWrapper}>
             {qrValue ? (
-              <QRCodeSVG value={qrValue} size={100} />
+              <QRCodeSVG 
+                value={qrValue} 
+                size={100}
+                level="H" // High error correction to allow logo
+                imageSettings={{
+                  src: "/logo.png",
+                  x: undefined,
+                  y: undefined,
+                  height: 24,
+                  width: 24,
+                  excavate: true,
+                }}
+              />
             ) : (
               <div className="w-[100px] h-[100px] bg-gray-200 animate-pulse rounded-lg" />
             )}
