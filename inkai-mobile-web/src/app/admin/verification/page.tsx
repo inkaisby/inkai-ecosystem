@@ -15,8 +15,9 @@ import {
 import { api } from '@/lib/api';
 import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { Suspense } from 'react';
 
-export default function VerificationPage() {
+function VerificationContent() {
   const searchParams = useSearchParams();
   const claimId = searchParams.get('claimId');
   const [claims, setClaims] = useState<any[]>([]);
@@ -177,5 +178,18 @@ export default function VerificationPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function VerificationPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <Loader2 className="animate-spin text-amber-500" size={32} />
+        <p className="text-gray-500 text-xs animate-pulse">Memuat...</p>
+      </div>
+    }>
+      <VerificationContent />
+    </Suspense>
   );
 }

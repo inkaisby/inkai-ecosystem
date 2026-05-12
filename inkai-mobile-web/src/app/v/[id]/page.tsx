@@ -146,7 +146,6 @@ export default function VerificationPage() {
                 </div>
               </div>
             </div>
-          </div>
         </motion.div>
 
         {/* Notice */}
