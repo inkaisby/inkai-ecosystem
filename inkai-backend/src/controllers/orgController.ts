@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import { notifyAdmins } from '../utils/notification';
+import { getOrSetCache, invalidateCache } from '../utils/redis';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -10,33 +11,45 @@ interface AuthRequest extends Request {
 export const getProvinces = async (req: AuthRequest, res: Response) => {
   try {
     const where: any = {};
+    let isScoped = false;
     if (req.user) {
       if (req.user.managedProvinceId) {
         where.id = req.user.managedProvinceId;
+        isScoped = true;
       } else if (req.user.managedBranchId) {
         where.branches = { some: { id: req.user.managedBranchId } };
+        isScoped = true;
       } else if (req.user.managedDojoId) {
         where.branches = { some: { dojos: { some: { id: req.user.managedDojoId } } } };
+        isScoped = true;
       }
     }
 
-    const provinces = await prisma.province.findMany({
-      where,
-      include: {
-        _count: { select: { branches: true } },
-        admins: { select: { email: true } },
-        branches: {
-          include: {
-            _count: { select: { dojos: true } },
-            dojos: {
-              include: {
-                _count: { select: { members: true } }
+    const fetchProvinces = async () => {
+      return await prisma.province.findMany({
+        where,
+        include: {
+          _count: { select: { branches: true } },
+          admins: { select: { email: true } },
+          branches: {
+            include: {
+              _count: { select: { dojos: true } },
+              dojos: {
+                include: {
+                  _count: { select: { members: true } }
+                }
               }
             }
           }
         }
-      }
-    });
+      });
+    };
+
+    // Only cache if not scoped to a specific region
+    const provinces = isScoped 
+      ? await fetchProvinces()
+      : await getOrSetCache('org:provinces:all', fetchProvinces, 3600);
+
     res.json({ status: 'success', data: provinces });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });
@@ -144,6 +157,9 @@ export const createProvince = async (req: Request, res: Response) => {
       data: { name, headName }
     });
 
+    // Invalidate cache
+    invalidateCache('org:provinces:all');
+
     // Create Admin User
     const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
     await prisma.user.upsert({
@@ -197,6 +213,9 @@ export const createBranch = async (req: Request, res: Response) => {
       data: { name, headName, provinceId },
       include: { province: true }
     });
+
+    // Invalidate cache
+    invalidateCache('org:provinces:all');
 
     // Create Admin User
     const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
@@ -253,6 +272,9 @@ export const createDojo = async (req: Request, res: Response) => {
       include: { branch: true }
     });
 
+    // Invalidate cache
+    invalidateCache('org:provinces:all');
+
     const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
     await prisma.user.upsert({
       where: { email: adminEmail },
@@ -304,6 +326,9 @@ export const updateProvince = async (req: Request, res: Response) => {
       where: { id },
       data: { name, headName }
     });
+
+    // Invalidate cache
+    invalidateCache('org:provinces:all');
 
     if (adminEmail) {
       // Unlink existing admins for this province
@@ -357,6 +382,9 @@ export const updateBranch = async (req: Request, res: Response) => {
       data: { name, headName }
     });
 
+    // Invalidate cache
+    invalidateCache('org:provinces:all');
+
     if (adminEmail) {
       // Unlink existing admins for this branch
       await prisma.user.updateMany({
@@ -406,6 +434,9 @@ export const updateDojo = async (req: Request, res: Response) => {
       where: { id },
       data: { name, contactPerson, headName: headName || contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule }
     });
+
+    // Invalidate cache
+    invalidateCache('org:provinces:all');
 
     if (adminEmail) {
       // Unlink existing admins for this dojo

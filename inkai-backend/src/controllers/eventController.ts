@@ -1,17 +1,21 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { notifyAdmins, createNotification } from '../utils/notification';
+import { getOrSetCache, invalidateCache } from '../utils/redis';
 
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
-    const events = await prisma.event.findMany({
-      include: {
-        categories: true,
-        _count: {
-          select: { registrations: true }
+    const events = await getOrSetCache('events:all', async () => {
+      return await prisma.event.findMany({
+        include: {
+          categories: true,
+          _count: {
+            select: { registrations: true }
+          }
         }
-      }
-    });
+      });
+    }, 300); // Cache for 5 minutes
+
     res.json({ status: 'success', data: events });
   } catch (error: any) {
     console.error('[EventController] Error:', error);
@@ -108,6 +112,10 @@ export const createEvent = async (req: any, res: Response) => {
       },
       include: { categories: true }
     });
+
+    // Invalidate cache
+    invalidateCache('events:all');
+
     res.status(201).json({ status: 'success', data: event });
   } catch (error: any) {
     console.error('[EventController] Error:', error);
@@ -333,6 +341,9 @@ export const updateEvent = async (req: any, res: Response) => {
       });
     });
 
+    // Invalidate cache
+    invalidateCache('events:all');
+
     res.json({ status: 'success', data: event });
   } catch (error: any) {
     console.error('[EventController] Error:', error);
@@ -364,6 +375,9 @@ export const deleteEvent = async (req: any, res: Response) => {
       prisma.verification.deleteMany({ where: { eventId: id } }),
       prisma.event.delete({ where: { id } })
     ]);
+
+    // Invalidate cache
+    invalidateCache('events:all');
 
     res.json({ status: 'success', message: 'Event deleted successfully' });
   } catch (error: any) {
