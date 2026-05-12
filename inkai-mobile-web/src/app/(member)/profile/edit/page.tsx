@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { ArrowLeft, User, Phone, MapPin, Calendar, Loader2, AlertTriangle, CheckCircle2, Home, MapPinned, ShieldCheck } from "lucide-react";
+import { ArrowLeft, User, Phone, MapPin, Calendar, Loader2, AlertTriangle, CheckCircle2, Home, MapPinned, ShieldCheck, CheckCircle } from "lucide-react";
 import styles from "./EditProfile.module.css";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -107,6 +107,36 @@ function EditProfileContent() {
   const isDirty = changedFields.length > 0;
   const isProfileComplete = isAdmin || auditFields.every(f => f.isComplete);
 
+  // Manual Save Logic
+  const handleSave = async () => {
+    if (!isDirty || isSaving || phoneError) return;
+    
+    setIsSaving(true);
+    try {
+      if (photoFile) {
+        const photoData = new FormData();
+        photoData.append('photo', photoFile);
+        await api.auth.uploadPhoto(photoData);
+        setPhotoFile(null); 
+      }
+      
+      await api.auth.updateProfile(formData);
+      await fetchProfile();
+      setLastSaved(new Date());
+      localStorage.removeItem(`profile_draft_${user?.id}`);
+      setToast({ show: true, message: 'Profil berhasil diperbarui', type: 'success' });
+    } catch (error: any) {
+      console.error('Save failed:', error);
+      setToast({ 
+        show: true, 
+        message: error.response?.data?.message || 'Gagal menyimpan profil. Silakan coba lagi.', 
+        type: 'error' 
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (user && (!mounted || !isDirty)) {
       const provinceId = user.dojo?.branch?.provinceId || user.member?.dojo?.branch?.provinceId || '';
@@ -157,34 +187,6 @@ function EditProfileContent() {
       if (branchId) fetchDojos(branchId);
     }
   }, [user, mounted, isDirty]);
-
-  // Silent Autosave Logic
-  useEffect(() => {
-    if (!mounted || !isDirty || isSaving || phoneError) return;
-
-    const timer = setTimeout(async () => {
-      setIsSaving(true);
-      try {
-        if (photoFile) {
-          const photoData = new FormData();
-          photoData.append('photo', photoFile);
-          await api.auth.uploadPhoto(photoData);
-          setPhotoFile(null); 
-        }
-        
-        await api.auth.updateProfile(formData);
-        await fetchProfile();
-        setLastSaved(new Date());
-        localStorage.removeItem(`profile_draft_${user?.id}`);
-      } catch (error) {
-        console.error('Autosave failed:', error);
-      } finally {
-        setIsSaving(false);
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [formData, photoFile, isDirty, mounted, phoneError]);
 
   // Draft persistence (fallback)
   useEffect(() => {
@@ -341,7 +343,7 @@ function EditProfileContent() {
         </div>
       ) : null}
 
-      <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
+      <form className={styles.form} onSubmit={(e) => e.preventDefault()} style={{ paddingBottom: '120px' }}>
         <div className={styles.field} style={{ alignItems: 'center' }}>
           <label className={styles.label}>Foto Profil</label>
           <div className={styles.avatarWrapper}>
@@ -556,6 +558,36 @@ function EditProfileContent() {
 
 
       </form>
+
+      {/* Floating Save Button */}
+      <div className="fixed bottom-6 left-0 right-0 px-4 z-10">
+        <button
+          onClick={handleSave}
+          disabled={!isDirty || isSaving || !!phoneError}
+          className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
+            !isDirty || isSaving || !!phoneError
+              ? 'bg-gray-600 cursor-not-allowed opacity-50'
+              : 'bg-gradient-to-r from-yellow-600 to-yellow-500 active:scale-95'
+          }`}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 size={20} className="animate-spin" />
+              Menyimpan...
+            </>
+          ) : (
+            <>
+              <CheckCircle size={20} />
+              Simpan Perubahan
+            </>
+          )}
+        </button>
+        {lastSaved && !isDirty && (
+          <p className="text-center text-xs text-green-400 mt-2 bg-black/50 py-1 rounded-full backdrop-blur-sm mx-auto w-fit px-4">
+            Terakhir disimpan: {lastSaved.toLocaleTimeString()}
+          </p>
+        )}
+      </div>
 
       <CustomToast 
         isVisible={toast.show} 

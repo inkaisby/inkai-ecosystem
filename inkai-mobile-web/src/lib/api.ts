@@ -14,7 +14,7 @@ const API_BASE_URL = getBaseUrl();
 
 const apiInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // Tingkatkan timeout ke 30 detik untuk upload file
 });
 
 // Interceptor for token

@@ -124,6 +124,9 @@ export default function Dashboard() {
                 width={40} 
                 height={40} 
                 className={styles.avatar} 
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/logo.png";
+                }}
               />
             ) : (
               <Image 
