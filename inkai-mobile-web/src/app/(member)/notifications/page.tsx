@@ -24,13 +24,16 @@ export default function Notifications() {
   }, [user]);
 
   const fetchNotifications = async () => {
+    if (!user) return;
     try {
       const res = await api.notifications.getMy();
       if (res.status === 'success') {
-        setNotifications(res.data);
+        setNotifications(res.data || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+    } catch (error: any) {
+      if (error.response?.status !== 401) {
+        console.error('Failed to fetch notifications:', error);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -52,11 +52,30 @@
   border-radius: 12px;
   display: flex;
   color: white;
+  position: relative;
 }
 
 .logout {
   background-color: rgba(239, 68, 68, 0.1);
   color: #f87171;
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #121212;
 }
 
 .section {

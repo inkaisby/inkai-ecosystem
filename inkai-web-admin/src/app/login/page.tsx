@@ -45,6 +45,7 @@ export default function LoginPage() {
               height={140} 
               className="drop-shadow-[0_0_20px_rgba(245,158,11,0.2)] animate-pulse-slow rounded-full"
               priority
+              unoptimized
             />
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-white">INKAI</h1>

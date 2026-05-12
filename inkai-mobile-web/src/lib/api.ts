@@ -28,6 +28,27 @@ apiInstance.interceptors.request.use((config) => {
   return config;
 });
 
+// Interceptor for response (handle 401 globally)
+apiInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('inkai_token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = window.location.pathname.includes('/admin') 
+            ? '/admin/login' 
+            : '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const getAssetUrl = (path?: string) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
@@ -79,6 +100,11 @@ export interface Member {
   nia?: string;
   nik?: string;
   status?: string;
+  currentRank?: string;
+  dojo?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface Event {
@@ -105,7 +131,9 @@ export const api = Object.assign(apiInstance, {
   members: {
     getAll: (params?: Record<string, any>) => apiInstance.get('/members', { params }).then(res => res.data),
     create: (data: Partial<Member>) => apiInstance.post('/members', data).then(res => res.data),
+    bulkCreate: (data: { members: any[] }) => apiInstance.post('/members/bulk', data).then(res => res.data),
     update: (id: string, data: Partial<Member>) => apiInstance.patch(`/members/${id}`, data).then(res => res.data),
+    delete: (id: string) => apiInstance.delete(`/members/${id}`).then(res => res.data),
     getDetail: (id: string) => apiInstance.get(`/members/${id}`).then(res => res.data),
     verify: (id: string) => apiInstance.get(`/members/verify/${id}`).then(res => res.data),
     uploadDocument: (formData: FormData) => apiInstance.post('/members/upload-document', formData).then(res => res.data),
@@ -157,6 +185,7 @@ export const api = Object.assign(apiInstance, {
       apiInstance.post('/notifications/broadcast', data).then(res => res.data),
     getMy: () => apiInstance.get('/notifications/my').then(res => res.data),
     markAsRead: (id: string) => apiInstance.patch(`/notifications/${id}/read`).then(res => res.data),
+    clearRead: () => apiInstance.delete('/notifications/clear-read').then(res => res.data),
   },
   inventory: {
     getAll: () => apiInstance.get('/inventory').then(res => res.data),
@@ -168,6 +197,12 @@ export const api = Object.assign(apiInstance, {
     getAll: () => apiInstance.get('/roles').then(res => res.data),
     getPermissions: () => apiInstance.get('/roles/permissions').then(res => res.data),
     updatePermissions: (id: string, data: { permissionIds: string[] }) => apiInstance.patch(`/roles/${id}/permissions`, data).then(res => res.data),
+  },
+  chat: {
+    getConversations: () => apiInstance.get('/chat/conversations').then(res => res.data),
+    getMessages: (conversationId: string) => apiInstance.get(`/chat/messages/${conversationId}`).then(res => res.data),
+    createConversation: (participantId: string) => apiInstance.post('/chat/conversations', { participantId }).then(res => res.data),
+    sendMessage: (data: { conversationId: string; content: string }) => apiInstance.post('/chat/messages', data).then(res => res.data),
   }
 });
 

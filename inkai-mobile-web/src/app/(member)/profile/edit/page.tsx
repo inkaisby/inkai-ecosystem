@@ -14,7 +14,7 @@ function EditProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isNewUser = searchParams.get('new_user') === 'true';
-  const { user, isLoading: isAuthLoading, fetchProfile } = useAuth();
+  const { user, isLoading: isAuthLoading, isAdmin, fetchProfile } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -105,7 +105,7 @@ function EditProfileContent() {
   })();
 
   const isDirty = changedFields.length > 0;
-  const isProfileComplete = auditFields.every(f => f.isComplete);
+  const isProfileComplete = isAdmin || auditFields.every(f => f.isComplete);
 
   useEffect(() => {
     if (user && (!mounted || !isDirty)) {

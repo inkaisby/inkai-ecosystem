@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Loader2, Eye, EyeOff, User, Mail, Smartphone, Lock, ShieldCheck } from "lucide-react";
 import CustomToast from "@/components/CustomToast/CustomToast";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -20,7 +21,8 @@ export default function ParentRegister() {
     setMounted(true);
   }, []);
 
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
       setToast({ show: true, message: 'Harap lengkapi semua kolom pendaftaran.', type: 'error' });
       return;
@@ -59,93 +61,147 @@ export default function ParentRegister() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#0f1115] flex flex-col items-center p-8">
-      <div className="w-full max-w-[400px]">
-        <button 
-          onClick={() => router.back()} 
-          className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors mb-12 text-sm font-bold"
-          disabled={isLoading}
-        >
-          <ArrowLeft size={18} /> Kembali
-        </button>
+    <div className="flex flex-col" style={{ minHeight: '100vh', backgroundColor: 'var(--background-dark)', position: 'relative', overflow: 'hidden' }}>
+      {/* Background Blurs */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '70%', height: '70%', backgroundColor: 'rgba(245, 158, 11, 0.08)', filter: 'blur(100px)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', backgroundColor: 'rgba(59, 130, 246, 0.05)', filter: 'blur(100px)', borderRadius: '50%' }} />
+      </div>
 
-        <div className="mb-10">
-          <h1 className="text-2xl font-black text-white mb-2">Pendaftaran Orang Tua</h1>
-          <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Untuk pendaftaran akun anak</p>
-        </div>
+      <div className="flex flex-col px-6 py-6" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '480px', margin: '0 auto', flex: 1 }}>
         
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-          <div className="space-y-2">
-            <label className="text-[12px] font-bold text-gray-400">Nama Lengkap Orang Tua:</label>
-            <input 
-              type="text" 
-              className="w-full bg-[#1c1f26] border border-[#2d3139] rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-all" 
-              placeholder="Masukkan nama sesuai KTP" 
-              required 
-              value={formData.name} 
-              onChange={(e) => setFormData({...formData, name: e.target.value})} 
-              disabled={isLoading} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[12px] font-bold text-gray-400">Email:</label>
-            <input 
-              type="email" 
-              className="w-full bg-[#1c1f26] border border-[#2d3139] rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-all" 
-              placeholder="email@contoh.com" 
-              required 
-              value={formData.email} 
-              onChange={(e) => setFormData({...formData, email: e.target.value})} 
-              disabled={isLoading} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[12px] font-bold text-gray-400">Nomor WhatsApp:</label>
-            <input 
-              type="tel" 
-              className="w-full bg-[#1c1f26] border border-[#2d3139] rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-all" 
-              placeholder="Contoh: 08123456789" 
-              required 
-              value={formData.phone} 
-              onChange={(e) => setFormData({...formData, phone: e.target.value})} 
-              disabled={isLoading} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[12px] font-bold text-gray-400">Kata Sandi:</label>
-            <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"} 
-                className="w-full bg-[#1c1f26] border border-[#2d3139] rounded-2xl px-5 py-4 text-white text-sm focus:outline-none focus:border-amber-500 transition-all" 
-                placeholder="••••••••" 
-                required 
-                value={formData.password} 
-                onChange={(e) => setFormData({...formData, password: e.target.value})} 
-                disabled={isLoading} 
-              />
-              <button 
-                type="button" 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={isLoading}
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-          </div>
-
+        {/* Header Section */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-8"
+        >
           <button 
-            type="button" 
-            className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black py-4 rounded-2xl text-sm transition-all active:scale-[0.98] mt-8 flex items-center justify-center gap-2" 
-            onClick={handleRegister} 
+            onClick={() => router.back()} 
+            className="flex items-center gap-2 text-10 font-black uppercase tracking-widest"
+            style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}
             disabled={isLoading}
           >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : "DAFTAR SEBAGAI ORANG TUA"}
+            <ArrowLeft size={16} /> Kembali
           </button>
-        </form>
+
+          <h1 className="text-2xl font-black text-white mb-2">Pendaftaran Orang Tua</h1>
+          <p className="text-gray-500 text-10 font-bold uppercase tracking-widest">Untuk pendaftaran akun anak</p>
+        </motion.div>
+        
+        {/* Form Container */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="glass-card p-6 shadow-2xl"
+          style={{ borderRadius: '2rem' }}
+        >
+          <form className="space-y-6" onSubmit={handleRegister}>
+            {/* Full Name */}
+            <div className="space-y-2">
+              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Nama Lengkap Orang Tua</label>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
+                  <User size={18} />
+                </div>
+                <input 
+                  type="text" 
+                  className="glass-input w-full py-4 pl-12 pr-4 text-sm" 
+                  placeholder="Masukkan nama sesuai KTP" 
+                  required 
+                  value={formData.name} 
+                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                  disabled={isLoading} 
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Email</label>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
+                  <Mail size={18} />
+                </div>
+                <input 
+                  type="email" 
+                  className="glass-input w-full py-4 pl-12 pr-4 text-sm" 
+                  placeholder="email@contoh.com" 
+                  required 
+                  value={formData.email} 
+                  onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                  disabled={isLoading} 
+                />
+              </div>
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-2">
+              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Nomor WhatsApp</label>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
+                  <Smartphone size={18} />
+                </div>
+                <input 
+                  type="tel" 
+                  className="glass-input w-full py-4 pl-12 pr-4 text-sm" 
+                  placeholder="Contoh: 08123456789" 
+                  required 
+                  value={formData.phone} 
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})} 
+                  disabled={isLoading} 
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Kata Sandi</label>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
+                  <Lock size={18} />
+                </div>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  className="glass-input w-full py-4 pl-12 pr-12 text-sm" 
+                  placeholder="••••••••" 
+                  required 
+                  value={formData.password} 
+                  onChange={(e) => setFormData({...formData, password: e.target.value})} 
+                  disabled={isLoading} 
+                />
+                <button 
+                  type="button" 
+                  style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <motion.button 
+              whileTap={{ scale: 0.98 }}
+              type="submit" 
+              className="btn-primary w-full py-4 rounded-xl font-black uppercase tracking-widest"
+              style={{ marginTop: '2rem', fontSize: '0.7rem', padding: '1.2rem', boxShadow: '0 8px 20px -6px rgba(245, 158, 11, 0.3)' }}
+              disabled={isLoading}
+            >
+              <div className="flex items-center justify-center gap-2">
+                {isLoading ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <>
+                    <ShieldCheck size={16} />
+                    <span>DAFTAR SEBAGAI ORANG TUA</span>
+                  </>
+                )}
+              </div>
+            </motion.button>
+          </form>
+        </motion.div>
       </div>
 
       <CustomToast 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Map as MapIcon, Shield, User, Award } from "lucide-react";
+import { Home, Map as MapIcon, Shield, User, Award, ShieldCheck } from "lucide-react";
 import styles from "./BottomNav.module.css";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -17,22 +17,12 @@ export default function BottomNav() {
                      roles.includes('ADMIN_DOJO') ? 'ADMIN_DOJO' : 'MEMBER';
 
   const navItems = [
-    { icon: <Home size={20} />, label: "Home", path: "/dashboard" },
+    { icon: <Home size={20} />, label: "Home", path: "/admin" },
+    { icon: <User size={20} />, label: "Anggota", path: "/admin/members" },
+    { icon: <Award size={20} />, label: "Event", path: "/admin/events" },
+    { icon: <ShieldCheck size={20} />, label: "Verifikasi", path: "/admin/verification" },
+    { icon: <User size={20} />, label: "Profil", path: "/profile" },
   ];
-
-  if (primaryRole.includes('ADMIN') && primaryRole !== 'ADMIN_BRANCH' && primaryRole !== 'ADMIN_DOJO') {
-    navItems.push({ icon: <MapIcon size={20} />, label: "Provinsi", path: "/provinsi" });
-  }
-
-  if (primaryRole.toUpperCase().includes('ADMIN')) {
-    navItems.push({ icon: <Shield size={20} />, label: "Admin", path: "/admin" });
-  }
-
-  if (primaryRole === 'MEMBER') {
-    navItems.push({ icon: <Award size={20} />, label: "Riwayat", path: "/achievement" });
-  }
-
-  navItems.push({ icon: <User size={20} />, label: "Profil", path: "/profile" });
 
   return (
     <nav className={styles.nav}>

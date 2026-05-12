@@ -93,12 +93,14 @@ export default function TopBar() {
     const role = user?.roles?.[0];
     const branchName = user?.managedBranchName;
     const provinceName = user?.managedProvinceName;
+    const dojoName = user?.managedDojoName;
 
     switch (role) {
       case 'ADMINISTRATOR': return 'Super Admin';
       case 'ADMIN_PUSAT': return 'PP INKAI';
-      case 'ADMIN_PROVINCE': return `PENGPROV ${provinceName || ''}`;
-      case 'ADMIN_BRANCH': return `PENGCAB ${branchName || ''}`;
+      case 'ADMIN_PROVINCE': return provinceName ? `PENGPROV ${provinceName}` : 'Admin Provinsi';
+      case 'ADMIN_BRANCH': return branchName ? `PENGCAB ${branchName}` : 'Admin Cabang';
+      case 'ADMIN_DOJO': return dojoName ? `DOJO ${dojoName}` : 'Admin Dojo';
       default: return role || 'Admin';
     }
   };

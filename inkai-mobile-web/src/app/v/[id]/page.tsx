@@ -64,7 +64,7 @@ export default function VerificationPage() {
     );
   }
 
-  const isActive = member.status === 'Active' || member.status === 'AKTIF';
+  const isActive = member.status === 'Active' || member.status === 'AKTIF' || member.isAdmin;
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-white p-6 pb-20 animate-in fade-in duration-700">
@@ -106,9 +106,10 @@ export default function VerificationPage() {
               </div>
             </div>
 
-            <div className="space-y-1">
               <h2 className="text-2xl font-black uppercase leading-tight">{member.fullName}</h2>
-              <p className="text-sm font-bold text-amber-500 font-mono tracking-widest">{member.nia || 'MEMPROSES NIA...'}</p>
+              <p className="text-sm font-bold text-amber-500 font-mono tracking-widest">
+                {member.nia || (member.isAdmin ? 'ADMINISTRATOR' : 'MEMPROSES NIA...')}
+              </p>
             </div>
 
             <div className="w-full pt-6 border-t border-white/5 grid grid-cols-1 gap-6">

@@ -10,6 +10,7 @@ export const getMyNotifications = async (req: any, res: Response) => {
     });
     res.json({ status: 'success', data: notifications });
   } catch (error: any) {
+    console.error('[NotificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -23,6 +24,23 @@ export const markAsRead = async (req: any, res: Response) => {
     });
     res.json({ status: 'success', message: 'Notification marked as read' });
   } catch (error: any) {
+    console.error('[NotificationController] Error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const clearReadNotifications = async (req: any, res: Response) => {
+  try {
+    const userId = req.user.userId;
+    await prisma.notification.deleteMany({
+      where: { 
+        userId,
+        isRead: true
+      }
+    });
+    res.json({ status: 'success', message: 'Read notifications cleared' });
+  } catch (error: any) {
+    console.error('[NotificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -75,6 +93,7 @@ export const broadcastNotification = async (req: any, res: Response) => {
       message: `Broadcast berhasil dikirim ke ${users.length} pengguna.` 
     });
   } catch (error: any) {
+    console.error('[NotificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };

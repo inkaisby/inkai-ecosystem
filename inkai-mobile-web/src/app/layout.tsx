@@ -37,28 +37,33 @@ export default function RootLayout({
               toastOptions={{
                 duration: 4000,
                 style: {
-                  background: 'rgba(20, 20, 25, 0.85)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
+                  background: 'rgba(10, 10, 12, 0.8)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
                   color: '#fff',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  fontSize: '12px',
-                  borderRadius: '16px',
-                  padding: '12px 20px',
-                  boxShadow: '0 20px 40px -15px rgba(0,0,0,0.5)',
-                  fontWeight: '600',
-                  letterSpacing: '0.02em',
+                  border: '1px solid rgba(255, 191, 0, 0.2)',
+                  fontSize: '13px',
+                  borderRadius: '20px',
+                  padding: '14px 24px',
+                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                  fontWeight: '700',
+                  letterSpacing: '0.01em',
+                  maxWidth: '350px',
                 },
                 success: {
+                  style: {
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    background: 'rgba(10, 15, 12, 0.85)',
+                  },
                   iconTheme: {
-                    primary: '#F59E0B',
-                    secondary: '#000',
+                    primary: '#22C55E',
+                    secondary: '#fff',
                   },
                 },
                 error: {
                   style: {
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    background: 'rgba(20, 5, 5, 0.9)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    background: 'rgba(20, 10, 10, 0.85)',
                   },
                   iconTheme: {
                     primary: '#EF4444',

@@ -10,7 +10,7 @@ router.get('/:id', eventController.getEventById);
 router.post('/', authenticate, eventController.createEvent);
 router.post('/register', authenticate, eventController.registerForEvent);
 router.put('/register/:id', authenticate, eventController.updateRegistration);
-router.put('/:id', authenticate, eventController.updateEvent);
+router.patch('/:id', authenticate, eventController.updateEvent);
 router.delete('/:id', authenticate, eventController.deleteEvent);
 
 export default router;

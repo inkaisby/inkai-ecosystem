@@ -32,6 +32,7 @@ export const createClaim = async (req: any, res: Response) => {
 
     res.json({ status: 'success', data: verification });
   } catch (error: any) {
+    console.error('[VerificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -51,29 +52,83 @@ export const getMyClaims = async (req: any, res: Response) => {
 
     res.json({ status: 'success', data: claims });
   } catch (error: any) {
+    console.error('[VerificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-export const getPendingClaims = async (req: Request, res: Response) => {
+export const getPendingClaims = async (req: any, res: Response) => {
   try {
+    const { roles, managedProvinceId, managedBranchId, managedDojoId } = req.user;
+    
+    let where: any = { status: 'PENDING' };
+
+    // Apply scoping based on admin role
+    const isSuperAdmin = roles.includes('ADMINISTRATOR') || roles.includes('ADMIN_PUSAT');
+    
+    if (!isSuperAdmin) {
+      if (roles.includes('ADMIN_PROVINCE') && managedProvinceId) {
+        where.member = { dojo: { branch: { provinceId: managedProvinceId } } };
+      } else if (roles.includes('ADMIN_BRANCH') && managedBranchId) {
+        where.member = { dojo: { branchId: managedBranchId } };
+      } else if (roles.includes('ADMIN_DOJO') && managedDojoId) {
+        where.member = { dojoId: managedDojoId };
+      }
+    }
+
     const claims = await prisma.verification.findMany({
-      where: { status: 'PENDING' },
-      include: { member: { select: { fullName: true, nia: true, currentRank: true } } },
+      where,
+      include: { 
+        member: { 
+          select: { 
+            fullName: true, 
+            nia: true, 
+            currentRank: true,
+            dojo: {
+              select: {
+                name: true,
+                branch: {
+                  select: {
+                    name: true,
+                    province: {
+                      select: { name: true }
+                    }
+                  }
+                }
+              }
+            }
+          } 
+        } 
+      },
       orderBy: { createdAt: 'asc' }
     });
     res.json({ status: 'success', data: claims });
   } catch (error: any) {
+    console.error('[VerificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-export const processClaim = async (req: Request, res: Response) => {
+export const processClaim = async (req: any, res: Response) => {
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
+    const { roles, managedProvinceId, managedBranchId, managedDojoId } = req.user;
 
-    const existingVerification = await prisma.verification.findUnique({ where: { id } });
+    const existingVerification = await prisma.verification.findUnique({ 
+      where: { id },
+      include: { 
+        member: {
+          include: {
+            dojo: {
+              include: {
+                branch: true
+              }
+            }
+          }
+        }
+      }
+    });
     
     if (!existingVerification) {
       return res.status(404).json({ status: 'error', message: 'Claim not found' });
@@ -81,6 +136,25 @@ export const processClaim = async (req: Request, res: Response) => {
 
     if (existingVerification.status !== 'PENDING') {
       return res.status(400).json({ status: 'error', message: 'Claim has already been processed' });
+    }
+
+    // Scoping check
+    const isSuperAdmin = roles.includes('ADMINISTRATOR') || roles.includes('ADMIN_PUSAT');
+    if (!isSuperAdmin) {
+      let hasAccess = false;
+      const memberDojo = existingVerification.member.dojo;
+      
+      if (roles.includes('ADMIN_PROVINCE') && managedProvinceId) {
+        hasAccess = memberDojo.branch.provinceId === managedProvinceId;
+      } else if (roles.includes('ADMIN_BRANCH') && managedBranchId) {
+        hasAccess = memberDojo.branchId === managedBranchId;
+      } else if (roles.includes('ADMIN_DOJO') && managedDojoId) {
+        hasAccess = existingVerification.member.dojoId === managedDojoId;
+      }
+
+      if (!hasAccess) {
+        return res.status(403).json({ status: 'error', message: 'Access denied: You cannot process claims outside your jurisdiction' });
+      }
     }
 
     const verification = await prisma.verification.update({
@@ -124,6 +198,7 @@ export const processClaim = async (req: Request, res: Response) => {
 
     res.json({ status: 'success', message: `Claim ${status.toLowerCase()} successfully` });
   } catch (error: any) {
+    console.error('[VerificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };

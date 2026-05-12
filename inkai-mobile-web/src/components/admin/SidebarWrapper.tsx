@@ -11,9 +11,9 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
   const isLoginPage = pathname === '/login';
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('inkai_token') || localStorage.getItem('token');
     if (!token && !isLoginPage) {
-      router.push('/login');
+      router.push('/admin/login');
     }
   }, [pathname, isLoginPage, router]);
 

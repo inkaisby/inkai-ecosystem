@@ -14,6 +14,7 @@ export const getAllEvents = async (req: Request, res: Response) => {
     });
     res.json({ status: 'success', data: events });
   } catch (error: any) {
+    console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -51,6 +52,7 @@ export const getMyEvents = async (req: any, res: Response) => {
 
     res.json({ status: 'success', data: events });
   } catch (error: any) {
+    console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -82,6 +84,7 @@ export const getEventById = async (req: Request, res: Response) => {
     if (!event) return res.status(404).json({ message: 'Event not found' });
     res.json({ status: 'success', data: event });
   } catch (error: any) {
+    console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -107,6 +110,7 @@ export const createEvent = async (req: any, res: Response) => {
     });
     res.status(201).json({ status: 'success', data: event });
   } catch (error: any) {
+    console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -181,6 +185,7 @@ export const registerForEvent = async (req: Request, res: Response) => {
 
     res.status(201).json({ status: 'success', data: registration });
   } catch (error: any) {
+    console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -264,6 +269,7 @@ export const updateRegistration = async (req: Request, res: Response) => {
 
     res.json({ status: 'success', data: registration });
   } catch (error: any) {
+    console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -329,6 +335,7 @@ export const updateEvent = async (req: any, res: Response) => {
 
     res.json({ status: 'success', data: event });
   } catch (error: any) {
+    console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -360,6 +367,7 @@ export const deleteEvent = async (req: any, res: Response) => {
 
     res.json({ status: 'success', message: 'Event deleted successfully' });
   } catch (error: any) {
+    console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };

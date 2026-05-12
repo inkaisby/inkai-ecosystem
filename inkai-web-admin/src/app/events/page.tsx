@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Calendar, 
   Plus, 
@@ -18,9 +18,21 @@ import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
+interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  location?: string;
+  _count?: {
+    registrations: number;
+  };
+}
+
 export default function EventsPage() {
   const router = useRouter();
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('Semua');
@@ -31,7 +43,7 @@ export default function EventsPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -42,17 +54,21 @@ export default function EventsPage() {
     category: 'Kegiatan Umum'
   });
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.events.getAll();
       setEvents(response.data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleDeleteEvent = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -69,8 +85,9 @@ export default function EventsPage() {
       fetchEvents();
       setShowDeleteModal(false);
       setEventToDelete(null);
-    } catch (err: any) {
-      toast.error(err.message || 'Gagal menghapus agenda');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Gagal menghapus agenda';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -78,7 +95,7 @@ export default function EventsPage() {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [fetchEvents]);
 
   const resetForm = () => {
     setFormData({
@@ -91,86 +108,77 @@ export default function EventsPage() {
     });
   };
 
-  const filteredEvents = events.filter(event => {
-    const isKejuaraan = event.title.toLowerCase().includes('kejurnas');
-    const isUjian = event.title.toLowerCase().includes('ujian');
-    const isOthers = !isKejuaraan && !isUjian;
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      const isKejuaraan = event.title.toLowerCase().includes('kejurnas');
+      const isUjian = event.title.toLowerCase().includes('ujian');
+      const isOthers = !isKejuaraan && !isUjian;
 
-    const matchesFilter = filter === 'Semua' || 
-      (filter === 'Kejuaraan' && isKejuaraan) ||
-      (filter === 'Ujian Kenaikan' && isUjian) ||
-      (filter === 'Lain-lain' && isOthers);
-    
-    const matchesSearch = event.title.toLowerCase().includes(search.toLowerCase()) ||
-      (event.location && event.location.toLowerCase().includes(search.toLowerCase()));
+      const matchesFilter = filter === 'Semua' || 
+        (filter === 'Kejuaraan' && isKejuaraan) ||
+        (filter === 'Ujian Kenaikan' && isUjian) ||
+        (filter === 'Lain-lain' && isOthers);
+      
+      const matchesSearch = event.title.toLowerCase().includes(search.toLowerCase()) ||
+        (event.location && event.location.toLowerCase().includes(search.toLowerCase()));
 
-    return matchesFilter && matchesSearch;
-  });
+      return matchesFilter && matchesSearch;
+    });
+  }, [events, filter, search]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 lg:pb-0">
       {/* Header */}
-      <div className="flex justify-between items-end">
-        <div>
-          <div className="flex items-center gap-2 text-amber-500 mb-2">
-            <Calendar size={20} />
-            <span className="text-sm font-bold uppercase tracking-widest">Manajemen Agenda</span>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-amber-500 mb-1">
+            <Calendar size={16} className="lg:w-5 lg:h-5" />
+            <span className="text-[10px] lg:text-sm font-bold uppercase tracking-[0.2em] lg:tracking-widest">Manajemen Agenda</span>
           </div>
-          <h2 className="text-3xl font-bold">Event & Kegiatan</h2>
-          <p className="text-gray-500 mt-1">Kelola jadwal turnamen, ujian kenaikan tingkat, dan gashuku nasional.</p>
+          <h2 className="text-2xl lg:text-3xl font-black uppercase text-white leading-tight">Event & Kegiatan</h2>
+          <p className="text-[11px] lg:text-sm text-gray-500 max-w-md">Kelola jadwal turnamen, ujian kenaikan tingkat, dan gashuku nasional.</p>
         </div>
         <button 
           onClick={() => {
             resetForm();
             setShowAddModal(true);
           }}
-          className="btn-primary flex items-center gap-2 text-sm"
+          className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 text-xs lg:text-sm py-3 lg:py-2"
         >
           <Plus size={18} />
           Buat Event Baru
         </button>
       </div>
 
-      {/* Categories Toggle */}
-      <div className="flex gap-4 p-1 bg-white/5 border border-white/10 rounded-2xl w-fit">
-        <button 
-          onClick={() => setFilter('Semua')}
-          className={`px-6 py-2 text-xs font-bold rounded-xl transition-all ${filter === 'Semua' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-white'}`}
-        >
-          Semua Event
-        </button>
-        <button 
-          onClick={() => setFilter('Kejuaraan')}
-          className={`px-6 py-2 text-xs font-bold rounded-xl transition-all ${filter === 'Kejuaraan' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-white'}`}
-        >
-          Kejuaraan
-        </button>
-        <button 
-          onClick={() => setFilter('Ujian Kenaikan')}
-          className={`px-6 py-2 text-xs font-bold rounded-xl transition-all ${filter === 'Ujian Kenaikan' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-white'}`}
-        >
-          Ujian Kenaikan
-        </button>
-        <button 
-          onClick={() => setFilter('Lain-lain')}
-          className={`px-6 py-2 text-xs font-bold rounded-xl transition-all ${filter === 'Lain-lain' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-white'}`}
-        >
-          Lain-lain
-        </button>
+      {/* Categories Toggle - Scrollable on Mobile */}
+      <div className="flex gap-2 lg:gap-4 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide no-scrollbar">
+        {['Semua Event', 'Kejuaraan', 'Ujian Kenaikan', 'Lain-lain'].map((cat) => (
+          <button 
+            key={cat}
+            onClick={() => setFilter(cat === 'Semua Event' ? 'Semua' : cat)}
+            className={`whitespace-nowrap px-5 lg:px-6 py-2.5 lg:py-2 text-[10px] lg:text-xs font-black uppercase tracking-widest rounded-full transition-all active:scale-95 ${
+              (filter === 'Semua' && cat === 'Semua Event') || filter === cat 
+                ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
+                : 'bg-white/5 text-gray-500 border border-white/5 hover:text-white'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="animate-spin text-amber-500" size={48} />
-          <p className="text-gray-500 text-sm">Memuat daftar event...</p>
+          <Loader2 className="animate-spin text-amber-500" size={40} />
+          <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Memuat daftar event...</p>
         </div>
       ) : error ? (
-        <div className="p-8 text-center text-red-500 glass-card">
-          Error: {error}
+        <div className="p-8 text-center text-red-500 glass-card border-red-500/20">
+          <p className="font-bold">Error: {error}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {filteredEvents.map((event) => (
               <div 
                 key={event.id} 
@@ -178,48 +186,52 @@ export default function EventsPage() {
                   setSelectedEvent(event);
                   setShowDetailModal(true);
                 }}
-                className="glass-card flex items-center gap-6 group cursor-pointer hover:border-amber-500/30 transition-all"
+                className="glass-card flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-6 group cursor-pointer hover:border-amber-500/30 transition-all p-4 lg:p-6"
               >
-                <div className={`w-20 h-20 rounded-2xl flex flex-col items-center justify-center border border-white/5 ${
+                <div className={`w-14 h-14 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl flex flex-col items-center justify-center border border-white/5 shrink-0 ${
                   event.title.toLowerCase().includes('kejurnas') ? 'bg-blue-500/10 text-blue-500' : 
                   event.title.toLowerCase().includes('ujian') ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
                 }`}>
-                  {event.title.toLowerCase().includes('kejurnas') ? <Trophy size={28} /> : 
-                   event.title.toLowerCase().includes('ujian') ? <GraduationCap size={28} /> : <Users size={28} />}
-                  <span className="text-[8px] font-bold uppercase mt-2">
+                  {event.title.toLowerCase().includes('kejurnas') ? <Trophy size={24} className="lg:w-7 lg:h-7" /> : 
+                   event.title.toLowerCase().includes('ujian') ? <GraduationCap size={24} className="lg:w-7 lg:h-7" /> : <Users size={24} className="lg:w-7 lg:h-7" />}
+                  <span className="text-[7px] lg:text-[8px] font-black uppercase mt-1 lg:mt-2">
                     {event.title.toLowerCase().includes('kejurnas') ? 'Turnamen' : 
                      event.title.toLowerCase().includes('ujian') ? 'Ujian' : 'Kegiatan'}
                   </span>
                 </div>
                 
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-lg font-bold group-hover:text-amber-500 transition-colors">{event.title}</h3>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-green-500/10 text-green-500`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-base lg:text-lg font-black uppercase group-hover:text-amber-500 transition-colors truncate">{event.title}</h3>
+                    <span className="shrink-0 text-[8px] px-2 py-0.5 rounded-full font-black uppercase bg-green-500/10 text-green-500 border border-green-500/20">
                       Buka
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar size={14} /> 
+                  <div className="flex flex-wrap gap-3 lg:gap-4 text-[10px] lg:text-xs text-gray-500">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Calendar size={12} className="text-amber-500" /> 
                       {new Date(event.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
-                    <span className="flex items-center gap-1.5"><MapPin size={14} /> {event.location || 'Indonesia'}</span>
-                    <span className="flex items-center gap-1.5 font-bold text-white">
-                      <Users size={14} /> {event._count?.registrations || 0} Terdaftar
+                    <span className="flex items-center gap-1.5 font-medium truncate max-w-[150px]">
+                      <MapPin size={12} className="text-amber-500" /> 
+                      {event.location || 'Indonesia'}
+                    </span>
+                    <span className="flex items-center gap-1.5 font-black text-white">
+                      <Users size={12} className="text-amber-500" /> 
+                      {event._count?.registrations || 0} Terdaftar
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-white/5">
                   <button 
                     onClick={(e) => handleDeleteEvent(event.id, e)}
-                    className="p-2 bg-white/5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                    className="flex-1 sm:flex-none p-2.5 bg-white/5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all border border-white/5"
                     title="Hapus Agenda"
                   >
                     <Trash2 size={18} />
                   </button>
-                  <button className="p-2 bg-white/5 rounded-lg hover:bg-amber-500 hover:text-black transition-all">
+                  <button className="flex-1 sm:flex-none p-2.5 bg-white/5 rounded-xl hover:bg-amber-500 hover:text-black transition-all border border-white/5">
                     <ChevronRight size={20} />
                   </button>
                 </div>
@@ -228,42 +240,45 @@ export default function EventsPage() {
             
             {filteredEvents.length === 0 && (
               <div className="py-20 text-center text-gray-500 glass-card">
-                Belum ada agenda kegiatan yang sesuai dengan filter.
+                <p className="text-xs font-bold uppercase tracking-widest">Belum ada agenda kegiatan.</p>
               </div>
             )}
           </div>
 
           {/* Quick Stats & Filters */}
           <div className="space-y-6">
-            <div className="glass-card">
-              <h3 className="font-bold mb-4">Cari Agenda</h3>
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+            <div className="glass-card space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-widest text-white">Cari Agenda</h3>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                 <input 
                   type="text" 
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Nama event..." 
-                  className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/50"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/50 text-white placeholder:text-gray-600"
                 />
               </div>
               <button 
                 onClick={() => setSearch('')}
-                className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-white/10 transition-all"
+                className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all text-gray-400"
               >
                 Reset Filter
               </button>
             </div>
 
-            <div className="glass-card bg-amber-500/5 border-amber-500/20">
-              <h3 className="font-bold text-amber-500 mb-2">Statistik Tahun Ini</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400">Total Event Aktif</span>
-                  <span className="text-lg font-bold text-white">{events.length}</span>
-                </div>
-                <div className="w-full bg-white/5 h-1.5 rounded-full mt-4 overflow-hidden">
-                  <div className="bg-amber-500 h-full w-1/4 rounded-full" />
+            <div className="glass-card bg-amber-500/5 border-amber-500/20 relative overflow-hidden">
+              <div className="absolute -left-4 -bottom-4 opacity-[0.1] text-white -rotate-12">
+                <Trophy size={100} />
+              </div>
+              <div className="relative z-10 flex flex-col items-end text-right">
+                <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 mb-4">Statistik Tahun Ini</h3>
+                <div className="space-y-2 w-full flex flex-col items-end">
+                  <span className="text-4xl font-black text-white">{events.length}</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Total Event Aktif</span>
+                  <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden mt-4">
+                    <div className="bg-amber-500 h-full rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)] transition-all duration-1000" style={{ width: `${Math.min((events.length / 10) * 100, 100)}%` }} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -273,110 +288,108 @@ export default function EventsPage() {
 
       {/* Event Detail Modal */}
       {showDetailModal && selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="glass-card w-full max-w-2xl p-0 overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="h-32 bg-gradient-to-r from-amber-500 to-amber-700 relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 overflow-hidden">
+          <div className="flex-1 flex flex-col w-full max-w-[480px] h-full lg:h-auto lg:max-h-[90vh] mx-auto relative bg-[#0A0A0C] lg:rounded-[2.5rem] lg:border lg:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="h-48 lg:h-64 bg-gradient-to-br from-amber-400/20 via-amber-600/20 to-[#0A0A0C] relative flex items-center justify-center overflow-hidden border-b border-white/5">
               <button 
                 onClick={() => setShowDetailModal(false)}
-                className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-all z-10"
+                className="absolute top-6 right-6 p-3 bg-black/40 hover:bg-black/60 text-white rounded-2xl backdrop-blur-md transition-all z-20 border border-white/10"
               >
                 <X size={20} />
               </button>
-              <div className="absolute -bottom-12 left-8">
-                <div className="w-24 h-24 rounded-2xl bg-[#1e1e24] p-1 border-4 border-[#1e1e24] shadow-xl">
-                  <div className={`w-full h-full rounded-xl flex items-center justify-center font-bold text-black text-3xl ${
-                    selectedEvent.title.toLowerCase().includes('kejurnas') ? 'bg-blue-500' : 
-                    selectedEvent.title.toLowerCase().includes('ujian') ? 'bg-amber-500' : 'bg-green-500'
-                  }`}>
-                    {selectedEvent.title.toLowerCase().includes('kejurnas') ? <Trophy size={40} /> : 
-                     selectedEvent.title.toLowerCase().includes('ujian') ? <GraduationCap size={40} /> : <Users size={40} />}
+              
+              {/* Background Watermark */}
+              <div className="absolute -right-12 -bottom-12 opacity-[0.03] rotate-12 text-white pointer-events-none">
+                {selectedEvent.title.toLowerCase().includes('kejurnas') ? <Trophy size={280} /> : 
+                 selectedEvent.title.toLowerCase().includes('ujian') ? <GraduationCap size={280} /> : <Users size={280} />}
+              </div>
+
+              <div className="relative z-10 text-center px-8">
+                <div className={`w-20 h-20 rounded-[1.75rem] mx-auto mb-4 flex items-center justify-center shadow-2xl ${
+                  selectedEvent.title.toLowerCase().includes('kejurnas') ? 'bg-blue-500 text-white' : 
+                  selectedEvent.title.toLowerCase().includes('ujian') ? 'bg-amber-500 text-black' : 'bg-green-500 text-white'
+                }`}>
+                  {selectedEvent.title.toLowerCase().includes('kejurnas') ? <Trophy size={32} /> : 
+                   selectedEvent.title.toLowerCase().includes('ujian') ? <GraduationCap size={32} /> : <Users size={32} />}
+                </div>
+                <h3 className="text-xl lg:text-2xl font-black uppercase tracking-tight text-white leading-tight">{selectedEvent.title}</h3>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
+              <div className="flex flex-wrap gap-2">
+                <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase border ${
+                  selectedEvent.title.toLowerCase().includes('kejurnas') ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 
+                  selectedEvent.title.toLowerCase().includes('ujian') ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-green-500/10 text-green-500 border-green-500/20'
+                }`}>
+                  {selectedEvent.title.toLowerCase().includes('kejurnas') ? 'Kejuaraan' : 
+                   selectedEvent.title.toLowerCase().includes('ujian') ? 'Ujian Kenaikan' : 'Kegiatan Umum'}
+                </span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg text-[9px] font-bold text-gray-400">
+                  <MapPin size={10} className="text-amber-500" />
+                  <span className="uppercase tracking-widest truncate max-w-[180px]">{selectedEvent.location || 'Indonesia'}</span>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-amber-500">
+                    <Calendar size={14} />
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Waktu Pelaksanaan</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+                      <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Mulai</p>
+                      <p className="text-[11px] font-bold text-white">
+                        {new Date(selectedEvent.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+                      <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Selesai</p>
+                      <p className="text-[11px] font-bold text-white">
+                        {new Date(selectedEvent.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-amber-500">
+                    <Users size={14} />
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Informasi Peserta</h4>
+                  </div>
+                  <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold">Pendaftar Saat Ini</span>
+                      <span className="text-2xl font-black text-amber-500">{selectedEvent._count?.registrations || 0}</span>
+                    </div>
+                    <div className="pt-4 border-t border-white/5">
+                      <p className="text-[9px] text-gray-500 uppercase font-black mb-2 tracking-widest">Deskripsi Agenda</p>
+                      <p className="text-xs text-gray-400 leading-relaxed italic">
+                        &quot;{selectedEvent.description || 'Tidak ada deskripsi tambahan.'}&quot;
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="pt-16 pb-8 px-8">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h3 className="text-2xl font-bold uppercase tracking-tight text-white mb-1">{selectedEvent.title}</h3>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                      selectedEvent.title.toLowerCase().includes('kejurnas') ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 
-                      selectedEvent.title.toLowerCase().includes('ujian') ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-green-500/10 text-green-500 border-green-500/20'
-                    }`}>
-                      {selectedEvent.title.toLowerCase().includes('kejurnas') ? 'Kejuaraan' : 
-                       selectedEvent.title.toLowerCase().includes('ujian') ? 'Ujian Kenaikan' : 'Kegiatan Umum'}
-                    </span>
-                    <span className="text-gray-500 text-xs font-mono flex items-center gap-1">
-                      <MapPin size={12} /> {selectedEvent.location || 'Indonesia'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-3">Waktu Pelaksanaan</p>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 text-gray-300">
-                        <div className="p-2 bg-white/5 rounded-lg"><Calendar size={16} className="text-amber-500" /></div>
-                        <div>
-                          <p className="text-[10px] text-gray-500 uppercase">Tanggal Mulai</p>
-                          <p className="text-sm font-medium">
-                            {new Date(selectedEvent.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-gray-300">
-                        <div className="p-2 bg-white/5 rounded-lg"><Calendar size={16} className="text-amber-500" /></div>
-                        <div>
-                          <p className="text-[10px] text-gray-500 uppercase">Tanggal Selesai</p>
-                          <p className="text-sm font-medium">
-                            {new Date(selectedEvent.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-3">Informasi Lainnya</p>
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-4">
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase">Pendaftar</p>
-                        <p className="text-sm font-bold text-white">{selectedEvent._count?.registrations || 0} Anggota Terdaftar</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase">Deskripsi</p>
-                        <p className="text-xs text-gray-400 leading-relaxed">{selectedEvent.description || 'Tidak ada deskripsi tambahan.'}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-10 flex gap-3">
-                <button 
-                  onClick={() => setShowDetailModal(false)}
-                  className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all text-gray-400"
-                >
-                  Tutup
-                </button>
-                <button 
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    // Navigate to members page with event filter if possible, 
-                    // or just navigate to a dedicated participants page (placeholder)
-                    router.push(`/events/${selectedEvent.id}/participants`);
-                  }}
-                  className="flex-[2] py-3 rounded-xl bg-amber-500 text-black text-sm font-black uppercase tracking-widest hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20"
-                >
-                  Kelola Peserta
-                </button>
-              </div>
+            <div className="p-6 bg-[#0A0A0C] border-t border-white/5 mt-auto pb-[env(safe-area-inset-bottom,24px)] flex gap-3">
+              <button 
+                onClick={() => setShowDetailModal(false)}
+                className="flex-1 py-4 rounded-2xl border border-white/10 text-xs font-bold hover:bg-white/5 transition-all text-gray-400 uppercase tracking-widest"
+              >
+                Tutup
+              </button>
+              <button 
+                onClick={() => {
+                  setShowDetailModal(false);
+                  router.push(`/events/${selectedEvent.id}/participants`);
+                }}
+                className="flex-[2] py-4 rounded-2xl bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
+              >
+                Kelola Peserta
+              </button>
             </div>
           </div>
         </div>
@@ -384,219 +397,220 @@ export default function EventsPage() {
 
       {/* Add Event Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="glass-card w-full max-w-lg p-8 animate-in zoom-in-95 duration-300">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold uppercase tracking-tight">Buat Agenda Baru</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 overflow-hidden">
+          <div className="flex-1 flex flex-col w-full max-w-[480px] h-full lg:h-auto lg:max-h-[90vh] mx-auto relative bg-[#0A0A0C] lg:rounded-[2.5rem] lg:border lg:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center p-6 border-b border-white/5 pt-[env(safe-area-inset-top,24px)] bg-[#0A0A0C]">
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-white leading-none mb-1">Buat Agenda</h3>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Lengkapi detail informasi</p>
+              </div>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white/5 transition-all"
+                className="p-3 bg-white/5 text-gray-400 hover:text-white rounded-2xl border border-white/10 active:scale-90 transition-all"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              setIsSubmitting(true);
-              try {
-                // Prepend keyword based on category choice to satisfy current filtering logic
-                let finalTitle = formData.title;
-                if (formData.category === 'Kejuaraan' && !finalTitle.toLowerCase().includes('kejurnas')) {
-                  finalTitle = `KEJURNAS: ${finalTitle}`;
-                } else if (formData.category === 'Ujian Kenaikan' && !finalTitle.toLowerCase().includes('ujian')) {
-                  finalTitle = `UJIAN: ${finalTitle}`;
+            <div className="flex-1 overflow-y-auto p-6">
+              <form id="addEventForm" onSubmit={async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                try {
+                  let finalTitle = formData.title;
+                  if (formData.category === 'Kejuaraan' && !finalTitle.toLowerCase().includes('kejurnas')) {
+                    finalTitle = `KEJURNAS: ${finalTitle}`;
+                  } else if (formData.category === 'Ujian Kenaikan' && !finalTitle.toLowerCase().includes('ujian')) {
+                    finalTitle = `UJIAN: ${finalTitle}`;
+                  }
+
+                  await api.events.create({
+                    ...formData,
+                    title: finalTitle,
+                    startDate: new Date(formData.startDate).toISOString(),
+                    endDate: new Date(formData.endDate).toISOString(),
+                  });
+                  toast.success('Agenda berhasil dibuat!');
+                  setShowAddModal(false);
+                  resetForm();
+                  fetchEvents();
+                } catch (err: unknown) {
+                  const errorMessage = err instanceof Error ? err.message : 'Gagal membuat agenda';
+                  toast.error(errorMessage);
+                } finally {
+                  setIsSubmitting(false);
                 }
-
-                await api.events.create({
-                  ...formData,
-                  title: finalTitle,
-                  startDate: new Date(formData.startDate).toISOString(),
-                  endDate: new Date(formData.endDate).toISOString(),
-                });
-                toast.success('Agenda berhasil dibuat!');
-                setShowAddModal(false);
-                resetForm();
-                fetchEvents();
-              } catch (err: any) {
-                toast.error(err.message || 'Gagal membuat agenda');
-              } finally {
-                setIsSubmitting(false);
-              }
-            }} className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Kategori Agenda</label>
-                  <select 
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    required
-                    onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Harap pilih kategori agenda')}
-                    onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
-                    className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
-                    style={{ colorScheme: 'dark' }}
-                  >
-                    <option value="Kegiatan Umum">Kegiatan Umum (Lain-lain)</option>
-                    <option value="Kejuaraan">Kejuaraan / Turnamen</option>
-                    <option value="Ujian Kenaikan">Ujian Kenaikan Tingkat</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Nama Event / Agenda</label>
-                  <div className="relative">
-                    <select 
-                      required
-                      onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Harap pilih salah satu item dari daftar')}
-                      onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
-                      style={{ colorScheme: 'dark' }}
-                    >
-                      <option value="">Pilih salah satu item di daftar...</option>
-                      {formData.category === 'Kejuaraan' && (
-                        <>
-                          <option value="KEJURNAS INKAI">KEJURNAS INKAI</option>
-                          <option value="KEJURDA INKAI">KEJURDA INKAI</option>
-                          <option value="OPEN TOURNAMENT">OPEN TOURNAMENT</option>
-                          <option value="PIALA GUBERNUR">PIALA GUBERNUR</option>
-                          <option value="PIALA WALIKOTA">PIALA WALIKOTA</option>
-                        </>
-                      )}
-                      {formData.category === 'Ujian Kenaikan' && (
-                        <>
-                          <option value="UJIAN KENAIKAN TINGKAT (UKT)">UJIAN KENAIKAN TINGKAT (UKT)</option>
-                          <option value="GASHUKU & UKT NASIONAL">GASHUKU & UKT NASIONAL</option>
-                          <option value="UJIAN DAN (SABUK HITAM)">UJIAN DAN (SABUK HITAM)</option>
-                        </>
-                      )}
-                      {formData.category === 'Kegiatan Umum' && (
-                        <>
-                          <option value="LATIHAN BERSAMA (GASHUKU)">LATIHAN BERSAMA (GASHUKU)</option>
-                          <option value="RAPAT KERJA (RAKER)">RAPAT KERJA (RAKER)</option>
-                          <option value="PELATIHAN PELATIH / WASIT">PELATIHAN PELATIH / WASIT</option>
-                          <option value="KEGIATAN SOSIAL">KEGIATAN SOSIAL</option>
-                        </>
-                      )}
-                    </select>
-                    <ChevronRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none" />
+              }} className="space-y-6">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">Kategori Agenda</label>
+                    <div className="relative">
+                      <select 
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        required
+                        className="w-full bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer text-white shadow-inner"
+                        style={{ colorScheme: 'dark' }}
+                      >
+                        <option value="Kegiatan Umum">Kegiatan Umum (Lain-lain)</option>
+                        <option value="Kejuaraan">Kejuaraan / Turnamen</option>
+                        <option value="Ujian Kenaikan">Ujian Kenaikan Tingkat</option>
+                      </select>
+                      <ChevronRight size={16} className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none" />
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Lokasi</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                    <input 
-                      type="text" 
-                      required
-                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Harap isi lokasi kegiatan')}
-                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="Gedung Olahraga, Kota..."
-                      className="w-full bg-[#1e1e24] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">Nama Event / Agenda</label>
+                    <div className="relative">
+                      <select 
+                        required
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        className="w-full bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer text-white shadow-inner"
+                        style={{ colorScheme: 'dark' }}
+                      >
+                        <option value="">Pilih salah satu item di daftar...</option>
+                        {formData.category === 'Kejuaraan' && (
+                          <>
+                            <option value="KEJURNAS INKAI">KEJURNAS INKAI</option>
+                            <option value="KEJURDA INKAI">KEJURDA INKAI</option>
+                            <option value="OPEN TOURNAMENT">OPEN TOURNAMENT</option>
+                            <option value="PIALA GUBERNUR">PIALA GUBERNUR</option>
+                            <option value="PIALA WALIKOTA">PIALA WALIKOTA</option>
+                          </>
+                        )}
+                        {formData.category === 'Ujian Kenaikan' && (
+                          <>
+                            <option value="UJIAN KENAIKAN TINGKAT (UKT)">UJIAN KENAIKAN TINGKAT (UKT)</option>
+                            <option value="GASHUKU & UKT NASIONAL">GASHUKU & UKT NASIONAL</option>
+                            <option value="UJIAN DAN (SABUK HITAM)">UJIAN DAN (SABUK HITAM)</option>
+                          </>
+                        )}
+                        {formData.category === 'Kegiatan Umum' && (
+                          <>
+                            <option value="LATIHAN BERSAMA (GASHUKU)">LATIHAN BERSAMA (GASHUKU)</option>
+                            <option value="RAPAT KERJA (RAKER)">RAPAT KERJA (RAKER)</option>
+                            <option value="PELATIHAN PELATIH / WASIT">PELATIHAN PELATIH / WASIT</option>
+                            <option value="KEGIATAN SOSIAL">KEGIATAN SOSIAL</option>
+                          </>
+                        )}
+                      </select>
+                      <ChevronRight size={16} className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">Lokasi</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                      <input 
+                        type="text" 
+                        required
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="Gedung Olahraga, Kota..."
+                        className="w-full bg-[#1e1e24] border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:border-amber-500 transition-all text-white placeholder:text-gray-600 shadow-inner"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">Mulai</label>
+                      <input 
+                        type="date" 
+                        required
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                        className="w-full bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 transition-all text-white shadow-inner"
+                        style={{ colorScheme: 'dark' }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">Selesai</label>
+                      <input 
+                        type="date" 
+                        required
+                        value={formData.endDate}
+                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                        className="w-full bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 transition-all text-white shadow-inner"
+                        style={{ colorScheme: 'dark' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">Deskripsi Singkat</label>
+                    <textarea 
+                      rows={4}
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Jelaskan detail kegiatan..."
+                      className="w-full bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 transition-all resize-none text-white placeholder:text-gray-600 shadow-inner"
                     />
                   </div>
                 </div>
+              </form>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Tanggal Mulai</label>
-                    <input 
-                      type="date" 
-                      required
-                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Harap isi tanggal mulai')}
-                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
-                      style={{ colorScheme: 'dark' }}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Tanggal Selesai</label>
-                    <input 
-                      type="date" 
-                      required
-                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Harap isi tanggal selesai')}
-                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all"
-                      style={{ colorScheme: 'dark' }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1.5 block">Deskripsi Singkat</label>
-                  <textarea 
-                    rows={3}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Jelaskan detail kegiatan..."
-                    className="w-full bg-[#1e1e24] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 transition-all resize-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button 
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition-all text-gray-400"
-                >
-                  Batal
-                </button>
-                <button 
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-[2] py-3 rounded-xl bg-amber-500 text-black text-sm font-black uppercase tracking-widest hover:bg-amber-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Memproses...
-                    </>
-                  ) : (
-                    'Simpan Agenda'
-                  )}
-                </button>
-              </div>
-            </form>
+            <div className="p-6 bg-[#0A0A0C] border-t border-white/5 mt-auto pb-[env(safe-area-inset-bottom,24px)] flex gap-3">
+              <button 
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 py-4 rounded-2xl border border-white/10 text-xs font-bold hover:bg-white/5 transition-all text-gray-400 uppercase tracking-widest"
+              >
+                Batal
+              </button>
+              <button 
+                form="addEventForm"
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-[2] py-4 rounded-2xl bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Memproses...
+                  </>
+                ) : (
+                  'Simpan Agenda'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Elegant Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="glass-card w-full max-w-sm p-8 text-center animate-in zoom-in-95 duration-300 border-red-500/20">
-            <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/5">
-              <Trash2 size={40} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-[360px] p-8 text-center rounded-[2.5rem] border border-white/10 shadow-2xl bg-[#1e1e24] relative overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-red-500/5 rounded-full blur-3xl" />
+            
+            <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-red-500/10 border border-red-500/20">
+              <Trash2 size={32} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-tight">Hapus Agenda?</h3>
-            <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-              Tindakan ini tidak dapat dibatalkan. Semua data pendaftaran terkait juga akan dihapus.
+            <h3 className="text-xl font-black text-white mb-3 uppercase tracking-tight">Hapus Agenda?</h3>
+            <p className="text-gray-400 text-xs mb-8 leading-relaxed font-medium">
+              Tindakan ini <span className="text-red-400 font-bold">permanen</span>. Semua data pendaftaran terkait akan ikut terhapus.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={confirmDelete}
+                disabled={isSubmitting}
+                className="w-full py-4 bg-red-500 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-red-500/20 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? 'Menghapus...' : 'Ya, Hapus Sekarang'}
+              </button>
               <button 
                 onClick={() => {
                   setShowDeleteModal(false);
                   setEventToDelete(null);
                 }}
-                className="flex-1 py-3 bg-white/5 text-gray-400 font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all"
+                className="w-full py-4 bg-white/5 text-gray-400 font-bold text-xs uppercase tracking-[0.2em] rounded-2xl border border-white/5 active:scale-95 transition-all"
               >
-                Batal
-              </button>
-              <button 
-                onClick={confirmDelete}
-                disabled={isSubmitting}
-                className="flex-1 py-3 bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-red-600 shadow-xl shadow-red-500/20 active:scale-95 transition-all disabled:opacity-50"
-              >
-                {isSubmitting ? 'Menghapus...' : 'Ya, Hapus'}
+                Batalkan
               </button>
             </div>
           </div>

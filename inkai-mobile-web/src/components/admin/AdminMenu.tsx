@@ -22,6 +22,7 @@ import {
   Home
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import styles from './AdminMenu.module.css';
 
 const adminItems = [
@@ -31,7 +32,6 @@ const adminItems = [
   { icon: ShieldCheck, label: 'Verifikasi', path: '/admin/verification' },
   { icon: Calendar, label: 'Event', path: '/admin/events' },
   { icon: MessageSquare, label: 'Broadcast', path: '/admin/broadcast' },
-  { icon: Wallet, label: 'Keuangan', path: '/admin/billing' },
   { icon: Settings, label: 'Settings', path: '/admin/settings' },
 ];
 
@@ -48,6 +48,9 @@ const memberItems = [
 export default function AdminMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+  const { isAuthenticated, logout, isLoading } = useAuth();
+
+  if (isLoading || !isAuthenticated) return null;
 
   const handleNavigate = (path: string) => {
     setIsOpen(false);
@@ -55,9 +58,7 @@ export default function AdminMenu() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('inkai_token');
-    localStorage.removeItem('user');
+    logout();
     setIsOpen(false);
     router.push('/admin/login');
   };

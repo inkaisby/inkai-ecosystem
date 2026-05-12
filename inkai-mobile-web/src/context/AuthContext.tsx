@@ -12,6 +12,7 @@ interface AuthContextType {
   fetchProfile: () => Promise<void>;
   updateUser: (data: any) => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isProfileComplete: boolean;
   isDocumentComplete: boolean;
 }
@@ -24,10 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('inkai_token');
+    const savedToken = localStorage.getItem('inkai_token') || localStorage.getItem('token');
     if (savedToken) {
       setToken(savedToken);
-      fetchProfile();
+      if (!user) fetchProfile();
     } else {
       setIsLoading(false);
     }
@@ -70,20 +71,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     localStorage.removeItem('inkai_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   const updateUser = (newData: any) => {
     setUser((prev: any) => ({ ...prev, ...newData }));
   };
 
-  const isProfileComplete = React.useMemo(() => {
+  const isAdmin = React.useMemo(() => {
     if (!user) return false;
-    
-    // Admins are exempt from member profile checks
-    const isAdmin = Array.isArray(user.roles) && user.roles.some((r: any) => {
+    return Array.isArray(user.roles) && user.roles.some((r: any) => {
       const roleName = typeof r === 'string' ? r : r.name;
       return roleName && roleName.includes('ADMIN');
     });
+  }, [user]);
+
+  const isProfileComplete = React.useMemo(() => {
+    if (!user) return false;
     if (isAdmin) return true;
 
     // Core User fields
@@ -103,15 +108,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!gender || !birthDate || !birthPlace || !address || !dojoId) return false;
     
     return true;
-  }, [user]);
+  }, [user, isAdmin]);
 
   const isDocumentComplete = React.useMemo(() => {
     if (!user) return false;
-    
-    const isAdmin = Array.isArray(user.roles) && user.roles.some((r: any) => {
-      const roleName = typeof r === 'string' ? r : r.name;
-      return roleName && roleName.includes('ADMIN');
-    });
     if (isAdmin) return true;
 
     const birthCertificateUrl = user.birthCertificateUrl || user.member?.birthCertificateUrl;
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!birthCertificateUrl || !bpjsCardUrl) return false;
     
     return true;
-  }, [user]);
+  }, [user, isAdmin]);
 
   return (
     <AuthContext.Provider value={{ 
@@ -133,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fetchProfile,
       updateUser, 
       isAuthenticated: !!token, 
+      isAdmin,
       isProfileComplete,
       isDocumentComplete 
     }}>

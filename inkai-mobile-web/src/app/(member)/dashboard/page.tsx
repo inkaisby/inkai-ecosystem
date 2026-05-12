@@ -9,14 +9,15 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventApi, getAssetUrl } from "@/lib/api";
+import { eventApi, getAssetUrl, api } from "@/lib/api";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, logout, isLoading: isAuthLoading, isProfileComplete, isDocumentComplete } = useAuth();
+  const { user, logout, isLoading: isAuthLoading, isAdmin, isProfileComplete, isDocumentComplete } = useAuth();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -28,8 +29,24 @@ export default function Dashboard() {
       router.push("/");
     } else if (user) {
       fetchEvents();
+      fetchUnreadCount();
     }
   }, [user, isAuthLoading, router]);
+
+  const fetchUnreadCount = async () => {
+    if (!user) return;
+    try {
+      const res = await api.notifications.getMy();
+      if (res.status === 'success') {
+        const count = (res.data || []).filter((n: any) => !n.isRead).length;
+        setUnreadCount(count);
+      }
+    } catch (error: any) {
+      if (error.response?.status !== 401) {
+        console.error("Fetch unread count error:", error);
+      }
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -105,6 +122,7 @@ export default function Dashboard() {
               alt={user?.fullName || "Member"} 
               width={40} 
               height={40} 
+              unoptimized
               className={styles.avatar} 
             />
           </div>
@@ -119,7 +137,10 @@ export default function Dashboard() {
         </div>
         <div className={styles.headerActions}>
           <button className={styles.iconBtn} onClick={() => router.push("/messages")}><MessageCircle size={20} /></button>
-          <button className={styles.iconBtn} onClick={() => router.push("/notifications")}><Bell size={20} /></button>
+          <button className={styles.iconBtn} onClick={() => router.push("/notifications")}>
+            <Bell size={20} />
+            {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
+          </button>
           <button 
             className={`${styles.iconBtn} ${styles.logout}`}
             onClick={() => { logout(); router.push("/"); }}
@@ -129,7 +150,7 @@ export default function Dashboard() {
         </div>
       </header>
       
-      {user.status === 'PENDING' && (
+      {user.status === 'PENDING' && !isAdmin && (
         <section className={styles.section}>
           <div className={styles.pendingNotice}>
             <Bell size={24} className={styles.pulse} />
@@ -143,7 +164,7 @@ export default function Dashboard() {
 
       <section className={styles.section}>
         <MemberCard 
-          nia={user.nia || "MEMPROSES NIA..."} 
+          nia={user.nia || (isAdmin ? "ADMINISTRATOR" : "MEMPROSES NIA...")} 
           name={user.fullName || "Anggota"} 
           dojo={user.dojo ? `${user.dojo.name} - ${user.dojo.branch?.province?.name || 'Pusat'}` : 'Dojo INKAI - Pusat'} 
           qrValue={typeof window !== 'undefined' ? `${window.location.origin}/v/${user.nia || user.id}` : user.id}
@@ -187,7 +208,7 @@ export default function Dashboard() {
           <button className={styles.seeAll} onClick={() => router.push("/events")}>Lihat Semua</button>
         </div>
         <div className={styles.eventList}>
-          {!user.nia ? (
+          {!user.nia && !isAdmin ? (
             <div className={styles.lockedState}>
                <Lock size={32} className={styles.lockedIcon} />
                <p className={styles.lockedText}>

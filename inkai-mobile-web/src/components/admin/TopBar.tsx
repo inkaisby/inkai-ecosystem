@@ -1,44 +1,69 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { User, LogOut, Bell, ChevronDown, Check } from 'lucide-react';
+import { User, LogOut, Bell, ChevronDown, Check, Shield, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function TopBar() {
-  const [user, setUser] = useState<any>(null);
+  const { user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Close notifications when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showNotifications && !target.closest('.notifications-container')) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications]);
+
+  // Lock body scroll on mobile when notifications are open
+  useEffect(() => {
+    if (showNotifications && window.innerWidth < 640) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showNotifications]);
+
   const fetchNotifications = async () => {
+    if (!isAuthenticated || !user) return;
     try {
       const res = await api.notifications.getMy();
-      setNotifications(res.data);
-      setUnreadCount(res.data.filter((n: any) => !n.isRead).length);
-    } catch (err) {
-      console.error('Failed to fetch notifications', err);
+      setNotifications(res.data || []);
+      setUnreadCount((res.data || []).filter((n: any) => !n.isRead).length);
+    } catch (err: any) {
+      if (err.response?.status !== 401) {
+        console.error('Failed to fetch notifications', err);
+      }
     }
   };
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
+    if (isAuthenticated && user) {
+      fetchNotifications();
+      // Refresh notifications every 1 minute
+      const interval = setInterval(fetchNotifications, 60000);
+      return () => clearInterval(interval);
     }
-    fetchNotifications();
-    
-    // Refresh notifications every 1 minute
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [isAuthenticated, user]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/login');
+    logout();
+    router.push('/admin/login');
   };
 
   const handleMarkAsRead = async (id: string) => {
@@ -60,6 +85,15 @@ export default function TopBar() {
     }
   };
 
+  const handleClearRead = async () => {
+    try {
+      await api.notifications.clearRead();
+      fetchNotifications();
+    } catch (err) {
+      console.error('Failed to clear read notifications', err);
+    }
+  };
+
   const getTimeAgo = (date: string) => {
     const now = new Date();
     const then = new Date(date);
@@ -78,102 +112,149 @@ export default function TopBar() {
     const role = user?.roles?.[0];
     const branchName = user?.managedBranchName;
     const provinceName = user?.managedProvinceName;
+    const dojoName = user?.managedDojoName;
 
     switch (role) {
       case 'ADMINISTRATOR': return 'Super Admin';
       case 'ADMIN_PUSAT': return 'PP INKAI';
-      case 'ADMIN_PROVINCE': return `PENGPROV ${provinceName || ''}`;
-      case 'ADMIN_BRANCH': return `PENGCAB ${branchName || ''}`;
+      case 'ADMIN_PROVINCE': return provinceName ? `PENGPROV ${provinceName}` : 'Admin Provinsi';
+      case 'ADMIN_BRANCH': return branchName ? `PENGCAB ${branchName}` : 'Admin Cabang';
+      case 'ADMIN_DOJO': return dojoName ? `DOJO ${dojoName}` : 'Admin Dojo';
       default: return role || 'Admin';
     }
   };
 
   return (
-    <header className="h-20 border-b border-white/5 bg-[#0a0a0c]/50 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between px-8">
-      <div>
-        {/* Placeholder for dynamic breadcrumbs or search if needed */}
+    <header className="h-16 border-b border-white/5 bg-[#0a0a0c]/80 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between px-5">
+      <div className="flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+          <Shield size={16} className="text-black" strokeWidth={3} />
+        </div>
+        <h1 className="text-xs font-black tracking-tighter text-white uppercase">INKAI <span className="text-amber-500">ADMIN</span></h1>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2">
         {/* Notifications */}
-        <div className="relative">
+        <div className="relative notifications-container">
           <button 
             onClick={() => {
               setShowNotifications(!showNotifications);
               if (!showNotifications) fetchNotifications();
             }}
-            className={`p-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all relative ${showNotifications ? 'bg-white/10 text-white' : ''}`}
+            className={`p-2 rounded-full text-gray-400 hover:text-white transition-all relative ${showNotifications ? 'bg-white/10 text-white' : ''}`}
           >
-            <Bell size={20} />
+            <Bell size={20} strokeWidth={2} />
             {unreadCount > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border-2 border-[#0a0a0c]"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-[#0a0a0c]"></span>
             )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-[#16161a] border border-white/10 rounded-2xl shadow-2xl z-50 p-4 animate-in fade-in zoom-in duration-200">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-bold">Notifikasi</h4>
-                {unreadCount > 0 && (
-                  <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase">
-                    {unreadCount} BARU
-                  </span>
-                )}
-              </div>
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                {notifications.length > 0 ? (
-                  notifications.map((n) => (
-                    <div 
-                      key={n.id} 
-                      onClick={() => !n.isRead && handleMarkAsRead(n.id)}
-                      className={`p-3 rounded-xl border transition-all relative group ${
-                        n.isRead 
-                          ? 'bg-transparent border-white/5 opacity-60' 
-                          : 'bg-white/5 border-white/10 hover:border-white/20 cursor-pointer'
-                      }`}
+            <>
+              {/* Backdrop for mobile */}
+              <div 
+                className="fixed inset-0 bg-black/80 backdrop-blur-md z-45 sm:hidden" 
+                onClick={() => setShowNotifications(false)} 
+              />
+              
+              <div className="fixed inset-x-0 bottom-0 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-dark-panel backdrop-blur-xl border-t border-white/10 sm:border sm:rounded-2xl shadow-2xl z-50 flex flex-col animate-in slide-in-from-bottom sm:slide-none duration-300 overflow-hidden">
+                {/* Header */}
+                <div className="flex justify-between items-center p-5 border-b border-white/5 bg-white/[0.02]">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-white/90">Notifikasi</h4>
+                  <div className="flex items-center gap-3">
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] bg-amber-500 text-black px-2 py-0.5 rounded-full font-black">
+                        {unreadCount} BARU
+                      </span>
+                    )}
+                    <button 
+                      onClick={() => setShowNotifications(false)}
+                      className="p-1 text-gray-500 hover:text-white transition-colors sm:hidden"
                     >
-                      {!n.isRead && (
-                        <div className="absolute top-3 right-3 w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
-                      )}
-                      <p className={`text-sm font-bold ${n.isRead ? 'text-gray-400' : 'text-white'}`}>{n.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.content}</p>
-                      <p className="text-[10px] text-gray-600 mt-1 uppercase font-bold">{getTimeAgo(n.createdAt)} ago</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-8 text-center">
-                    <p className="text-gray-600 text-xs italic">Belum ada notifikasi.</p>
+                      <X size={18} />
+                    </button>
                   </div>
-                )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                  {notifications.length > 0 ? (
+                    notifications.map((n) => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => !n.isRead && handleMarkAsRead(n.id)}
+                        className={`p-4 rounded-2xl border transition-all relative group ${
+                          n.isRead 
+                            ? 'bg-transparent border-white/5 opacity-50' 
+                            : 'bg-white/5 border-white/10 hover:border-white/20 cursor-pointer shadow-lg'
+                        }`}
+                      >
+                        {!n.isRead && (
+                          <div className="absolute top-4 right-4 w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+                        )}
+                        <p className={`text-[13px] font-black leading-tight ${n.isRead ? 'text-gray-400' : 'text-white'}`}>
+                          {n.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1.5 leading-relaxed line-clamp-2 font-medium">
+                          {n.content}
+                        </p>
+                        <p className="text-[9px] text-gray-600 mt-2 uppercase font-black tracking-widest">
+                          {getTimeAgo(n.createdAt)} AGO
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-20 text-center">
+                      <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Bell size={20} className="text-gray-600" />
+                      </div>
+                      <p className="text-gray-600 text-xs italic font-medium">Belum ada notifikasi baru.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-4 border-t border-white/5 bg-white/[0.02] grid grid-cols-2 gap-2">
+                  {unreadCount > 0 ? (
+                    <button 
+                      onClick={handleMarkAllAsRead}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all"
+                    >
+                      <Check size={14} />
+                      Baca Semua
+                    </button>
+                  ) : (
+                    <div className="flex items-center justify-center py-2.5 text-[10px] font-black uppercase tracking-wider text-gray-600">
+                      Semua Terbaca
+                    </div>
+                  )}
+                  
+                  {notifications.some(n => n.isRead) ? (
+                    <button 
+                      onClick={handleClearRead}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-wider text-red-500/60 hover:text-red-500 transition-all"
+                    >
+                      <Trash2 size={14} />
+                      Hapus
+                    </button>
+                  ) : (
+                    <div className="flex items-center justify-center py-2.5 text-[10px] font-black uppercase tracking-wider text-gray-600">
+                      Kosong
+                    </div>
+                  )}
+                </div>
               </div>
-              {unreadCount > 0 && (
-                <button 
-                  onClick={handleMarkAllAsRead}
-                  className="w-full mt-4 py-2 text-xs text-gray-500 hover:text-white transition-all flex items-center justify-center gap-2 border-t border-white/5 pt-4"
-                >
-                  <Check size={14} />
-                  Tandai Semua Sudah Dibaca
-                </button>
-              )}
-            </div>
+            </>
           )}
         </div>
 
         {/* User Profile */}
-        <div className="flex items-center gap-4 pl-6 border-l border-white/10">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-white leading-tight">{user?.fullName || user?.email?.split('@')[0]}</p>
-            <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mt-0.5">
-              {getRoleBadge(user)}
-            </p>
-          </div>
-          
+        <div className="flex items-center gap-2 pl-2 border-l border-white/10">
           <div className="group relative">
-            <button className="flex items-center gap-2 p-1 pr-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center text-black shadow-lg shadow-amber-500/20">
-                <User size={20} strokeWidth={2.5} />
+            <button className="flex items-center justify-center w-9 h-9 bg-white/5 rounded-full hover:bg-white/10 transition-all overflow-hidden border border-white/10">
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <User size={18} strokeWidth={2} />
               </div>
-              <ChevronDown size={16} className="text-gray-500 group-hover:text-white transition-all" />
             </button>
 
             {/* Dropdown Menu */}

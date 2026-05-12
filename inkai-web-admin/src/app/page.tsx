@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { 
   Users, 
   MapPin, 
-  CreditCard, 
   Clock, 
   Search, 
   Filter,
@@ -150,13 +149,7 @@ export default function Dashboard() {
           subValue={`Di ${stats?.totalProvinces || 0} Provinsi`} 
           icon={MapPin} 
         />
-        <StatCard 
-          label="Iuran Masuk" 
-          value={`Rp ${(stats?.iuranTotal / 1000000).toFixed(1)}M`} 
-          subValue="Akumulasi Terverifikasi" 
-          icon={CreditCard} 
-          trend="up"
-        />
+
         <StatCard 
           label="Pending Approval" 
           value={stats?.pendingVerifications || '0'} 

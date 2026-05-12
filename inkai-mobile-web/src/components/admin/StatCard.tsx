@@ -27,27 +27,27 @@ export default function StatCard({ label, value, subValue, icon: Icon, trend, on
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className={`glass-card p-4 flex flex-col gap-3 relative overflow-hidden group ${onClick ? 'cursor-pointer active:scale-95 transition-all' : ''}`}
+      className={`glass-card p-5 flex flex-col gap-4 relative overflow-hidden group ${onClick ? 'cursor-pointer active:scale-95 transition-all' : ''}`}
       onClick={onClick}
     >
-      <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${selectedColor.split(' ')[0]} blur-3xl opacity-20 -mr-10 -mt-10 group-hover:opacity-40 transition-opacity`} />
+      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${selectedColor.split(' ')[0]} blur-3xl opacity-10 -mr-12 -mt-12 group-hover:opacity-20 transition-opacity`} />
       
       <div className="flex justify-between items-start relative z-10">
-        <div className={`p-2.5 rounded-xl bg-white/5 border border-white/10 ${selectedColor.split(' ')[1]}`}>
-          <Icon size={18} />
+        <div className={`p-2 rounded-xl bg-white/5 border border-white/10 ${selectedColor.split(' ')[1]}`}>
+          <Icon size={18} strokeWidth={2.5} />
         </div>
         {trend && (
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-black tracking-tight ${trend === 'up' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+          <span className={`text-[10px] px-2 py-0.5 rounded-lg font-black tracking-tight ${trend === 'up' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
             {trend === 'up' ? '↑ 12%' : '↓ 3%'}
           </span>
         )}
       </div>
       
       <div className="relative z-10">
-        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.15em] truncate">{label}</p>
-        <h3 className="text-2xl font-black text-white leading-none mt-2 tracking-tight">{value}</h3>
+        <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.2em] truncate">{label}</p>
+        <h3 className="text-3xl font-black text-white leading-none mt-2.5 tracking-tighter">{value}</h3>
         {subValue && (
-          <p className="text-[10px] text-gray-600 mt-2 font-bold truncate">
+          <p className="text-[10px] text-gray-600 mt-3 font-bold truncate uppercase tracking-wide">
             {subValue}
           </p>
         )}

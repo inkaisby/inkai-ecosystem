@@ -13,9 +13,12 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 export default function VerificationPage() {
+  const searchParams = useSearchParams();
+  const claimId = searchParams.get('claimId');
   const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClaim, setSelectedClaim] = useState<any>(null);
@@ -31,6 +34,14 @@ export default function VerificationPage() {
     try {
       const response = await api.verifications.getPending();
       setClaims(response.data);
+      
+      // Auto-select claim if claimId is in URL
+      if (claimId && response.data.length > 0) {
+        const target = response.data.find((c: any) => c.id === claimId);
+        if (target) {
+          setSelectedClaim(target);
+        }
+      }
     } catch (err) {
       toast.error('Gagal memuat antrean verifikasi');
     } finally {

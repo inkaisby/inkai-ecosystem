@@ -107,3 +107,33 @@ export const createConversation = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const sendMessage = async (req: AuthRequest, res: Response) => {
+  try {
+    const { conversationId, content } = req.body;
+    const userId = req.user.userId;
+
+    const message = await prisma.message.create({
+      data: {
+        conversationId,
+        content,
+        senderId: userId
+      },
+      include: {
+        sender: {
+          select: { id: true, fullName: true }
+        }
+      }
+    });
+
+    // Update conversation updatedAt
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() }
+    });
+
+    res.status(201).json({ status: 'success', data: message });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

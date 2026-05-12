@@ -10,7 +10,7 @@ import { eventApi } from "@/lib/api";
 
 export default function Events() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,7 +45,7 @@ export default function Events() {
       </header>
 
       <section className={styles.listSection}>
-        {!user?.nia ? (
+        {!user?.nia && !isAdmin ? (
           <div className={styles.lockedState}>
             <Lock size={48} className={styles.lockedIcon} />
             <p className={styles.lockedText}>

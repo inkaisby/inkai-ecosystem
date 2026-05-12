@@ -18,12 +18,14 @@ import {
   X,
   ArrowLeft,
   ChevronDown,
-  Calendar
+  Calendar,
+  Trash2
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import toast from 'react-hot-toast';
+import { MemberItemSkeleton } from '@/components/admin/Skeleton';
 
 function MembersContent() {
   const router = useRouter();
@@ -32,6 +34,7 @@ function MembersContent() {
   const dojoName = searchParams.get('dojoName');
   const branchId = searchParams.get('branchId');
   const provinceId = searchParams.get('provinceId');
+  const memberId = searchParams.get('memberId');
 
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,13 +44,19 @@ function MembersContent() {
   const [dojoInfo, setDojoInfo] = useState<any | null>(null);
   
   // Modal states
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [resetPasswordValue, setResetPasswordValue] = useState('123456');
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [dateInput, setDateInput] = useState('');
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [bulkText, setBulkText] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -99,6 +108,17 @@ function MembersContent() {
       setDojoInfo(null);
     }
   }, [dojoId]);
+
+  useEffect(() => {
+    if (memberId) {
+      api.members.getDetail(memberId).then((res: any) => {
+        setSelectedMember(res.data);
+        setShowDetailModal(true);
+      }).catch(err => {
+        console.error('Failed to fetch member detail', err);
+      });
+    }
+  }, [memberId]);
 
   useEffect(() => {
     if (searchParams.get('showAdd') === 'true') {
@@ -185,8 +205,84 @@ function MembersContent() {
     setEditId(null);
   };
 
+  const handleDelete = async (id: string) => {
+    setEditId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!editId) return;
+    try {
+      await api.members.delete(editId);
+      toast.success('Anggota berhasil dihapus');
+      setShowDeleteModal(false);
+      setShowDetailModal(false);
+      fetchMembers(meta.page, search);
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal menghapus anggota');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedMember || !resetPasswordValue) return;
+    setIsSubmitting(true);
+    try {
+      await api.members.update(selectedMember.id, { password: resetPasswordValue } as any);
+      toast.success(`Sandi ${selectedMember.fullName} berhasil direset!`);
+      setShowResetModal(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal reset sandi');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleStatus = async (member: any) => {
+    const newStatus = member.status === 'Active' ? 'Non Active' : 'Active';
+    try {
+      await api.members.update(member.id, { status: newStatus });
+      toast.success(`Status anggota diubah menjadi ${newStatus === 'Active' ? 'Aktif' : 'Non-Aktif'}`);
+      
+      // Update local state if needed or just refetch
+      if (selectedMember && selectedMember.id === member.id) {
+        setSelectedMember({ ...selectedMember, status: newStatus });
+      }
+      fetchMembers(meta.page, search);
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengubah status');
+    }
+  };
+
   return (
     <div suppressHydrationWarning className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Premium Confirm Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+          <div className="glass-card-opaque w-full max-w-sm p-8 text-center border border-white/10 shadow-2xl">
+            <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">Hapus Anggota?</h3>
+            <p className="text-sm text-gray-400 mb-8 leading-relaxed">
+              Tindakan ini akan menonaktifkan keanggotaan secara permanen. Anda yakin?
+            </p>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={confirmDelete}
+                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95"
+              >
+                Ya, Hapus Sekarang
+              </button>
+              <button 
+                onClick={() => setShowDeleteModal(false)}
+                className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-400 rounded-2xl font-black uppercase tracking-widest transition-all"
+              >
+                Batalkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header Area */}
       <div className="space-y-6">
         <div className="space-y-4">
@@ -201,7 +297,7 @@ function MembersContent() {
               <div className="flex items-center gap-2 text-amber-500 mb-0.5">
                 <Users size={14} />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate">
-                  {dojoId ? `Dojo ${dojoName}` : 'Database Nasional'}
+                  {searchParams.get('title') || (dojoId ? `Dojo ${dojoName}` : 'Database Nasional')}
                 </span>
               </div>
               <h2 className="text-xl font-black uppercase text-white truncate leading-tight">
@@ -223,6 +319,14 @@ function MembersContent() {
         >
           <Plus size={20} />
           Tambah Anggota
+        </button>
+
+        <button 
+          onClick={() => setShowBulkModal(true)}
+          className="btn-secondary w-full py-3 text-[10px] font-black uppercase tracking-[0.2em] border-dashed border-white/20"
+        >
+          <Download size={14} />
+          Input Massal (Teks/Excel)
         </button>
 
         {dojoId && (
@@ -261,8 +365,8 @@ function MembersContent() {
               type="text" 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari Nama, NIA, atau Email..." 
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-white"
+              placeholder="Cari Nama, NIA, NIK, atau Email..." 
+              className="glass-input w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-white"
             />
           </div>
           <div className="flex gap-2">
@@ -284,13 +388,13 @@ function MembersContent() {
         </form>
 
         <div className="space-y-3 relative min-h-[200px]">
-          {loading && (
-            <div className="absolute inset-0 bg-[#0A0A0C] flex items-center justify-center z-10 rounded-2xl">
-              <Loader2 className="animate-spin text-amber-500" size={32} />
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <MemberItemSkeleton key={i} />
+              ))}
             </div>
-          )}
-
-          {members.length > 0 ? members.map((member) => (
+          ) : members.length > 0 ? members.map((member) => (
             <div 
               key={member.id} 
               onClick={() => {
@@ -315,12 +419,27 @@ function MembersContent() {
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <div className={`text-[9px] px-2 py-0.5 rounded-full inline-block font-bold ${
-                  member.status === 'Active' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
-                }`}>
-                  {member.status}
-                </div>
                 <p className="text-[9px] text-gray-600 mt-1 truncate max-w-[80px]">{member.dojo?.name || 'Umum'}</p>
+              </div>
+              <div className="flex gap-1 ml-4" onClick={(e) => e.stopPropagation()}>
+                <button 
+                  onClick={() => handleToggleStatus(member)}
+                  className={`p-1.5 rounded-lg border transition-all ${
+                    member.status === 'Active' 
+                    ? 'border-green-500/20 text-green-500 hover:bg-green-500/10' 
+                    : 'border-red-500/20 text-red-500 hover:bg-red-500/10'
+                  }`}
+                  title={member.status === 'Active' ? 'Non-Aktifkan' : 'Aktifkan'}
+                >
+                  {member.status === 'Active' ? <UserCheck size={14} /> : <UserMinus size={14} />}
+                </button>
+                <button 
+                  onClick={() => handleDelete(member.id)}
+                  className="p-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all"
+                  title="Hapus"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           )) : !loading && (
@@ -650,8 +769,8 @@ function MembersContent() {
 
       {/* Member Detail Modal */}
       {showDetailModal && selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0A0C] animate-in fade-in">
-          <div className="glass-card w-full max-w-2xl p-0 overflow-hidden animate-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-modal animate-in fade-in">
+          <div className="glass-card-opaque w-full max-w-2xl p-0 overflow-hidden animate-in">
             {/* Modal Header/Banner */}
             <div className="h-32 bg-amber-500 relative">
               <button 
@@ -740,38 +859,228 @@ function MembersContent() {
               <div className="mt-10 flex flex-wrap gap-3">
                 <button 
                   onClick={() => setShowDetailModal(false)}
-                  className="btn-secondary flex-1 py-3 text-xs font-bold"
+                  className="btn-secondary flex-1 min-w-[120px] py-3 text-xs font-bold"
                 >
                   Tutup
                 </button>
                 <button 
-                  onClick={async () => {
-                    const newPassword = prompt('Masukkan password baru (default: 123456):', '123456');
-                    if (newPassword) {
-                      setIsSubmitting(true);
-                      try {
-                        await api.members.update(selectedMember.id, { password: newPassword } as any);
-                        toast.success(`Sandi ${selectedMember.fullName} berhasil direset!`);
-                      } catch (err: any) {
-                        toast.error(err.message || 'Gagal reset sandi');
-                      } finally {
-                        setIsSubmitting(false);
-                      }
-                    }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(selectedMember.id);
+                  }}
+                  className="flex-1 min-w-[140px] py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-xs font-black uppercase tracking-widest border border-red-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={14} />
+                  Hapus
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleStatus(selectedMember);
+                  }}
+                  className={`flex-1 min-w-[140px] py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                    selectedMember.status === 'Active'
+                    ? 'bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/20'
+                    : 'bg-green-500/10 hover:bg-green-500/20 text-green-500 border-green-500/20'
+                  }`}
+                >
+                  {selectedMember.status === 'Active' ? <UserMinus size={14} /> : <UserCheck size={14} />}
+                  {selectedMember.status === 'Active' ? 'Non-Aktif' : 'Aktifkan'}
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setResetPasswordValue('123456');
+                    setShowResetModal(true);
                   }}
                   disabled={isSubmitting}
-                  className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-xs font-black uppercase tracking-widest border border-red-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                  className="flex-1 min-w-[140px] py-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/5"
                 >
-                  {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+                  <UserCheck size={14} />
                   Reset Sandi
                 </button>
                 <button 
                   onClick={() => handleEdit(selectedMember)}
-                  className="btn-primary flex-[2] py-3 shadow-amber-20 text-xs"
+                  className="btn-primary flex-1 min-w-[160px] py-3 shadow-amber-20 text-xs"
                 >
-                  Ubah Data Lengkap
+                  Ubah Data
                 </button>
               </div>
+          </div>
+          
+          {/* Premium Input Modal (Reset Password) */}
+          {showResetModal && (
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in">
+              <div className="glass-card-opaque w-full max-w-sm p-8 border border-white/10 shadow-2xl animate-in zoom-in-95">
+                <div className="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <UserCheck size={32} />
+                </div>
+                <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2 text-center">Reset Sandi</h3>
+                <p className="text-xs text-gray-500 mb-6 text-center uppercase font-bold tracking-widest">
+                  {selectedMember?.fullName}
+                </p>
+                
+                <div className="mb-8">
+                  <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] mb-3 block opacity-80">Sandi Baru</label>
+                  <input 
+                    type="text" 
+                    autoFocus
+                    value={resetPasswordValue}
+                    onChange={(e) => setResetPasswordValue(e.target.value)}
+                    placeholder="123456"
+                    className="glass-input w-full px-5 py-4 text-center text-lg font-black tracking-[0.3em] focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={handleResetPassword}
+                    disabled={isSubmitting}
+                    className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-black rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-amber-500/30 flex items-center justify-center gap-3"
+                  >
+                    {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <UserCheck size={20} />}
+                    Simpan Sandi
+                  </button>
+                  <button 
+                    onClick={() => setShowResetModal(false)}
+                    className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-400 rounded-2xl font-black uppercase tracking-widest transition-all"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+      {/* Bulk Import Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-[#0A0A0C] animate-in fade-in">
+          <div className="modal-gradient w-full max-w-2xl p-6 rounded-2xl shadow-2xl border border-white/10 max-h-[90vh] flex flex-col animate-in">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-lg font-black uppercase tracking-widest text-white">Impor Massal</h3>
+                <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">Tempel data dari Excel atau Teks</p>
+              </div>
+              <button 
+                onClick={() => setShowBulkModal(false)}
+                className="p-1.5 text-gray-500 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+              <div className="bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 space-y-2">
+                <p className="text-[9px] font-black uppercase text-amber-500">Petunjuk Format:</p>
+                <p className="text-[10px] text-gray-400 leading-relaxed">
+                  Format per baris: <code className="text-amber-500">NIA [tab] Nama [tab] Tempat, Tgl Lahir [tab] P/L [tab] Alamat</code>
+                  <br />
+                  Contoh: <code className="text-gray-500">26.37619 [tab] Beatrix Sharon [tab] Surabaya, 28 Februari 2011 [tab] P [tab] Alamat...</code>
+                </p>
+              </div>
+
+              <textarea 
+                value={bulkText}
+                onChange={(e) => setBulkText(e.target.value)}
+                placeholder="Tempel data di sini..."
+                className="flex-1 w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-mono focus:outline-none focus:border-amber-500/50 text-gray-300 resize-none"
+              />
+
+              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                <label className="text-[10px] font-black uppercase text-gray-500 mb-2 block">Pilih Dojo Tujuan</label>
+                <div className="relative">
+                  <select 
+                    value={formData.dojoId}
+                    onChange={(e) => setFormData({ ...formData, dojoId: e.target.value })}
+                    className="glass-input w-full px-4 py-3 text-xs appearance-none font-bold"
+                    style={{ colorScheme: 'dark' }}
+                  >
+                    <option value="">Pilih Dojo...</option>
+                    {dojos.length > 0 ? dojos.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    )) : dojoId ? (
+                      <option value={dojoId}>{dojoName}</option>
+                    ) : null}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-6">
+              <button 
+                onClick={() => setShowBulkModal(false)}
+                className="btn-secondary flex-1 py-3 text-xs font-bold uppercase"
+              >
+                Batal
+              </button>
+              <button 
+                disabled={isBulkImporting || !bulkText.trim() || !formData.dojoId}
+                onClick={async () => {
+                  setIsBulkImporting(true);
+                  try {
+                    const lines = bulkText.split('\n').filter(l => l.trim() !== '');
+                    const membersToImport = lines.map(line => {
+                      // Split by tab or multiple spaces
+                      const cols = line.split(/\t| {2,}/).map(c => c.trim());
+                      if (cols.length < 2) return null;
+
+                      // Map based on the user's provided structure
+                      // NO. INDUK | NAMA | TEMPAT TANGGAL LAHIR | JENIS KELAMIN | ALAMAT
+                      const [nia, fullName, birthInfo, genderCode, address] = cols;
+
+                      // Parsing date like "Surabaya, 28 Februari 2011"
+                      let birthDate = undefined;
+                      if (birthInfo && birthInfo.includes(',')) {
+                        const datePart = birthInfo.split(',')[1].trim();
+                        const months = ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+                        const dp = datePart.split(' ');
+                        if (dp.length === 3) {
+                          const monthIdx = months.indexOf(dp[1].toLowerCase());
+                          if (monthIdx !== -1) {
+                            birthDate = new Date(parseInt(dp[2]), monthIdx, parseInt(dp[0])).toISOString();
+                          }
+                        }
+                      }
+
+                      return {
+                        nia: nia || undefined,
+                        fullName: fullName?.toUpperCase(),
+                        birthDate,
+                        gender: genderCode?.toUpperCase() === 'P' ? 'Perempuan' : 'Laki-laki',
+                        address: address?.toUpperCase(),
+                        dojoId: formData.dojoId,
+                        status: 'Active'
+                      };
+                    }).filter(Boolean);
+
+                    if (membersToImport.length === 0) {
+                      throw new Error('Tidak ada data yang valid untuk diimpor');
+                    }
+
+                    const res = await api.members.bulkCreate({ members: membersToImport });
+                    toast.success(res.message || `Berhasil mengimpor ${res.data.success} anggota`);
+                    
+                    if (res.data.failed > 0) {
+                      console.error('Beberapa data gagal diimpor:', res.data.errors);
+                    }
+
+                    setShowBulkModal(false);
+                    setBulkText('');
+                    fetchMembers(1);
+                  } catch (err: any) {
+                    toast.error(err.message || 'Gagal mengimpor data');
+                  } finally {
+                    setIsBulkImporting(false);
+                  }
+                }}
+                className="btn-primary flex-[1.5] py-3 text-xs font-black uppercase tracking-widest"
+              >
+                {isBulkImporting ? <Loader2 size={16} className="animate-spin" /> : `Impor ${bulkText.split('\n').filter(l => l.trim()).length} Baris`}
+              </button>
             </div>
           </div>
         </div>

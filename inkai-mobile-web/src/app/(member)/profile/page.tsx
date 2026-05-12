@@ -12,7 +12,7 @@ import { getAssetUrl } from "@/lib/api";
 
 export default function Profile() {
   const router = useRouter();
-  const { user, logout, isLoading: isAuthLoading } = useAuth();
+  const { user, logout, isAdmin, isLoading: isAuthLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -53,8 +53,8 @@ export default function Profile() {
           )}
         </div>
         <h2 className={styles.name}>{user.fullName}</h2>
-        <p className={styles.nia}>NIA: {user.nia || "-"}</p>
-        <div className={styles.statusBadge}>Anggota Aktif</div>
+        <p className={styles.nia}>NIA: {user.nia || (isAdmin ? "ADMINISTRATOR" : "-")}</p>
+        <div className={styles.statusBadge}>{isAdmin ? 'Administrator' : 'Anggota Aktif'}</div>
       </section>
       
       <section className={styles.infoSection}>

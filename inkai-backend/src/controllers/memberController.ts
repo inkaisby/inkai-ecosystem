@@ -63,6 +63,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error: any) {
+    console.error('[MemberController] Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -146,20 +147,65 @@ export const updateMyProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getMemberDetail = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const member = await prisma.member.findUnique({
+      where: { id },
+      include: {
+        dojo: { 
+          include: { 
+            branch: { 
+              include: { 
+                province: true 
+              } 
+            } 
+          } 
+        },
+        user: {
+          select: {
+            email: true,
+            photoUrl: true,
+            phoneNumber: true
+          }
+        },
+        ranks: { orderBy: { date: 'desc' } },
+        attendances: { take: 10, orderBy: { checkInAt: 'desc' } }
+      }
+    });
+
+    if (!member) {
+      return res.status(404).json({ status: 'error', message: 'Member not found' });
+    }
+
+    res.json({ status: 'success', data: member });
+  } catch (error: any) {
+    console.error('[MemberController] Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getAllMembers = async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 10, search = '', dojoId } = req.query;
+    const { page = 1, limit = 10, search = '', dojoId, status } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {
+      isDeleted: false,
       OR: [
         { fullName: { contains: String(search), mode: 'insensitive' } },
-        { nia: { contains: String(search), mode: 'insensitive' } }
+        { nia: { contains: String(search), mode: 'insensitive' } },
+        { nik: { contains: String(search), mode: 'insensitive' } },
+        { user: { email: { contains: String(search), mode: 'insensitive' } } }
       ]
     };
 
     if (dojoId) {
       where.dojoId = String(dojoId);
+    }
+
+    if (status) {
+      where.status = String(status);
     }
 
     // Regional Scoping
@@ -212,6 +258,7 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error: any) {
+    console.error('[MemberController] Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -220,7 +267,7 @@ export const verifyMember = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const member = await prisma.member.findFirst({
+    let member = await prisma.member.findFirst({
       where: {
         OR: [
           { id: id },
@@ -229,11 +276,42 @@ export const verifyMember = async (req: Request, res: Response) => {
       },
       include: {
         dojo: { include: { branch: { include: { province: true } } } },
-        user: { select: { photoUrl: true } }
+        user: { include: { roles: true } }
       }
     });
 
     if (!member) {
+      // Check if it's a User ID instead
+      const user = await prisma.user.findUnique({
+        where: { id: id },
+        include: {
+          roles: true,
+          managedProvince: { select: { name: true } },
+          managedBranch: { select: { name: true } }
+        }
+      });
+
+      if (user) {
+        const isAdmin = user.roles.some(r => r.name.includes('ADMIN'));
+        if (isAdmin) {
+          return res.json({
+            status: 'success',
+            data: {
+              fullName: user.fullName,
+              nia: null,
+              currentRank: '-',
+              status: 'AKTIF',
+              dojoName: user.managedBranch?.name || user.managedProvince?.name || 'Pusat (Administrator)',
+              branchName: user.managedBranch?.name || 'Administrator',
+              provinceName: user.managedProvince?.name || 'Administrator',
+              photoUrl: user.photoUrl,
+              joinedAt: user.createdAt,
+              isAdmin: true
+            }
+          });
+        }
+      }
+
       return res.status(404).json({ status: 'error', message: 'Anggota tidak ditemukan.' });
     }
 
@@ -248,7 +326,8 @@ export const verifyMember = async (req: Request, res: Response) => {
         branchName: member.dojo.branch.name,
         provinceName: member.dojo.branch.province.name,
         photoUrl: member.user?.photoUrl,
-        joinedAt: member.createdAt
+        joinedAt: member.createdAt,
+        isAdmin: member.user?.roles.some(r => r.name.includes('ADMIN')) || false
       }
     });
   } catch (error: any) {
@@ -268,6 +347,7 @@ export const getMyChildren = async (req: AuthRequest, res: Response) => {
 
     res.json({ status: 'success', data: children });
   } catch (error: any) {
+    console.error('[MemberController] Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -311,6 +391,7 @@ export const addChildMember = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({ status: 'success', data: newMember });
   } catch (error: any) {
+    console.error('[MemberController] Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -413,6 +494,7 @@ export const createMember = async (req: Request, res: Response) => {
 
     res.status(201).json({ status: 'success', data: newMember });
   } catch (error: any) {
+    console.error('[MemberController] Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -613,3 +695,121 @@ export const uploadDocument = async (req: AuthRequest, res: Response) => {
   }
 };
 
+
+export const bulkCreateMembers = async (req: Request, res: Response) => {
+  try {
+    const { members } = req.body;
+
+    if (!Array.isArray(members)) {
+      return res.status(400).json({ status: 'error', message: 'Data members harus berupa array' });
+    }
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as any[]
+    };
+
+    // We process sequentially or in small chunks to avoid overloading and handle errors per item
+    for (const m of members) {
+      try {
+        const { 
+          fullName, 
+          dojoId, 
+          gender, 
+          birthDate, 
+          currentRank, 
+          nia,
+          email,
+          password,
+          status = 'Active'
+        } = m;
+
+        if (!fullName || !dojoId) {
+          throw new Error('Nama Lengkap dan Dojo wajib diisi');
+        }
+
+        const finalNia = nia && String(nia).trim() !== '' ? String(nia).trim() : null;
+
+        if (finalNia) {
+          const existingMember = await prisma.member.findUnique({ where: { nia: finalNia } });
+          if (existingMember) {
+            throw new Error(`NIA ${finalNia} sudah digunakan`);
+          }
+        }
+
+        await prisma.$transaction(async (tx) => {
+          let userId = undefined;
+          
+          if (email) {
+            const existingUser = await tx.user.findUnique({ where: { email } });
+            if (existingUser) {
+              throw new Error(`Email ${email} sudah terdaftar`);
+            }
+
+            const hashedPassword = await bcrypt.hash(password || '123456', 12);
+            const user = await tx.user.create({
+              data: {
+                email,
+                passwordHash: hashedPassword,
+                fullName,
+                roles: {
+                  connectOrCreate: {
+                    where: { name: 'MEMBER' },
+                    create: { name: 'MEMBER' }
+                  }
+                }
+              }
+            });
+            userId = user.id;
+          }
+
+          await tx.member.create({
+            data: {
+              fullName: fullName.toUpperCase(),
+              dojoId,
+              gender,
+              birthDate: birthDate ? new Date(birthDate) : undefined,
+              currentRank: (currentRank || 'Putih').toUpperCase(),
+              nia: finalNia,
+              status,
+              userId
+            }
+          });
+        });
+
+        results.success++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push({
+          member: m.fullName || 'Unknown',
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      status: 'success',
+      message: `Berhasil mengimpor ${results.success} anggota. Gagal: ${results.failed}`,
+      data: results
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const deleteMember = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    // Soft delete
+    await prisma.member.update({
+      where: { id },
+      data: { isDeleted: true }
+    });
+
+    res.json({ status: 'success', message: 'Member deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};

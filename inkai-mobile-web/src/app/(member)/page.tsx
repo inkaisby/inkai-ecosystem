@@ -3,7 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Eye, EyeOff, Loader2, Mail, Lock, UserPlus, Users, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Eye, 
+  EyeOff, 
+  Loader2, 
+  Mail, 
+  Lock, 
+  UserPlus, 
+  Users, 
+  ChevronRight,
+  ShieldCheck,
+  Zap
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import CustomToast from "@/components/CustomToast/CustomToast";
 
@@ -33,144 +45,194 @@ export default function Login() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center px-8 py-12" style={{ backgroundColor: '#0A0A0C' }}>
-      <style jsx global>{`
-        input {
-          background-color: #161618 !important;
-          color: white !important;
-          border: 1px solid #262626 !important;
-        }
-        input::placeholder {
-          color: #4b5563 !important;
-        }
-        .btn-orange {
-          background-color: #ff6b1a !important;
-          color: black !important;
-        }
-        .card-dark {
-          background-color: #161618 !important;
-          border: 1px solid #262626 !important;
-        }
-      `}</style>
-
-      {/* Logo Section */}
-      <div className="mb-10">
-        <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-2xl">
-          <Image 
-            src="/logo.png" 
-            alt="INKAI Logo" 
-            width={90} 
-            height={90} 
-            priority
-          />
-        </div>
+    <div className="flex flex-col" style={{ minHeight: '100vh', backgroundColor: 'var(--background-dark)', position: 'relative', overflow: 'hidden' }}>
+      {/* Background Blurs */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
+        <motion.div 
+          animate={{ opacity: [0.1, 0.15, 0.1] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: 'absolute', top: '-10%', left: '-10%', width: '70%', height: '70%', backgroundColor: 'rgba(245, 158, 11, 0.12)', filter: 'blur(100px)', borderRadius: '50%' }} 
+        />
+        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', backgroundColor: 'rgba(59, 130, 246, 0.05)', filter: 'blur(100px)', borderRadius: '50%' }} />
       </div>
 
-      {/* Title Section */}
-      <div className="text-center mb-12">
-        <h1 className="text-2xl font-black text-white tracking-widest mb-2" style={{ color: 'white' }}>ECOSYSTEM DIGITAL INKAI</h1>
-        <p className="text-gray-500 text-sm font-medium">Masuk ke akun anggota Anda</p>
-      </div>
-
-      <div className="w-full max-w-[360px]">
-        <form className="space-y-8" onSubmit={handleLogin}>
-          {/* Email/NIA Field */}
-          <div className="space-y-3">
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">
-              EMAIL ATAU NIA
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-              <input 
-                type="text" 
-                placeholder="email@contoh.com"
-                className="w-full rounded-2xl px-12 py-4 text-sm focus:outline-none transition-all"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                required
+      <div className="flex flex-col px-6 py-8" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '480px', margin: '0 auto', flex: 1 }}>
+        
+        {/* Logo Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="flex flex-col items-center mb-8"
+        >
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', inset: '-4px', background: 'var(--gradient-gold)', borderRadius: '50%', opacity: 0.2, filter: 'blur(8px)' }} />
+            <div className="flex items-center justify-center bg-white rounded-full shadow-2xl" style={{ width: '100px', height: '100px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <Image 
+                src="/logo.png" 
+                alt="INKAI Logo" 
+                width={70} 
+                height={70} 
+                priority 
+                unoptimized
+                style={{ position: 'relative', zIndex: 2 }}
               />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.05))', zIndex: 1 }} />
             </div>
           </div>
+          <h1 className="mt-6 font-black tracking-widest text-center uppercase" style={{ fontSize: '1.25rem', color: '#fff', letterSpacing: '0.2em' }}>
+            INKAI PORTAL
+          </h1>
+          <p className="text-gray-500 text-10 font-bold tracking-widest uppercase mt-2">
+            Ecosystem Digital Member
+          </p>
+        </motion.div>
 
-          {/* Password Field */}
-          <div className="space-y-3">
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">
-              KATA SANDI
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-              <input 
-                type={showPassword ? "text" : "password"} 
-                placeholder="••••••••"
-                className="w-full rounded-2xl px-12 py-4 text-sm focus:outline-none transition-all"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+        {/* Login Form Container */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="glass-card p-6 shadow-2xl"
+          style={{ borderRadius: '2rem' }}
+        >
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Identity Field */}
+            <div className="space-y-2">
+              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">
+                Identitas Anggota
+              </label>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
+                  <Mail size={18} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Email atau NIA"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  className="glass-input w-full py-4 pl-12 pr-4 text-sm"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-2">
+              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">
+                Kata Sandi
+              </label>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
+                  <Lock size={18} />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="glass-input w-full py-4 pl-12 pr-12 text-sm"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="text-right" style={{ marginTop: '0.5rem' }}>
               <button 
-                type="button" 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
-                onClick={() => setShowPassword(!showPassword)}
+                type="button"
+                className="text-10 font-bold uppercase tracking-widest"
+                style={{ color: 'var(--primary-gold)', opacity: 0.8 }}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                Lupa Kata Sandi?
               </button>
             </div>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={isLoading}
+              className="btn-primary w-full py-4 rounded-xl font-black uppercase tracking-widest"
+              style={{ fontSize: '0.7rem', padding: '1.2rem', boxShadow: '0 8px 20px -6px rgba(245, 158, 11, 0.3)' }}
+            >
+              <div className="flex items-center justify-center gap-2">
+                {isLoading ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <>
+                    <ShieldCheck size={16} />
+                    <span>MASUK SEKARANG</span>
+                  </>
+                )}
+              </div>
+            </motion.button>
+          </form>
+        </motion.div>
+
+        {/* Quick Access/Registration */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-8 space-y-4 mb-8"
+        >
+          <div className="flex items-center px-4" style={{ position: 'relative' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+            <span className="px-4 text-10 font-black text-gray-500 tracking-widest uppercase">Registrasi</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
           </div>
 
-          {/* Forgot Password */}
-          <div className="text-right !mt-3">
-            <button type="button" className="text-orange-600 text-sm font-black hover:text-orange-500 transition-colors">
-              Lupa Kata Sandi?
-            </button>
+          <div className="grid grid-cols-1 gap-4">
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => router.push("/register")}
+              className="flex items-center justify-between p-4 rounded-2xl"
+              style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center rounded-xl" style={{ width: '44px', height: '44px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: 'var(--primary-gold)' }}>
+                  <UserPlus size={20} />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-white">Anggota Baru</p>
+                  <p className="text-10 text-gray-500">Daftar nomor induk (NIA)</p>
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-gray-500" />
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => router.push("/register-parent")}
+              className="flex items-center justify-between p-4 rounded-2xl"
+              style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center rounded-xl" style={{ width: '44px', height: '44px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                  <Users size={20} />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-white">Orang Tua</p>
+                  <p className="text-10 text-gray-500">Akses akun untuk wali murid</p>
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-gray-500" />
+            </motion.button>
           </div>
+        </motion.div>
 
-          {/* Login Button */}
-          <button 
-            type="submit" 
-            className="btn-orange w-full py-5 rounded-3xl text-sm font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-            disabled={isLoading}
-          >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : "MASUK SEKARANG"}
-          </button>
-        </form>
-
-        {/* Divider */}
-        <div className="relative flex items-center my-14">
-          <div className="flex-grow border-t border-[#1c1f26]"></div>
-          <span className="flex-shrink mx-4 text-[10px] font-black text-gray-700 tracking-[0.3em] uppercase">PENDAFTARAN</span>
-          <div className="flex-grow border-t border-[#1c1f26]"></div>
-        </div>
-
-        {/* Registration Cards */}
-        <div className="space-y-5 pb-10">
-          <div 
-            className="card-dark w-full p-5 rounded-[28px] flex items-center gap-5 cursor-pointer transition-all active:scale-[0.98]"
-            onClick={() => router.push('/register')}
-          >
-            <div className="w-12 h-12 bg-[#ff6b1a]/10 rounded-2xl flex items-center justify-center">
-              <UserPlus className="text-[#ff6b1a]" size={24} />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="text-white font-bold text-base leading-tight">Anggota Baru</h3>
-              <p className="text-gray-500 text-[11px] mt-1">Daftar NIA dan akun baru</p>
-            </div>
-            <ChevronRight className="text-gray-700" size={20} />
-          </div>
-
-          <div 
-            className="card-dark w-full p-5 rounded-[28px] flex items-center gap-5 cursor-pointer transition-all active:scale-[0.98]"
-            onClick={() => router.push('/register-parent')}
-          >
-            <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center">
-              <Users className="text-blue-500" size={24} />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="text-white font-bold text-base leading-tight">Orang Tua</h3>
-              <p className="text-gray-500 text-[11px] mt-1">Daftarkan akun untuk anak</p>
-            </div>
-            <ChevronRight className="text-gray-700" size={20} />
-          </div>
-        </div>
+        <footer className="mt-auto pt-4 pb-2 text-center">
+          <p className="text-10 text-gray-500 font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+            <Zap size={10} style={{ color: 'var(--primary-gold)' }} />
+            <span>© 2024 INKAI Federation Digital Ecosystem</span>
+          </p>
+        </footer>
       </div>
 
       <CustomToast 
