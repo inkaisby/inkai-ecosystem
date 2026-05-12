@@ -8,19 +8,16 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   
-  const roles = user?.roles || [];
-  const primaryRole = roles.includes('ADMIN_PUSAT') || roles.includes('ADMINISTRATOR') ? 'ADMIN_PUSAT' : 
-                     roles.includes('ADMIN_PROVINCE') ? 'ADMIN_PROVINCE' :
-                     roles.includes('ADMIN_BRANCH') ? 'ADMIN_BRANCH' :
-                     roles.includes('ADMIN_DOJO') ? 'ADMIN_DOJO' : 'MEMBER';
-
-  const navItems = [
+  const navItems = isAdmin ? [
     { icon: <Home size={20} />, label: "Home", path: "/admin" },
     { icon: <User size={20} />, label: "Anggota", path: "/admin/members" },
     { icon: <Award size={20} />, label: "Event", path: "/admin/events" },
     { icon: <ShieldCheck size={20} />, label: "Verifikasi", path: "/admin/verification" },
+    { icon: <User size={20} />, label: "Profil", path: "/profile" },
+  ] : [
+    { icon: <Home size={20} />, label: "Home", path: "/dashboard" },
     { icon: <User size={20} />, label: "Profil", path: "/profile" },
   ];
 
