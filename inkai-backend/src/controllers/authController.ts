@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import prisma from '../utils/prisma';
+import { supabase } from '../utils/supabase';
+import path from 'path';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -304,7 +306,26 @@ export const uploadProfilePhoto = async (req: any, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const fileExt = path.extname(req.file.originalname);
+    const fileName = `avatar-${Date.now()}${fileExt}`;
+    const filePath = `avatars/${userId}/${fileName}`;
+
+    const { data, error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw new Error('Supabase Upload Error: ' + uploadError.message);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('documents')
+      .getPublicUrl(filePath);
+
+    const fileUrl = publicUrl;
     
     await prisma.user.update({
       where: { id: userId },
@@ -327,12 +348,29 @@ export const uploadFile = async (req: any, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const fileExt = path.extname(req.file.originalname);
+    const fileName = `file-${Date.now()}${fileExt}`;
+    const filePath = `misc/${fileName}`;
+
+    const { data, error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw new Error('Supabase Upload Error: ' + uploadError.message);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('documents')
+      .getPublicUrl(filePath);
 
     res.json({ 
       status: 'success', 
       message: 'File berhasil diunggah',
-      fileUrl: fileUrl 
+      fileUrl: publicUrl 
     });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });

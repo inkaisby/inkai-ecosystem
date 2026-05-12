@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import { notifyAdmins } from '../utils/notification';
+import { supabase } from '../utils/supabase';
+import path from 'path';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -638,7 +640,29 @@ export const uploadDocument = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    // 1. Prepare file info
+    const fileExt = path.extname(req.file.originalname);
+    const fileName = `${fieldName}-${Date.now()}${fileExt}`;
+    const filePath = `documents/${userId}/${fileName}`;
+
+    // 2. Upload to Supabase Storage
+    const { data, error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw new Error('Supabase Upload Error: ' + uploadError.message);
+    }
+
+    // 3. Get Public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('documents')
+      .getPublicUrl(filePath);
+
+    const fileUrl = publicUrl;
     
     const updateData: any = {};
     if (fieldName === 'akte_lahir') {
