@@ -117,9 +117,9 @@ export const login = async (req: Request, res: Response) => {
 
     // Flatten permissions
     const permissions = user.roles.flatMap(role => 
-      role.permissions.map(rp => rp.permission.slug)
+      role.permissions.map(rp => rp.permission?.slug).filter(Boolean)
     );
-    const uniquePermissions = Array.from(new Set(permissions));
+    const uniquePermissions = Array.from(new Set(permissions as string[]));
 
     // Generate JWT
     const token = jwt.sign(
@@ -233,9 +233,9 @@ export const adminLogin = async (req: Request, res: Response) => {
     }
 
     const permissions = user.roles.flatMap(role => 
-      role.permissions.map(rp => rp.permission.slug)
+      role.permissions.map(rp => rp.permission?.slug).filter(Boolean)
     );
-    const uniquePermissions = Array.from(new Set(permissions));
+    const uniquePermissions = Array.from(new Set(permissions as string[]));
 
     const token = jwt.sign(
       { 
