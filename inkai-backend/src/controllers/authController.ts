@@ -468,79 +468,75 @@ export const updateProfile = async (req: any, res: Response) => {
 
     console.log('[UpdateProfile] Body:', req.body);
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        fullName: (fullName !== undefined && fullName !== '') ? fullName : user.fullName,
-        phoneNumber: (phoneNumber !== undefined && phoneNumber !== '') ? phoneNumber : user.phoneNumber
+    // 1. Update User and Member in a single transaction for speed and consistency
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: {
+          fullName: (fullName !== undefined && fullName !== '') ? fullName : user.fullName,
+          phoneNumber: (phoneNumber !== undefined && phoneNumber !== '') ? phoneNumber : user.phoneNumber
+        }
+      });
+
+      let finalBirthDate: Date | undefined | null = undefined;
+      if (birthDate === '' || birthDate === null) {
+        finalBirthDate = null;
+      } else if (birthDate) {
+        const d = new Date(birthDate);
+        if (!isNaN(d.getTime())) {
+          finalBirthDate = d;
+        }
       }
+
+      let memberRecord;
+      if (user.member) {
+        memberRecord = await tx.member.update({
+          where: { id: user.member.id },
+          data: {
+            fullName: (fullName !== undefined && fullName !== '') ? fullName : user.member.fullName,
+            gender: gender !== undefined ? gender : user.member.gender,
+            birthPlace: birthPlace !== undefined ? birthPlace : user.member.birthPlace,
+            birthDate: finalBirthDate !== undefined ? finalBirthDate : user.member.birthDate,
+            address: address !== undefined ? address : user.member.address,
+            birthCertificateUrl: birthCertificateUrl !== undefined ? birthCertificateUrl : user.member.birthCertificateUrl,
+            bpjsCardUrl: bpjsCardUrl !== undefined ? bpjsCardUrl : user.member.bpjsCardUrl,
+            dojoId: (dojoId !== undefined && dojoId !== '') ? dojoId : user.member.dojoId,
+            nik: nik !== undefined ? nik : user.member.nik
+          },
+          include: { dojo: true }
+        });
+      } else if (dojoId && dojoId !== '') {
+        memberRecord = await tx.member.create({
+          data: {
+            userId: user.id,
+            dojoId: dojoId,
+            fullName: (fullName !== undefined && fullName !== '') ? fullName : user.fullName || 'Anggota',
+            gender: gender || 'MALE',
+            birthPlace: birthPlace,
+            birthDate: finalBirthDate || undefined,
+            address: address,
+            birthCertificateUrl: birthCertificateUrl,
+            bpjsCardUrl: bpjsCardUrl,
+            nik: nik,
+            status: 'PENDING'
+          },
+          include: { dojo: true }
+        });
+      }
+      return memberRecord;
     });
 
-    let memberRecord;
-    
-    // Process birthDate safely
-    let finalBirthDate: Date | undefined | null = undefined;
-    if (birthDate === '' || birthDate === null) {
-      finalBirthDate = null;
-    } else if (birthDate) {
-      const d = new Date(birthDate);
-      if (!isNaN(d.getTime())) {
-        finalBirthDate = d;
-      }
-    }
-
-    if (user.member) {
-      memberRecord = await prisma.member.update({
-        where: { id: user.member.id },
-        data: {
-          fullName: (fullName !== undefined && fullName !== '') ? fullName : user.member.fullName,
-          gender: gender !== undefined ? gender : user.member.gender,
-          birthPlace: birthPlace !== undefined ? birthPlace : user.member.birthPlace,
-          birthDate: finalBirthDate !== undefined ? finalBirthDate : user.member.birthDate,
-          address: address !== undefined ? address : user.member.address,
-          birthCertificateUrl: birthCertificateUrl !== undefined ? birthCertificateUrl : user.member.birthCertificateUrl,
-          bpjsCardUrl: bpjsCardUrl !== undefined ? bpjsCardUrl : user.member.bpjsCardUrl,
-          dojoId: (dojoId !== undefined && dojoId !== '') ? dojoId : user.member.dojoId,
-          nik: nik !== undefined ? nik : user.member.nik
-        },
-        include: { dojo: true }
-      });
-    } else if (dojoId && dojoId !== '') {
-      // Create member record if it doesn't exist but dojo is provided
-      memberRecord = await prisma.member.create({
-        data: {
-          userId: user.id,
-          dojoId: dojoId,
-          fullName: (fullName !== undefined && fullName !== '') ? fullName : user.fullName || 'Anggota',
-          gender: gender || 'MALE',
-          birthPlace: birthPlace,
-          birthDate: finalBirthDate || undefined,
-          address: address,
-          birthCertificateUrl: birthCertificateUrl,
-          bpjsCardUrl: bpjsCardUrl,
-          nik: nik,
-          status: 'PENDING'
-        },
-        include: { dojo: true }
-      });
-    }
-
-    if (memberRecord) {
-      // Notify admins that the member has updated/completed their profile
-      try {
-        const { notifyAdmins } = require('../utils/notification');
-        
-        if (memberRecord.dojo) {
-          await notifyAdmins({
-            title: 'Profil Anggota Diperbarui',
-            content: `${memberRecord.fullName} telah memperbarui/melengkapi profil di Dojo ${memberRecord.dojo.name}`,
-            type: 'INFO',
-            branchId: memberRecord.dojo.branchId
-          });
-        }
-      } catch (err) {
-        console.error('Failed to notify admins on profile update:', err);
-      }
+    // 2. Background Notification (Don't await if it slows down too much, 
+    // but in serverless we must await or use a queue. Let's optimize the call.)
+    if (result && result.dojo) {
+      // Use a non-blocking approach if possible, or just ensure it's fast
+      const { notifyAdmins } = require('../utils/notification');
+      notifyAdmins({
+        title: 'Profil Anggota Diperbarui',
+        content: `${result.fullName} telah memperbarui profil di Dojo ${result.dojo.name}`,
+        type: 'INFO',
+        branchId: result.dojo.branchId
+      }).catch(err => console.error('Background notification failed:', err));
     }
 
     res.json({
