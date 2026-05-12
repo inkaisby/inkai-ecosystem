@@ -75,7 +75,7 @@ export const login = async (req: Request, res: Response) => {
     let user = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: identifier },
+          { email: { equals: identifier, mode: 'insensitive' } },
           { member: { nia: identifier } }
         ]
       },
@@ -83,6 +83,7 @@ export const login = async (req: Request, res: Response) => {
         member: true,
         managedProvince: { select: { name: true } },
         managedBranch: { select: { name: true } },
+        managedDojo: { select: { name: true } },
         roles: {
           include: {
             permissions: {
@@ -162,8 +163,17 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    console.error('Login Error:', error);
-    res.status(500).json({ message: error.message });
+    console.error('[Login Error Detail]:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      meta: error.meta
+    });
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Terjadi kesalahan pada server saat login',
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -267,7 +277,17 @@ export const adminLogin = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('[AdminLogin Error Detail]:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      meta: error.meta
+    });
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Terjadi kesalahan pada server saat login admin',
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -526,17 +546,19 @@ export const updateProfile = async (req: any, res: Response) => {
       return memberRecord;
     });
 
-    // 2. Background Notification (Don't await if it slows down too much, 
-    // but in serverless we must await or use a queue. Let's optimize the call.)
+    // 2. Background Notification (Await for Vercel stability)
     if (result && result.dojo) {
-      // Use a non-blocking approach if possible, or just ensure it's fast
-      const { notifyAdmins } = require('../utils/notification');
-      notifyAdmins({
-        title: 'Profil Anggota Diperbarui',
-        content: `${result.fullName} telah memperbarui profil di Dojo ${result.dojo.name}`,
-        type: 'INFO',
-        branchId: result.dojo.branchId
-      }).catch(err => console.error('Background notification failed:', err));
+      try {
+        const { notifyAdmins } = require('../utils/notification');
+        await notifyAdmins({
+          title: 'Profil Anggota Diperbarui',
+          content: `${result.fullName} telah memperbarui profil di Dojo ${result.dojo.name}`,
+          type: 'INFO',
+          branchId: result.dojo.branchId
+        });
+      } catch (err) {
+        console.error('Notification failed:', err);
+      }
     }
 
     res.json({
