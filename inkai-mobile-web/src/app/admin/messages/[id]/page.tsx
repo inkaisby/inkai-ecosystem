@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 
@@ -31,8 +32,9 @@ export default function AdminChatRoomPage() {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
+  // Initial fetch
   useEffect(() => {
-    const fetchData = async (isInitial = false) => {
+    const fetchData = async () => {
       try {
         const convRes = await api.chat.getConversations();
         const currentConv = convRes.data.find((c: any) => c.id === id);
@@ -41,29 +43,48 @@ export default function AdminChatRoomPage() {
         }
 
         const msgRes = await api.chat.getMessages(id as string);
-        const newMessages = msgRes.data || [];
-        
-        // Only update and scroll if there are new messages
-        if (newMessages.length !== messages.length) {
-          setMessages(newMessages);
-          if (isInitial) {
-            setTimeout(() => scrollToBottom('auto'), 100);
-          } else {
-            setTimeout(() => scrollToBottom('smooth'), 100);
-          }
-        }
+        setMessages(msgRes.data || []);
+        setTimeout(() => scrollToBottom('auto'), 100);
       } catch (err) {
         console.error('Failed to fetch chat data', err);
       } finally {
-        if (isInitial) setLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchData(true);
-    
-    const interval = setInterval(() => fetchData(false), 5000);
-    return () => clearInterval(interval);
-  }, [id, messages.length]);
+    fetchData();
+  }, [id]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`chat:${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'Message',
+          filter: `conversationId=eq.${id}`,
+        },
+        (payload) => {
+          const newMessage = payload.new;
+          // Check if message already exists to avoid duplicates
+          setMessages((prev) => {
+            if (prev.some(m => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
+          setTimeout(() => scrollToBottom('smooth'), 100);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
 
   // Handle keyboard popup on mobile
   useEffect(() => {

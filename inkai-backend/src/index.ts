@@ -18,11 +18,7 @@ import syncRoutes from './routes/syncRoutes';
 import roleRoutes from './routes/roleRoutes';
 import chatRoutes from './routes/chatRoutes';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
 import prisma from './utils/prisma';
-
-
-
 
 dotenv.config();
 
@@ -61,15 +57,11 @@ app.use('/v1/sync', syncRoutes);
 app.use('/v1/roles', roleRoutes);
 app.use('/v1/chat', chatRoutes);
 
-
-
-
-
 // Health Check
 app.get('/', (req: Request, res: Response) => {
   res.json({
     status: 'success',
-    message: 'INKAI API Server is running',
+    message: 'INKAI API Server is running (Optimized)',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
@@ -85,53 +77,6 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 });
 
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
-  }
-});
-
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-
-  socket.on('join_room', (roomId) => {
-    socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
-  });
-
-  socket.on('send_message', async (data) => {
-    try {
-      const { conversationId, senderId, content } = data;
-      
-      const message = await prisma.message.create({
-        data: {
-          conversationId,
-          senderId,
-          content
-        },
-        include: {
-          sender: {
-            select: { id: true, fullName: true }
-          }
-        }
-      });
-
-      await prisma.conversation.update({
-        where: { id: conversationId },
-        data: { updatedAt: new Date(), lastMessageAt: new Date() }
-      });
-
-      io.to(conversationId).emit('receive_message', message);
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
 
 httpServer.listen(PORT, () => {
   console.log(`
