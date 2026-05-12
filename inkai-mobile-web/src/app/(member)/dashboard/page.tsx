@@ -117,14 +117,23 @@ export default function Dashboard() {
       <header className={styles.header}>
         <div className={styles.userProfile}>
           <div className={styles.avatarWrapper}>
-            <Image 
-              src={user?.photoUrl ? getAssetUrl(user.photoUrl) : "/logo.png"} 
-              alt={user?.fullName || "Member"} 
-              width={40} 
-              height={40} 
-              unoptimized
-              className={styles.avatar} 
-            />
+            {user?.photoUrl ? (
+              <img 
+                src={getAssetUrl(user.photoUrl)} 
+                alt={user?.fullName || "Member"} 
+                width={40} 
+                height={40} 
+                className={styles.avatar} 
+              />
+            ) : (
+              <Image 
+                src="/logo.png" 
+                alt="Member" 
+                width={40} 
+                height={40} 
+                className={styles.avatar} 
+              />
+            )}
           </div>
           <div className={styles.userInfo}>
             <h1 className={styles.greeting}>Oss, {user.fullName ? user.fullName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Member')}!</h1>
