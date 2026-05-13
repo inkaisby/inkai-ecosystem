@@ -101,6 +101,11 @@ export const api = {
     getMemberBills: (memberId: string) => request(`/billing/member/${memberId}`),
     createBill: (data: any) => request('/billing', { method: 'POST', body: JSON.stringify(data) }),
   },
+  verifications: {
+    getPending: () => request('/verifications/pending'),
+    process: (id: string, data: { status: 'APPROVED' | 'REJECTED'; adminNotes?: string }) =>
+      request(`/verifications/${id}/process`, { method: 'POST', body: JSON.stringify(data) }),
+  },
   roles: {
     getAll: () => request('/roles'),
     getPermissions: () => request('/roles/permissions'),

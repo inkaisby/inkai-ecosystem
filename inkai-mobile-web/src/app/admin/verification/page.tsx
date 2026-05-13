@@ -3,16 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
-  CheckCircle2, 
-  XCircle, 
-  Eye, 
   Clock, 
-  Filter,
   FileText,
   Loader2,
   ChevronLeft
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import {
+  verificationTypeLabel,
+  verificationDataSummary,
+  verificationDataRows,
+  isOpenableProofUrl,
+} from '@/lib/verificationDisplay';
 import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Suspense } from 'react';
@@ -120,23 +122,47 @@ function VerificationContent() {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-[8px] uppercase font-black text-gray-500">Jenis Pengajuan</p>
-                    <p className="text-xs font-bold text-white uppercase mt-0.5">{item.type.replace('_', ' ')}</p>
+                    <p className="text-xs font-bold text-white mt-0.5">{verificationTypeLabel(item.type)}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[8px] uppercase font-black text-gray-500">Data</p>
-                    <p className="text-xs font-bold text-amber-500 uppercase mt-0.5">{item.data}</p>
+                  <div className="text-right min-w-0 pl-2">
+                    <p className="text-[8px] uppercase font-black text-gray-500">Ringkasan</p>
+                    <p className="text-xs font-bold text-amber-500 mt-0.5 line-clamp-2 normal-case text-right break-words">
+                      {verificationDataSummary(item.data, item.type)}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {selectedClaim?.id === item.id && (
                 <div className="pt-4 border-t border-white/5 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="p-4 bg-black/30 rounded-xl border border-white/5 space-y-2">
+                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Detail pengajuan</p>
+                    {verificationDataRows(item.data, item.type).map((row) => (
+                      <div key={row.label} className="flex justify-between gap-3 text-[11px] border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                        <span className="text-gray-500 shrink-0">{row.label}</span>
+                        <span className="text-white text-right break-words">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
                   <div className="p-4 bg-black/40 rounded-xl border border-white/5 text-center">
                     <p className="text-[10px] text-amber-500 font-bold uppercase tracking-widest mb-2">Dokumen Pendukung</p>
-                    <p className="text-[10px] text-gray-500 break-all mb-4">{item.proofUrl || 'Tidak ada URL dokumen'}</p>
-                    <button className="text-[10px] font-black uppercase text-white bg-white/10 px-4 py-2 rounded-lg">
-                      Buka Dokumen
-                    </button>
+                    <p className="text-[10px] text-gray-500 break-all mb-4">
+                      {isOpenableProofUrl(item.proofUrl) ? item.proofUrl : item.proofUrl || 'Belum ada file / tidak tersedia'}
+                    </p>
+                    {isOpenableProofUrl(item.proofUrl) ? (
+                      <a
+                        href={item.proofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-[10px] font-black uppercase text-black bg-amber-500 hover:bg-amber-400 px-4 py-2 rounded-lg transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Buka Dokumen
+                      </a>
+                    ) : (
+                      <p className="text-[10px] text-gray-600 italic">Link dokumen akan tersedia jika anggota mengunggah sertifikat.</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">

@@ -3,16 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
-  CheckCircle2, 
-  XCircle, 
   Eye, 
   Clock, 
-  Filter,
   FileText,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
+import {
+  verificationTypeLabel,
+  verificationDataSummary,
+  verificationDataRows,
+  isOpenableProofUrl,
+} from '@/lib/verificationDisplay';
 
 export default function VerificationPage() {
   const [claims, setClaims] = useState<any[]>([]);
@@ -28,13 +32,10 @@ export default function VerificationPage() {
   const fetchClaims = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5001/v1/verifications/pending', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await response.json();
-      setClaims(data.data);
-    } catch (err) {
-      toast.error('Gagal memuat antrean verifikasi');
+      const data = await api.verifications.getPending();
+      setClaims(data.data || []);
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal memuat antrean verifikasi');
     } finally {
       setLoading(false);
     }
@@ -44,20 +45,13 @@ export default function VerificationPage() {
     if (!selectedClaim) return;
     setProcessing(true);
     try {
-      await fetch(`http://localhost:5001/v1/verifications/${selectedClaim.id}/process`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ status, adminNotes })
-      });
+      await api.verifications.process(selectedClaim.id, { status, adminNotes });
       toast.success(status === 'APPROVED' ? 'Pengajuan berhasil disetujui!' : 'Pengajuan telah ditolak.');
       setSelectedClaim(null);
       setAdminNotes('');
       fetchClaims();
-    } catch (err) {
-      toast.error('Gagal memproses pengajuan');
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal memproses pengajuan');
     } finally {
       setProcessing(false);
     }
@@ -65,25 +59,29 @@ export default function VerificationPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header */}
       <div className="flex justify-between items-end">
         <div>
           <div className="flex items-center gap-2 text-amber-500 mb-2">
             <ShieldCheck size={20} />
             <span className="text-sm font-bold uppercase tracking-widest">Antrean Kerja</span>
           </div>
-          <h2 className="text-3xl font-bold">Verifikasi & Approval</h2>
-          <p className="text-gray-500 mt-1">Validasi klaim data anggota, riwayat sabuk, dan pengajuan mutasi.</p>
+          <h2 className="text-3xl font-bold">Verifikasi</h2>
+          <p className="text-gray-500 mt-1">
+            Mutasi dojo, kenaikan tingkat, dan prestasi (piagam / pelatihan) dari anggota.
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Table View */}
         <div className="xl:col-span-2 glass-card space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-bold flex items-center gap-2">
-              Daftar Antrean
-              {!loading && <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] rounded-full font-bold">{claims.length} Menunggu</span>}
+              Daftar antrean
+              {!loading && (
+                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] rounded-full font-bold">
+                  {claims.length} menunggu
+                </span>
+              )}
             </h3>
           </div>
 
@@ -97,8 +95,9 @@ export default function VerificationPage() {
                 <thead>
                   <tr className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
                     <th className="pb-4 pl-2 font-medium">Tgl / ID</th>
-                    <th className="pb-4 font-medium">Nama Anggota</th>
-                    <th className="pb-4 font-medium">Jenis Pengajuan</th>
+                    <th className="pb-4 font-medium">Nama anggota</th>
+                    <th className="pb-4 font-medium">Jenis</th>
+                    <th className="pb-4 font-medium">Ringkasan</th>
                     <th className="pb-4 font-medium">Status</th>
                     <th className="pb-4 text-right pr-2 font-medium">Aksi</th>
                   </tr>
@@ -112,15 +111,19 @@ export default function VerificationPage() {
                     >
                       <td className="py-4 pl-2">
                         <p className="text-white text-xs">{new Date(item.createdAt).toLocaleDateString('id-ID')}</p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">{item.id.substring(0, 8)}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5 font-mono">{item.id.substring(0, 8)}…</p>
                       </td>
                       <td className="py-4">
                         <p className="font-bold text-white">{item.member?.fullName}</p>
                         <p className="text-[10px] text-gray-500">{item.member?.nia}</p>
                       </td>
                       <td className="py-4">
-                        <p className="text-white text-xs">{item.type.replace('_', ' ')}</p>
-                        <p className="text-[10px] text-amber-500 mt-0.5 font-bold uppercase">{item.data}</p>
+                        <p className="text-white text-xs">{verificationTypeLabel(item.type)}</p>
+                      </td>
+                      <td className="py-4 max-w-[200px]">
+                        <p className="text-[11px] text-amber-500/90 line-clamp-2 break-words">
+                          {verificationDataSummary(item.data, item.type)}
+                        </p>
                       </td>
                       <td className="py-4">
                         <div className="flex items-center gap-2 text-yellow-500">
@@ -129,11 +132,14 @@ export default function VerificationPage() {
                         </div>
                       </td>
                       <td className="py-4 text-right pr-2">
-                        <div className="flex justify-end gap-2">
-                          <button className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all">
-                            <Eye size={16} />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setSelectedClaim(item); }}
+                          className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                          aria-label="Pratinjau"
+                        >
+                          <Eye size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -149,48 +155,72 @@ export default function VerificationPage() {
           </div>
         </div>
 
-        {/* Detail Preview Panel */}
         <div className="glass-card flex flex-col h-full bg-gradient-to-b from-[#1e1e24] to-transparent">
           <div className="flex items-center gap-3 pb-6 border-b border-white/5 mb-6">
             <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
               <FileText size={24} />
             </div>
             <div>
-              <h3 className="font-bold">Pratinjau Dokumen</h3>
-              <p className="text-xs text-gray-500">Silakan periksa keaslian bukti.</p>
+              <h3 className="font-bold">Pratinjau</h3>
+              <p className="text-xs text-gray-500">Detail pengajuan & dokumen</p>
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-2xl p-8 text-center bg-black/20 overflow-hidden">
+          <div className="flex-1 flex flex-col border-2 border-dashed border-white/5 rounded-2xl p-6 text-center bg-black/20 overflow-y-auto max-h-[480px]">
             {selectedClaim ? (
-              <div className="space-y-4">
-                <div className="w-full aspect-video bg-white/5 rounded-lg flex items-center justify-center text-gray-600">
-                  <FileText size={48} />
+              <div className="space-y-4 text-left w-full">
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Jenis</p>
+                  <p className="text-sm text-white font-bold">{verificationTypeLabel(selectedClaim.type)}</p>
                 </div>
-                <p className="text-xs text-amber-500 font-bold uppercase tracking-wider">BUKTI: {selectedClaim.type}</p>
-                <p className="text-[10px] text-gray-500 break-all">{selectedClaim.proofUrl}</p>
+                <div className="space-y-2">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Detail</p>
+                  {verificationDataRows(selectedClaim.data, selectedClaim.type).map((row) => (
+                    <div key={row.label} className="flex justify-between gap-2 text-xs border-b border-white/5 pb-2 last:border-0">
+                      <span className="text-gray-500 shrink-0">{row.label}</span>
+                      <span className="text-white text-right break-words">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="pt-2 border-t border-white/10">
+                  <p className="text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-2">Dokumen pendukung</p>
+                  <p className="text-[10px] text-gray-500 break-all mb-3">{selectedClaim.proofUrl || '—'}</p>
+                  {isOpenableProofUrl(selectedClaim.proofUrl) ? (
+                    <a
+                      href={selectedClaim.proofUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition-colors"
+                    >
+                      <ExternalLink size={14} />
+                      Buka dokumen
+                    </a>
+                  ) : (
+                    <p className="text-[10px] text-gray-600 italic text-center">Tidak ada URL dokumen yang dapat dibuka.</p>
+                  )}
+                </div>
               </div>
             ) : (
-              <>
+              <div className="flex flex-col items-center justify-center flex-1 text-center py-8">
                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 text-gray-600">
                   <FileText size={40} />
                 </div>
-                <p className="text-gray-500 text-sm">Klik baris di tabel untuk melihat<br/>dokumen pendukung.</p>
-              </>
+                <p className="text-gray-500 text-sm">Klik baris di tabel untuk melihat detail.</p>
+              </div>
             )}
           </div>
 
           {selectedClaim && (
             <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-right-4">
               <div className="p-4 bg-white/5 rounded-xl border border-white/5">
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Catatan Admin</p>
+                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Catatan admin</p>
                 <textarea 
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   className="w-full bg-transparent text-sm focus:outline-none resize-none text-white"
-                  placeholder="Tambahkan alasan jika menolak pengajuan..."
+                  placeholder="Alasan penolakan atau catatan internal…"
                   rows={3}
-                ></textarea>
+                />
               </div>
               <div className="flex gap-3">
                 <button 

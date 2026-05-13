@@ -20,7 +20,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/', slug: 'dashboard' },
   { icon: Users, label: 'Anggota', href: '/members', slug: 'members' },
   { icon: Map, label: 'Organisasi', href: '/organization', slug: 'organization' },
-  { icon: ShieldCheck, label: 'Verifikasi', href: '/verification', slug: 'verification' },
+  { icon: ShieldCheck, label: 'Antrean Kerja', href: '/verification', slug: 'verification' },
   { icon: Calendar, label: 'Event', href: '/events', slug: 'events' },
   { icon: Store, label: 'Store', href: '#', slug: 'store' },
   { icon: BookOpen, label: 'Library', href: '#', slug: 'library' },

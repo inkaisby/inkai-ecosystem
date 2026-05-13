@@ -35,6 +35,10 @@
   gap: 8px;
 }
 
+.certFieldWrap {
+  position: relative;
+}
+
 .label {
   font-size: 12px;
   font-weight: bold;
@@ -93,6 +97,19 @@
   color: rgba(255, 255, 255, 0.2);
 }
 
+/**
+ * Native date picker icon is nearly invisible on dark backgrounds in Chromium/WebKit.
+ */
+.dateInput {
+  color-scheme: dark;
+}
+
+.dateInput::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.95;
+  filter: invert(1);
+}
+
 .selectInWrapper {
   flex: 1;
   width: 100%;
@@ -122,6 +139,68 @@
   align-items: center;
   gap: 12px;
   cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.uploadBox:hover {
+  border-color: rgba(230, 174, 94, 0.35);
+}
+
+.uploadBox:focus-visible {
+  outline: 2px solid var(--primary-gold);
+  outline-offset: 2px;
+}
+
+.uploadBoxHasFile {
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.05);
+  cursor: default;
+}
+
+.certInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.uploadFileRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 4px;
+}
+
+.uploadFileName {
+  flex: 1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uploadRemoveBtn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.uploadRemoveBtn:hover {
+  color: white;
+  background: rgba(255, 60, 60, 0.15);
+  border-color: rgba(255, 100, 100, 0.3);
 }
 
 .uploadIcon {
@@ -132,6 +211,29 @@
 .uploadText {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.uploadHint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.25);
+  margin: 0;
+  text-align: center;
+}
+
+.uploadChangeBtn {
+  margin-top: 4px;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--primary-gold);
+  background: rgba(230, 174, 94, 0.12);
+  border: 1px solid rgba(230, 174, 94, 0.25);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.uploadChangeBtn:hover {
+  background: rgba(230, 174, 94, 0.2);
 }
 
 .submitBtn {

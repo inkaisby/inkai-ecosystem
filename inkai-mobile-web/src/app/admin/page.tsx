@@ -22,6 +22,7 @@ import {
 } from "@/components/admin/Skeleton";
 import { api, Member } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { verificationTypeLabel } from "@/lib/verificationDisplay";
 
 interface DashboardStats {
   totalMembers: number;
@@ -356,7 +357,7 @@ export default function Dashboard() {
                       {claim.member?.fullName}
                     </h4>
                     <p className="text-[9px] text-blue-400 font-black uppercase tracking-wider mt-0.5">
-                      {claim.type.replace("_", " ")}
+                      {verificationTypeLabel(claim.type)}
                     </p>
                   </div>
                 </div>

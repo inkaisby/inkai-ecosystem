@@ -29,7 +29,7 @@ const adminItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
   { icon: Users, label: 'Anggota', path: '/admin/members' },
   { icon: Map, label: 'Organisasi', path: '/admin/organization' },
-  { icon: ShieldCheck, label: 'Verifikasi', path: '/admin/verification' },
+  { icon: ShieldCheck, label: 'Antrean Kerja', path: '/admin/verification' },
   { icon: Calendar, label: 'Event', path: '/admin/events' },
   { icon: MessageSquare, label: 'Broadcast', path: '/admin/broadcast' },
   { icon: Settings, label: 'Settings', path: '/admin/settings' },

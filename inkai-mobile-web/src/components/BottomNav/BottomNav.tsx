@@ -14,7 +14,7 @@ export default function BottomNav() {
     { icon: <Home size={20} />, label: "Home", path: "/admin" },
     { icon: <User size={20} />, label: "Anggota", path: "/admin/members" },
     { icon: <Award size={20} />, label: "Event", path: "/admin/events" },
-    { icon: <ShieldCheck size={20} />, label: "Verifikasi", path: "/admin/verification" },
+    { icon: <ShieldCheck size={20} />, label: "Antrean Kerja", path: "/admin/verification" },
     { icon: <User size={20} />, label: "Profil", path: "/profile" },
   ] : [
     { icon: <Home size={20} />, label: "Home", path: "/dashboard" },
