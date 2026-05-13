@@ -44,31 +44,27 @@ export default function Profile() {
 
       <section className={styles.profileHeader}>
         <div className={styles.avatarWrapper}>
-          {user.photoUrl ? (
+          {user?.photoUrl ? (
             <img 
+              key={user.photoUrl}
               src={getAssetUrl(user.photoUrl)} 
-              alt={user.fullName} 
+              alt={user.fullName || "Profile"} 
               className={styles.avatar} 
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
               onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-                const parent = (e.target as HTMLImageElement).parentElement;
-                if (parent) {
-                  const placeholder = document.createElement('div');
-                  placeholder.className = styles.avatarPlaceholder;
-                  placeholder.innerText = user.fullName?.substring(0, 1).toUpperCase() || '?';
-                  parent.appendChild(placeholder);
-                }
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite loop
+                target.src = "/logo.png"; // Fallback to logo if image fails
               }}
             />
           ) : (
             <div className={styles.avatarPlaceholder}>
-              {user.fullName?.substring(0, 1).toUpperCase()}
+              {user?.fullName?.substring(0, 1).toUpperCase() || "U"}
             </div>
           )}
         </div>
-        <h2 className={styles.name}>{user.fullName}</h2>
-        <p className={styles.nia}>NIA: {user.nia || (isAdmin ? "ADMINISTRATOR" : "-")}</p>
+        <h2 className={styles.name}>{user?.fullName}</h2>
+        <p className={styles.nia}>NIA: {user?.nia || (isAdmin ? "ADMINISTRATOR" : "-")}</p>
         <div className={styles.statusBadge}>{isAdmin ? 'Administrator' : 'Anggota Aktif'}</div>
       </section>
       

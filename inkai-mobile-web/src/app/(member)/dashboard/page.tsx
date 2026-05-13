@@ -119,14 +119,17 @@ export default function Dashboard() {
           <div className={styles.avatarWrapper}>
             {user?.photoUrl ? (
               <img 
+                key={user.photoUrl}
                 src={getAssetUrl(user.photoUrl)} 
                 alt={user?.fullName || "Member"} 
                 width={40} 
                 height={40} 
                 className={styles.avatar} 
-                style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '50%' }}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/logo.png";
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = "/logo.png";
                 }}
               />
             ) : (
