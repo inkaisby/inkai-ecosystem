@@ -53,6 +53,7 @@ function MembersContent() {
   const [dateInput, setDateInput] = useState('');
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [showRankEditModal, setShowRankEditModal] = useState(false);
+  const [memberDetailLoading, setMemberDetailLoading] = useState(false);
   const [editingRank, setEditingRank] = useState<any | null>(null);
   const [rankEditForm, setRankEditForm] = useState({
     rank: '',
@@ -119,20 +120,25 @@ function MembersContent() {
   }, [dojoId]);
 
   useEffect(() => {
-    if (memberId) {
-      api.members.getDetail(memberId).then((res: any) => {
+    if (!memberId) return;
+    setMemberDetailLoading(true);
+    api.members
+      .getDetail(memberId)
+      .then((res: any) => {
         setSelectedMember(res.data);
         setShowDetailModal(true);
-      }).catch(err => {
+      })
+      .catch((err) => {
         console.error('Failed to fetch member detail', err);
-      });
-    }
+      })
+      .finally(() => setMemberDetailLoading(false));
   }, [memberId]);
 
   useEffect(() => {
     if (!showDetailModal) {
       setShowRankEditModal(false);
       setEditingRank(null);
+      setMemberDetailLoading(false);
     }
   }, [showDetailModal]);
 
@@ -455,9 +461,18 @@ function MembersContent() {
           ) : members.length > 0 ? members.map((member) => (
             <div 
               key={member.id} 
-              onClick={() => {
+              onClick={async () => {
                 setSelectedMember(member);
                 setShowDetailModal(true);
+                setMemberDetailLoading(true);
+                try {
+                  const res = await api.members.getDetail(member.id);
+                  setSelectedMember(res.data);
+                } catch (err: any) {
+                  toast.error(err?.message || 'Gagal memuat detail anggota');
+                } finally {
+                  setMemberDetailLoading(false);
+                }
               }}
               className="glass-card p-4 flex items-center justify-between border-white/5"
             >
@@ -914,53 +929,63 @@ function MembersContent() {
                 </div>
               </div>
 
-              {Array.isArray(selectedMember.ranks) && selectedMember.ranks.length > 0 && (
-                <div className="mt-10 border-t border-white/10 pt-8">
-                  <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-4">
-                    Riwayat kenaikan tingkat
-                  </p>
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {selectedMember.ranks.map((r: any) => (
-                      <div
-                        key={r.id}
-                        className="flex items-start justify-between gap-3 p-4 bg-white/5 rounded-xl border border-white/10"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-white">{r.rank}</p>
-                          <p className="text-[11px] text-gray-500 mt-1">
-                            {r.date
-                              ? new Date(r.date).toLocaleDateString('id-ID', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })
-                              : '-'}{' '}
-                            · Lokasi: {(r.location && String(r.location).trim()) || '—'}
-                          </p>
-                          <p className="text-[10px] mt-1 font-bold uppercase tracking-wider text-amber-500/80">
-                            {r.isVerified ? 'Terverifikasi' : 'Belum terverifikasi'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openRankEditModal(r);
-                          }}
-                          className="shrink-0 p-2.5 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/25 hover:bg-amber-500/25 transition-all"
-                          title="Perbaiki data tingkat"
-                          aria-label="Edit riwayat tingkat"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                      </div>
-                    ))}
+              <div className="mt-10 border-t border-white/10 pt-8">
+                <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-4">
+                  Riwayat kenaikan tingkat
+                </p>
+                {memberDetailLoading ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="animate-spin text-amber-500" size={28} />
                   </div>
-                  <p className="text-[10px] text-gray-600 mt-3 italic">
-                    Admin dapat memperbaiki lokasi, tanggal, atau nama tingkat bila ada kesalahan dari pengajuan anggota.
+                ) : Array.isArray(selectedMember.ranks) && selectedMember.ranks.length > 0 ? (
+                  <>
+                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                      {selectedMember.ranks.map((r: any) => (
+                        <div
+                          key={r.id}
+                          className="flex items-start justify-between gap-3 p-4 bg-white/5 rounded-xl border border-white/10"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-white">{r.rank}</p>
+                            <p className="text-[11px] text-gray-500 mt-1">
+                              {r.date
+                                ? new Date(r.date).toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                : '-'}{' '}
+                              · Lokasi: {(r.location && String(r.location).trim()) || '—'}
+                            </p>
+                            <p className="text-[10px] mt-1 font-bold uppercase tracking-wider text-amber-500/80">
+                              {r.isVerified ? 'Terverifikasi' : 'Belum terverifikasi'}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRankEditModal(r);
+                            }}
+                            className="shrink-0 p-2.5 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/25 hover:bg-amber-500/25 transition-all"
+                            title="Perbaiki data tingkat"
+                            aria-label="Edit riwayat tingkat"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-3 italic">
+                      Admin dapat memperbaiki lokasi, tanggal, atau nama tingkat bila ada kesalahan dari pengajuan anggota.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-500 leading-relaxed py-2">
+                    Belum ada baris riwayat tingkat. Data di sini muncul setelah pengajuan kenaikan sabuk disetujui di Antrean Kerja, atau dapat ditambah/diperbaiki lewat edit riwayat jika fitur tersedia.
                   </p>
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="mt-10 flex flex-wrap gap-3">
                 <button 

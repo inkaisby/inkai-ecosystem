@@ -119,15 +119,14 @@ function AchievementContent() {
 
   const ranks = user.ranks || [];
   const eventRegs = user.eventRegistrations || [];
-  const dojoFallback =
-    (user?.dojo?.name || user?.member?.dojo?.name || "").trim() || null;
 
-  /** Lokasi kartu: data tersimpan dulu, lalu nama dojo — tanpa teks "N/A" */
-  const formatLocation = (stored?: string | null) => {
+  /**
+   * Lokasi di riwayat sabuk harus sama dengan yang diisi di "Tambah Prestasi".
+   * Tanpa fallback ke nama dojo/ranting — agar tidak menyesatkan ("GADING" dari nama dojo).
+   */
+  const formatSabukStoredLocation = (stored?: string | null) => {
     const s = typeof stored === "string" ? stored.trim() : "";
-    if (s) return s;
-    if (dojoFallback) return dojoFallback;
-    return "—";
+    return s || "—";
   };
 
   // Filter UKT registrations that are PAID
@@ -182,7 +181,7 @@ function AchievementContent() {
                 id: claim.id,
                 title: p.title,
                 date: p.date ? formatIdDate(p.date) : formatIdDate(claim.createdAt),
-                location: formatLocation(p.location ?? null),
+                location: formatSabukStoredLocation(p.location ?? null),
                 isValidated: false,
                 customStatus: "Menunggu Validasi",
               });
@@ -199,7 +198,7 @@ function AchievementContent() {
               id: rank.id,
               title: rank.rank,
               date: rank.date ? new Date(rank.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
-              location: formatLocation(rank.location),
+              location: formatSabukStoredLocation(rank.location),
               isValidated: rank.isVerified,
             }))}
           </>
