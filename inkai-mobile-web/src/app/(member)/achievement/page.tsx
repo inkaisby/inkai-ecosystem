@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Plus, Check, Info, FolderOpen, Loader2 } from "lucide-react";
 import styles from "./Achievement.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
+import CustomToast from "@/components/CustomToast/CustomToast";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
@@ -47,10 +48,15 @@ function AchievementContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') as TabType;
   
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading, isAdmin, isDocumentComplete } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'Sabuk');
   const [mounted, setMounted] = useState(false);
   const [myVerifications, setMyVerifications] = useState<any[]>([]);
+  const [addGateToast, setAddGateToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({ show: false, message: "", type: "error" });
 
   useEffect(() => {
     setMounted(true);
@@ -80,6 +86,14 @@ function AchievementContent() {
   const pendingRankPromotions = useMemo(() => {
     return pendingClaims.filter((v) => v.type === 'RANK_PROMOTION').sort(sortByCreatedDesc);
   }, [pendingClaims]);
+
+  const canSubmitAchievement = useMemo(() => {
+    if (isAdmin) return true;
+    if (!user) return false;
+    const nia = typeof user.nia === "string" ? user.nia.trim() : "";
+    if (!nia) return false;
+    return isDocumentComplete;
+  }, [user, isAdmin, isDocumentComplete]);
 
   const pendingAchievementByCategory = useMemo(() => {
     const piagam: any[] = [];
@@ -142,6 +156,43 @@ function AchievementContent() {
       <p className={styles.emptyText}>{message}</p>
     </div>
   );
+
+  function handleAddPrestasiClick() {
+    if (!canSubmitAchievement && user) {
+      const missingNia = !isAdmin && !(typeof user.nia === "string" && user.nia.trim());
+      const missingDocs = !isAdmin && !isDocumentComplete;
+      const parts: string[] = [];
+      if (missingNia) parts.push("NIA Anda belum aktif");
+      if (missingDocs) parts.push("dokumen Akte/KK dan BPJS belum lengkap");
+      setAddGateToast({
+        show: true,
+        message: `Tambah prestasi memerlukan NIA aktif dan dokumen lengkap.${parts.length ? ` (${parts.join(" · ")})` : ""}`,
+        type: "error",
+      });
+      return;
+    }
+    router.push("/achievement/add");
+  }
+
+  function renderAddFooter(ctaLabel: string) {
+    return (
+      <>
+        <button
+          type="button"
+          className={`${styles.addBtn} ${!canSubmitAchievement ? styles.addBtnDisabled : ""}`}
+          onClick={handleAddPrestasiClick}
+        >
+          <Plus size={18} />
+          {ctaLabel}
+        </button>
+        {!canSubmitAchievement && !isAdmin && (
+          <p className={styles.addRequirementHint}>
+            NIA aktif dan dokumen wajib (Akte/KK, BPJS) harus sudah ada. Unggah lewat Profil → Dokumen.
+          </p>
+        )}
+      </>
+    );
+  }
 
   const renderHistoryCard = (item: any) => (
     <div key={item.id || item.title} className={styles.historyCard}>
@@ -207,10 +258,7 @@ function AchievementContent() {
       
       {verificationLegend}
 
-      <button className={styles.addBtn} onClick={() => router.push('/achievement/add')}>
-        <Plus size={18} />
-        TAMBAH DATA KENAIKAN MANUAL
-      </button>
+      {renderAddFooter("TAMBAH DATA KENAIKAN MANUAL")}
     </motion.div>
   );
   };
@@ -249,10 +297,7 @@ function AchievementContent() {
         )}
       </div>
       {verificationLegend}
-      <button className={styles.addBtn} onClick={() => router.push('/achievement/add')}>
-        <Plus size={18} />
-        TAMBAH PIAGAM / PERTANDINGAN
-      </button>
+      {renderAddFooter("TAMBAH PIAGAM / PERTANDINGAN")}
     </motion.div>
   );
   };
@@ -282,10 +327,7 @@ function AchievementContent() {
         )}
       </div>
       {verificationLegend}
-      <button className={styles.addBtn} onClick={() => router.push('/achievement/add')}>
-        <Plus size={18} />
-        TAMBAH RIWAYAT PELATIHAN
-      </button>
+      {renderAddFooter("TAMBAH RIWAYAT PELATIHAN")}
     </motion.div>
   );
   };
@@ -317,6 +359,13 @@ function AchievementContent() {
         {activeTab === 'Piagam' && renderPiagamTab()}
         {activeTab === 'Pelatihan' && renderPelatihanTab()}
       </div>
+
+      <CustomToast
+        isVisible={addGateToast.show}
+        message={addGateToast.message}
+        type={addGateToast.type}
+        onClose={() => setAddGateToast((t) => ({ ...t, show: false }))}
+      />
 
       <div style={{ height: '100px' }} />
       <BottomNav />

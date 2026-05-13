@@ -18,6 +18,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Suspense } from 'react';
+import { isAxiosError } from 'axios';
 
 function VerificationContent() {
   const searchParams = useSearchParams();
@@ -26,7 +27,7 @@ function VerificationContent() {
   const [loading, setLoading] = useState(true);
   const [selectedClaim, setSelectedClaim] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
-  const [processing, setProcessing] = useState(false);
+  const [processingAction, setProcessingAction] = useState<'APPROVED' | 'REJECTED' | null>(null);
 
   useEffect(() => {
     fetchClaims();
@@ -53,18 +54,29 @@ function VerificationContent() {
   };
 
   const handleProcess = async (status: 'APPROVED' | 'REJECTED') => {
-    if (!selectedClaim) return;
-    setProcessing(true);
+    if (!selectedClaim || processingAction) return;
+    setProcessingAction(status);
     try {
-      await api.verifications.process(selectedClaim.id, { status, adminNotes });
+      const notes = adminNotes.trim();
+      await api.verifications.process(selectedClaim.id, {
+        status,
+        ...(notes ? { adminNotes: notes } : {}),
+      });
       toast.success(status === 'APPROVED' ? 'Pengajuan berhasil disetujui!' : 'Pengajuan telah ditolak.');
       setSelectedClaim(null);
       setAdminNotes('');
       fetchClaims();
     } catch (err) {
-      toast.error('Gagal memproses pengajuan');
+      let msg = 'Gagal memproses pengajuan';
+      if (isAxiosError(err)) {
+        const d = err.response?.data;
+        if (d && typeof d === 'object' && 'message' in d && typeof (d as { message: unknown }).message === 'string') {
+          msg = (d as { message: string }).message;
+        }
+      }
+      toast.error(msg);
     } finally {
-      setProcessing(false);
+      setProcessingAction(null);
     }
   };
 
@@ -100,6 +112,14 @@ function VerificationContent() {
             <div 
               key={item.id} 
               onClick={() => setSelectedClaim(item)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedClaim(item);
+                }
+              }}
               className={`glass-card p-5 border-white/5 space-y-4 transition-all ${selectedClaim?.id === item.id ? 'border-amber-500/30 bg-amber-500/5' : ''}`}
             >
               <div className="flex justify-between items-start">
@@ -175,18 +195,34 @@ function VerificationContent() {
                     />
                     <div className="flex gap-3">
                       <button 
-                        disabled={processing}
-                        onClick={() => handleProcess('REJECTED')}
-                        className="flex-1 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold text-[10px] uppercase"
+                        type="button"
+                        disabled={processingAction !== null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProcess('REJECTED');
+                        }}
+                        className="flex-1 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold text-[10px] uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Tolak
+                        {processingAction === 'REJECTED' ? (
+                          <Loader2 className="animate-spin mx-auto" size={14} />
+                        ) : (
+                          'Tolak'
+                        )}
                       </button>
                       <button 
-                        disabled={processing}
-                        onClick={() => handleProcess('APPROVED')}
-                        className="flex-1 py-3 bg-green-500 text-black rounded-xl font-bold text-[10px] uppercase"
+                        type="button"
+                        disabled={processingAction !== null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProcess('APPROVED');
+                        }}
+                        className="flex-1 py-3 bg-amber-500 text-black rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {processing ? <Loader2 className="animate-spin mx-auto" size={14} /> : 'Setujui'}
+                        {processingAction === 'APPROVED' ? (
+                          <Loader2 className="animate-spin mx-auto" size={14} />
+                        ) : (
+                          'Setujui'
+                        )}
                       </button>
                     </div>
                   </div>

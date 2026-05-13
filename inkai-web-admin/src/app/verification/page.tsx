@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 import {
   verificationTypeLabel,
   verificationDataSummary,
@@ -23,7 +24,7 @@ export default function VerificationPage() {
   const [loading, setLoading] = useState(true);
   const [selectedClaim, setSelectedClaim] = useState<any>(null);
   const [adminNotes, setAdminNotes] = useState('');
-  const [processing, setProcessing] = useState(false);
+  const [processingAction, setProcessingAction] = useState<'APPROVED' | 'REJECTED' | null>(null);
 
   useEffect(() => {
     fetchClaims();
@@ -42,18 +43,29 @@ export default function VerificationPage() {
   };
 
   const handleProcess = async (status: 'APPROVED' | 'REJECTED') => {
-    if (!selectedClaim) return;
-    setProcessing(true);
+    if (!selectedClaim || processingAction) return;
+    setProcessingAction(status);
     try {
-      await api.verifications.process(selectedClaim.id, { status, adminNotes });
+      const notes = adminNotes.trim();
+      await api.verifications.process(selectedClaim.id, {
+        status,
+        ...(notes ? { adminNotes: notes } : {}),
+      });
       toast.success(status === 'APPROVED' ? 'Pengajuan berhasil disetujui!' : 'Pengajuan telah ditolak.');
       setSelectedClaim(null);
       setAdminNotes('');
       fetchClaims();
-    } catch (err: any) {
-      toast.error(err?.message || 'Gagal memproses pengajuan');
+    } catch (err) {
+      let msg = 'Gagal memproses pengajuan';
+      if (isAxiosError(err)) {
+        const d = err.response?.data;
+        if (d && typeof d === 'object' && 'message' in d && typeof (d as { message: unknown }).message === 'string') {
+          msg = (d as { message: string }).message;
+        }
+      }
+      toast.error(msg);
     } finally {
-      setProcessing(false);
+      setProcessingAction(null);
     }
   };
 
@@ -224,18 +236,28 @@ export default function VerificationPage() {
               </div>
               <div className="flex gap-3">
                 <button 
-                  disabled={processing}
+                  type="button"
+                  disabled={processingAction !== null}
                   onClick={() => handleProcess('REJECTED')}
-                  className="flex-1 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold text-xs hover:bg-red-500/20 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold text-xs hover:bg-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  TOLAK
+                  {processingAction === 'REJECTED' ? (
+                    <Loader2 className="animate-spin mx-auto" size={16} />
+                  ) : (
+                    'TOLAK'
+                  )}
                 </button>
                 <button 
-                  disabled={processing}
+                  type="button"
+                  disabled={processingAction !== null}
                   onClick={() => handleProcess('APPROVED')}
-                  className="flex-1 py-3 bg-green-500 text-black rounded-xl font-bold text-xs hover:bg-green-600 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 bg-amber-500 text-black rounded-xl font-bold text-xs hover:bg-amber-400 shadow-lg shadow-amber-500/15 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {processing ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'SETUJUI'}
+                  {processingAction === 'APPROVED' ? (
+                    <Loader2 className="animate-spin mx-auto" size={16} />
+                  ) : (
+                    'SETUJUI'
+                  )}
                 </button>
               </div>
             </div>

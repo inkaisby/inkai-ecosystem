@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { ArrowLeft, Award, Calendar, MapPin, CloudUpload, Loader2 } from "lucide-react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { ArrowLeft, Award, Calendar, MapPin, CloudUpload, Loader2, Lock, FileText } from "lucide-react";
 import styles from "./AddAchievement.module.css";
 import { useRouter } from "next/navigation";
 import CustomToast from "@/components/CustomToast/CustomToast";
 import { isAxiosError } from "axios";
 import api from "@/lib/api";
 import { compressImage } from "@/lib/imageUtils";
+import { useAuth } from "@/context/AuthContext";
 
 const CERT_MAX_MB = 15;
 
@@ -26,6 +27,7 @@ const SABUK_DAN_TITLES = Array.from({ length: 10 }, (_, i) => `Dan ${i + 1}`);
 
 export default function AddAchievement() {
   const router = useRouter();
+  const { user, isLoading: isAuthLoading, isAdmin, isDocumentComplete } = useAuth();
   const certInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isCompressingCert, setIsCompressingCert] = useState(false);
@@ -41,6 +43,19 @@ export default function AddAchievement() {
 
   const isSabuk = formData.type === 'SABUK';
   const sabukTitleOptions = formData.sabukGradeKind === 'KYU' ? SABUK_KYU_TITLES : SABUK_DAN_TITLES;
+
+  const canSubmitPrestasi = useMemo(() => {
+    if (isAdmin) return true;
+    if (!user) return false;
+    const nia = typeof user.nia === 'string' ? user.nia.trim() : '';
+    if (!nia) return false;
+    return isDocumentComplete;
+  }, [user, isAdmin, isDocumentComplete]);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   function updateForm(partial: Partial<typeof formData>) {
     setFormData((prev) => ({ ...prev, ...partial }));
@@ -138,6 +153,57 @@ export default function AddAchievement() {
   };
 
   const certBusy = isCompressingCert;
+
+  if (!mounted || isAuthLoading || !user) {
+    return (
+      <div className={styles.loadingScreen}>
+        <Loader2 className={styles.spinner} size={40} />
+      </div>
+    );
+  }
+
+  if (!canSubmitPrestasi) {
+    const missingNia = !isAdmin && !(typeof user.nia === 'string' && user.nia.trim());
+    const missingDocs = !isAdmin && !isDocumentComplete;
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <button onClick={() => router.back()} className={styles.backBtn}>
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className={styles.title}>TAMBAH PRESTASI</h1>
+        </header>
+
+        <div className={styles.blockedWrap}>
+          <Lock size={48} className={styles.blockedIcon} />
+          <p className={styles.blockedTitle}>Belum dapat mengajukan prestasi</p>
+          <p className={styles.blockedText}>
+            {missingNia && (
+              <>
+                Pastikan <b>NIA</b> Anda sudah aktif (proses aktivasi oleh Ketua Ranting).
+                <br />
+              </>
+            )}
+            {missingDocs && (
+              <>
+                Unggah dokumen wajib: <b>Akte/KK</b> dan <b>BPJS</b> di halaman Dokumen.
+              </>
+            )}
+          </p>
+
+          <div className={styles.blockedActions}>
+            <button type="button" className={styles.blockedPrimary} onClick={() => router.push('/documents')}>
+              <FileText size={18} />
+              Buka halaman Dokumen
+            </button>
+            <button type="button" className={styles.blockedSecondary} onClick={() => router.push('/profile')}>
+              Kembali ke Profil
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

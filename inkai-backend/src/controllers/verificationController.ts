@@ -26,10 +26,45 @@ function parseRankPromotionData(raw: string): { title: string; eventDate: Date; 
   return { title: title || 'Tanpa nama', eventDate: new Date(), location: null };
 }
 
+const ACHIEVEMENT_CLAIM_TYPES = ['RANK_PROMOTION', 'ACHIEVEMENT'];
+
 export const createClaim = async (req: any, res: Response) => {
   try {
     const { type, data, proofUrl } = req.body;
     const memberId = req.user.memberId;
+
+    if (!memberId) {
+      return res.status(400).json({ status: 'error', message: 'Akun Anda tidak terhubung ke data anggota.' });
+    }
+
+    const roles = req.user.roles || [];
+    const isPrivileged =
+      Array.isArray(roles) && roles.some((r: unknown) => r && String(r).includes('ADMIN'));
+
+    if (!isPrivileged && ACHIEVEMENT_CLAIM_TYPES.includes(String(type))) {
+      const member = await prisma.member.findUnique({
+        where: { id: memberId },
+        select: {
+          nia: true,
+          birthCertificateUrl: true,
+          bpjsCardUrl: true,
+        },
+      });
+      if (!member) {
+        return res.status(400).json({ status: 'error', message: 'Data anggota tidak ditemukan.' });
+      }
+      const hasNia = typeof member.nia === 'string' && member.nia.trim().length > 0;
+      const hasBirthCert =
+        typeof member.birthCertificateUrl === 'string' && member.birthCertificateUrl.trim().length > 0;
+      const hasBpjs = typeof member.bpjsCardUrl === 'string' && member.bpjsCardUrl.trim().length > 0;
+      if (!hasNia || !hasBirthCert || !hasBpjs) {
+        return res.status(403).json({
+          status: 'error',
+          message:
+            'Pengajuan prestasi tidak dapat dilakukan. Pastikan NIA Anda telah aktif dan dokumen Akte/KK serta BPJS sudah diunggah di halaman Dokumen.',
+        });
+      }
+    }
 
     const verification = await prisma.verification.create({
       data: {
@@ -166,18 +201,23 @@ export const processClaim = async (req: any, res: Response) => {
     const isSuperAdmin = roles.includes('ADMINISTRATOR') || roles.includes('ADMIN_PUSAT');
     if (!isSuperAdmin) {
       let hasAccess = false;
-      const memberDojo = existingVerification.member.dojo;
-      
+      const memberDojo = existingVerification.member?.dojo;
+      const branch = memberDojo?.branch;
+
       if (roles.includes('ADMIN_PROVINCE') && managedProvinceId) {
-        hasAccess = memberDojo.branch.provinceId === managedProvinceId;
+        hasAccess = !!branch && branch.provinceId === managedProvinceId;
       } else if (roles.includes('ADMIN_BRANCH') && managedBranchId) {
-        hasAccess = memberDojo.branchId === managedBranchId;
+        hasAccess = !!memberDojo && memberDojo.branchId === managedBranchId;
       } else if (roles.includes('ADMIN_DOJO') && managedDojoId) {
         hasAccess = existingVerification.member.dojoId === managedDojoId;
       }
 
       if (!hasAccess) {
-        return res.status(403).json({ status: 'error', message: 'Access denied: You cannot process claims outside your jurisdiction' });
+        return res.status(403).json({
+          status: 'error',
+          message:
+            'Anda tidak memiliki wewenang untuk memproses pengajuan ini (di luar wilayah administrasi Anda).',
+        });
       }
     }
 
@@ -208,18 +248,32 @@ export const processClaim = async (req: any, res: Response) => {
     }
 
     // Notify member about the outcome
-    if (verification.type === 'DOJO_TRANSFER') {
-      const member = await prisma.member.findUnique({ where: { id: verification.memberId }, select: { userId: true } });
-      if (member?.userId) {
-        await createNotification({
-          userId: member.userId,
-          title: `Pengajuan Mutasi ${status === 'APPROVED' ? 'Disetujui' : 'Ditolak'}`,
-          content: status === 'APPROVED' 
+    const memberUserId = verification.member?.userId;
+
+    if (verification.type === 'DOJO_TRANSFER' && memberUserId) {
+      await createNotification({
+        userId: memberUserId,
+        title: `Pengajuan Mutasi ${status === 'APPROVED' ? 'Disetujui' : 'Ditolak'}`,
+        content:
+          status === 'APPROVED'
             ? 'Selamat! Pengajuan pindah dojo Anda telah disetujui. Data Anda akan segera diperbarui.'
             : `Maaf, pengajuan pindah dojo Anda ditolak. ${adminNotes ? 'Alasan: ' + adminNotes : ''}`,
-          type: status === 'APPROVED' ? 'SUCCESS' : 'WARNING'
-        });
-      }
+        type: status === 'APPROVED' ? 'SUCCESS' : 'WARNING',
+      });
+    } else if (memberUserId && (verification.type === 'RANK_PROMOTION' || verification.type === 'ACHIEVEMENT')) {
+      const approved = status === 'APPROVED';
+      const kind =
+        verification.type === 'RANK_PROMOTION'
+          ? 'kenaikan tingkat (sabuk)'
+          : 'prestasi (piagam / pelatihan)';
+      await createNotification({
+        userId: memberUserId,
+        title: approved ? 'Pengajuan prestasi disetujui' : 'Pengajuan prestasi ditolak',
+        content: approved
+          ? `Pengajuan ${kind} Anda telah disetujui pusat.${adminNotes ? ' Catatan: ' + adminNotes : ''}`
+          : `Maaf, pengajuan ${kind} Anda ditolak.${adminNotes ? ' Alasan: ' + adminNotes : ''}`,
+        type: approved ? 'SUCCESS' : 'WARNING',
+      });
     }
 
     res.json({ status: 'success', message: `Claim ${status.toLowerCase()} successfully` });
