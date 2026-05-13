@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { ArrowLeft, Plus, Check, Info, FolderOpen, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Check, Info, FolderOpen, Loader2, XCircle } from "lucide-react";
 import styles from "./Achievement.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import CustomToast from "@/components/CustomToast/CustomToast";
@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 import { Suspense } from "react";
 import api from "@/lib/api";
-import { parseRankPromotionPayload } from "@/lib/verificationDisplay";
+import { parseRankPromotionPayload, parseAchievementPayload } from "@/lib/verificationDisplay";
 
 type TabType = 'Sabuk' | 'Piagam' | 'Pelatihan';
 
@@ -19,24 +19,6 @@ function formatIdDate(iso?: string | null) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function parseAchievementData(raw: string): {
-  category?: string;
-  title?: string;
-  date?: string;
-  location?: string;
-} {
-  try {
-    return JSON.parse(raw) as {
-      category?: string;
-      title?: string;
-      date?: string;
-      location?: string;
-    };
-  } catch {
-    return {};
-  }
 }
 
 function sortByCreatedDesc(a: { createdAt?: string }, b: { createdAt?: string }) {
@@ -100,7 +82,7 @@ function AchievementContent() {
     const pelatihan: any[] = [];
     for (const v of pendingClaims) {
       if (v.type !== 'ACHIEVEMENT') continue;
-      const o = parseAchievementData(v.data || '');
+      const o = parseAchievementPayload(v.data || '');
       if (o.category === 'PIAGAM') piagam.push(v);
       else if (o.category === 'PELATIHAN') pelatihan.push(v);
     }
@@ -108,6 +90,34 @@ function AchievementContent() {
     pelatihan.sort(sortByCreatedDesc);
     return { piagam, pelatihan };
   }, [pendingClaims]);
+
+  const rejectedClaims = useMemo(
+    () =>
+      myVerifications.filter(
+        (v) =>
+          v.status === "REJECTED" && (v.type === "RANK_PROMOTION" || v.type === "ACHIEVEMENT")
+      ),
+    [myVerifications]
+  );
+
+  const rejectedRankPromotions = useMemo(() => {
+    return rejectedClaims.filter((v) => v.type === "RANK_PROMOTION").sort(sortByCreatedDesc);
+  }, [rejectedClaims]);
+
+  const rejectedAchievementByCategory = useMemo(() => {
+    const piagam: any[] = [];
+    const pelatihan: any[] = [];
+    for (const v of rejectedClaims) {
+      if (v.type !== "ACHIEVEMENT") continue;
+      const o = parseAchievementPayload(v.data || "");
+      if (o.category === "PIAGAM") piagam.push(v);
+      else if (o.category === "PELATIHAN") pelatihan.push(v);
+      else piagam.push(v);
+    }
+    piagam.sort(sortByCreatedDesc);
+    pelatihan.sort(sortByCreatedDesc);
+    return { piagam, pelatihan };
+  }, [rejectedClaims]);
 
   const verificationLegend = (
     <div className={styles.legend}>
@@ -119,6 +129,10 @@ function AchievementContent() {
       <div className={styles.legendItem}>
         <Info size={14} className={styles.statusPending} />
         <span>Menunggu Validasi</span>
+      </div>
+      <div className={styles.legendItem}>
+        <XCircle size={14} className={styles.statusRejected} />
+        <span>Ditolak — perbaiki data lalu ajukan ulang</span>
       </div>
     </div>
   );
@@ -194,29 +208,88 @@ function AchievementContent() {
     );
   }
 
-  const renderHistoryCard = (item: any) => (
-    <div key={item.id || item.title} className={styles.historyCard}>
-      <div className={styles.cardInfo}>
-        <h3 className={styles.cardTitle}>{item.title}</h3>
-        <p className={styles.cardMeta}>Tanggal: {item.date}</p>
-        <p className={styles.cardMeta}>Lokasi : {item.location}</p>
+  type HistoryRow = {
+    id: string;
+    title: string;
+    date: string;
+    location: string;
+    isValidated: boolean;
+    customStatus?: string;
+    variant?: "pending" | "rejected" | "valid";
+    rejectAdminNotes?: string | null;
+    resubmitClaimId?: string;
+  };
+
+  const renderHistoryCard = (item: HistoryRow) => {
+    const variant = item.variant ?? (item.isValidated ? "valid" : "pending");
+    const isRejected = variant === "rejected";
+
+    const statusBlock = item.isValidated ? (
+      <Check size={20} className={styles.statusValid} />
+    ) : isRejected ? (
+      <div className={styles.statusPendingWrapper}>
+        <XCircle size={20} className={styles.statusRejected} />
+        {item.customStatus && <span className={styles.customStatusRejected}>{item.customStatus}</span>}
       </div>
-      <div className={styles.cardStatus}>
-        {item.isValidated ? (
-          <Check size={20} className={styles.statusValid} />
-        ) : (
-          <div className={styles.statusPendingWrapper}>
-            <Info size={20} className={styles.statusPending} />
-            {item.customStatus && <span className={styles.customStatusText}>{item.customStatus}</span>}
-          </div>
-        )}
+    ) : (
+      <div className={styles.statusPendingWrapper}>
+        <Info size={20} className={styles.statusPending} />
+        {item.customStatus && <span className={styles.customStatusText}>{item.customStatus}</span>}
       </div>
-    </div>
-  );
+    );
+
+    const mainRow = (
+      <>
+        <div className={styles.cardInfo}>
+          <h3 className={styles.cardTitle}>{item.title}</h3>
+          <p className={styles.cardMeta}>Tanggal: {item.date}</p>
+          <p className={styles.cardMeta}>Lokasi : {item.location}</p>
+        </div>
+        <div className={styles.cardStatus}>{statusBlock}</div>
+      </>
+    );
+
+    if (isRejected) {
+      const showBtn = !!(item.resubmitClaimId && canSubmitAchievement);
+      return (
+        <div key={item.id} className={styles.historyRejectWrap}>
+          <div className={styles.historyCard}>{mainRow}</div>
+          {item.rejectAdminNotes?.trim() ? (
+            <p className={styles.rejectAdminNote}>
+              <strong>Catatan admin:</strong> {item.rejectAdminNotes.trim()}
+            </p>
+          ) : null}
+          {showBtn ? (
+            <button
+              type="button"
+              className={styles.resubmitBtn}
+              onClick={() => router.push(`/achievement/add?resubmit=${item.resubmitClaimId}`)}
+            >
+              Ajukan ulang
+            </button>
+          ) : null}
+          {!showBtn && !isAdmin && item.resubmitClaimId ? (
+            <p className={styles.resubmitBlockedHint}>
+              Lengkapi NIA dan dokumen wajib untuk mengajukan ulang.
+            </p>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div key={item.id} className={styles.historyCard}>
+        {mainRow}
+      </div>
+    );
+  };
 
   const renderSabukTab = () => {
     const hasList =
-      uktRegs.length > 0 || ranks.length > 0 || pendingRankPromotions.length > 0;
+      uktRegs.length > 0 ||
+      ranks.length > 0 ||
+      pendingRankPromotions.length > 0 ||
+      rejectedRankPromotions.length > 0;
 
     return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={styles.tabContent}>
@@ -235,6 +308,21 @@ function AchievementContent() {
                 location: formatSabukStoredLocation(p.location ?? null),
                 isValidated: false,
                 customStatus: "Menunggu Validasi",
+                variant: "pending",
+              });
+            })}
+            {rejectedRankPromotions.map((claim: any) => {
+              const p = parseRankPromotionPayload(claim.data || "");
+              return renderHistoryCard({
+                id: claim.id,
+                title: p.title,
+                date: p.date ? formatIdDate(p.date) : formatIdDate(claim.createdAt),
+                location: formatSabukStoredLocation(p.location ?? null),
+                isValidated: false,
+                customStatus: "Ditolak",
+                variant: "rejected",
+                rejectAdminNotes: claim.adminNotes,
+                resubmitClaimId: claim.id,
               });
             })}
             {uktRegs.map((reg: any) => renderHistoryCard({
@@ -244,6 +332,7 @@ function AchievementContent() {
               location: reg.event?.location || 'Lokasi Ujian',
               isValidated: false,
               customStatus: 'Menunggu Hasil Ujian',
+              variant: "pending",
             }))}
             {ranks.map((rank: any) => renderHistoryCard({
               id: rank.id,
@@ -251,6 +340,7 @@ function AchievementContent() {
               date: rank.date ? new Date(rank.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
               location: formatSabukStoredLocation(rank.location),
               isValidated: rank.isVerified,
+              variant: rank.isVerified ? "valid" : "pending",
             }))}
           </>
         )}
@@ -265,7 +355,9 @@ function AchievementContent() {
 
   const renderPiagamTab = () => {
     const hasList =
-      eventRegs.length > 0 || pendingAchievementByCategory.piagam.length > 0;
+      eventRegs.length > 0 ||
+      pendingAchievementByCategory.piagam.length > 0 ||
+      rejectedAchievementByCategory.piagam.length > 0;
 
     return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={styles.tabContent}>
@@ -276,7 +368,7 @@ function AchievementContent() {
         ) : (
           <>
             {pendingAchievementByCategory.piagam.map((claim: any) => {
-              const o = parseAchievementData(claim.data || '');
+              const o = parseAchievementPayload(claim.data || '');
               return renderHistoryCard({
                 id: claim.id,
                 title: o.title || 'Pengajuan piagam / pertandingan',
@@ -284,6 +376,21 @@ function AchievementContent() {
                 location: o.location || '—',
                 isValidated: false,
                 customStatus: 'Menunggu Validasi',
+                variant: "pending",
+              });
+            })}
+            {rejectedAchievementByCategory.piagam.map((claim: any) => {
+              const o = parseAchievementPayload(claim.data || '');
+              return renderHistoryCard({
+                id: claim.id,
+                title: o.title || 'Pengajuan piagam / pertandingan',
+                date: o.date ? formatIdDate(o.date) : formatIdDate(claim.createdAt),
+                location: o.location || '—',
+                isValidated: false,
+                customStatus: 'Ditolak',
+                variant: "rejected",
+                rejectAdminNotes: claim.adminNotes,
+                resubmitClaimId: claim.id,
               });
             })}
             {eventRegs.map((e: any) => renderHistoryCard({
@@ -292,6 +399,7 @@ function AchievementContent() {
               date: e.createdAt ? new Date(e.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
               location: e.event?.location || 'Lokasi Terdaftar',
               isValidated: e.status === 'APPROVED',
+              variant: e.status === 'APPROVED' ? "valid" : "pending",
             }))}
           </>
         )}
@@ -304,7 +412,8 @@ function AchievementContent() {
 
   const renderPelatihanTab = () => {
     const pending = pendingAchievementByCategory.pelatihan;
-    const hasList = pending.length > 0;
+    const rejectedPel = rejectedAchievementByCategory.pelatihan;
+    const hasList = pending.length > 0 || rejectedPel.length > 0;
 
     return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={styles.tabContent}>
@@ -313,17 +422,34 @@ function AchievementContent() {
         {!hasList ? (
           renderEmptyState('Belum ada riwayat pelatihan.')
         ) : (
-          pending.map((claim: any) => {
-            const o = parseAchievementData(claim.data || '');
-            return renderHistoryCard({
-              id: claim.id,
-              title: o.title || 'Pengajuan pelatihan / sertifikasi',
-              date: o.date ? formatIdDate(o.date) : formatIdDate(claim.createdAt),
-              location: o.location || '—',
-              isValidated: false,
-              customStatus: 'Menunggu Validasi',
-            });
-          })
+          <>
+            {pending.map((claim: any) => {
+              const o = parseAchievementPayload(claim.data || '');
+              return renderHistoryCard({
+                id: claim.id,
+                title: o.title || 'Pengajuan pelatihan / sertifikasi',
+                date: o.date ? formatIdDate(o.date) : formatIdDate(claim.createdAt),
+                location: o.location || '—',
+                isValidated: false,
+                customStatus: 'Menunggu Validasi',
+                variant: "pending",
+              });
+            })}
+            {rejectedPel.map((claim: any) => {
+              const o = parseAchievementPayload(claim.data || '');
+              return renderHistoryCard({
+                id: claim.id,
+                title: o.title || 'Pengajuan pelatihan / sertifikasi',
+                date: o.date ? formatIdDate(o.date) : formatIdDate(claim.createdAt),
+                location: o.location || '—',
+                isValidated: false,
+                customStatus: 'Ditolak',
+                variant: "rejected",
+                rejectAdminNotes: claim.adminNotes,
+                resubmitClaimId: claim.id,
+              });
+            })}
+          </>
         )}
       </div>
       {verificationLegend}

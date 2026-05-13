@@ -4,6 +4,26 @@ const TYPE_LABELS: Record<string, string> = {
   ACHIEVEMENT: "Prestasi / Piagam / Pelatihan",
 };
 
+/** ACHIEVEMENT: payload JSON Pengajuan piagam / pelatihan */
+export function parseAchievementPayload(raw: string): {
+  category?: string;
+  title?: string;
+  date?: string;
+  location?: string;
+} {
+  if (!raw?.trim()) return {};
+  try {
+    return JSON.parse(raw) as {
+      category?: string;
+      title?: string;
+      date?: string;
+      location?: string;
+    };
+  } catch {
+    return {};
+  }
+}
+
 /** RANK_PROMOTION: teks tingkat saja (lama) atau JSON `{ title, date, location }` */
 export function parseRankPromotionPayload(raw: string): {
   title: string;
@@ -46,7 +66,7 @@ export function verificationDataSummary(raw: string, type: string): string {
   if (type === "RANK_PROMOTION") return parseRankPromotionPayload(raw).title;
   if (type === "ACHIEVEMENT") {
     try {
-      const o = JSON.parse(raw) as { title?: string };
+      const o = parseAchievementPayload(raw);
       return o.title || raw;
     } catch {
       return raw;
@@ -76,12 +96,7 @@ export function verificationDataRows(raw: string, type: string): VerificationDet
 
   if (type === "ACHIEVEMENT") {
     try {
-      const o = JSON.parse(raw) as {
-        category?: string;
-        title?: string;
-        date?: string;
-        location?: string;
-      };
+      const o = parseAchievementPayload(raw);
       if (o.category) rows.push({ label: "Tipe riwayat", value: categoryLabel(o.category) });
       if (o.title) rows.push({ label: "Judul", value: o.title });
       if (o.date) rows.push({ label: "Tanggal", value: o.date });

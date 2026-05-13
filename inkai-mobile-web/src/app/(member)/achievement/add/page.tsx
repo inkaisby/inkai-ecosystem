@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, Suspense } from "react";
 import { ArrowLeft, Award, Calendar, MapPin, CloudUpload, Loader2, Lock, FileText } from "lucide-react";
 import styles from "./AddAchievement.module.css";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import CustomToast from "@/components/CustomToast/CustomToast";
 import { isAxiosError } from "axios";
 import api from "@/lib/api";
 import { compressImage } from "@/lib/imageUtils";
 import { useAuth } from "@/context/AuthContext";
+import { parseRankPromotionPayload, parseAchievementPayload } from "@/lib/verificationDisplay";
 
 const CERT_MAX_MB = 15;
 
@@ -25,29 +26,58 @@ const SABUK_KYU_TITLES = [
 
 const SABUK_DAN_TITLES = Array.from({ length: 10 }, (_, i) => `Dan ${i + 1}`);
 
-export default function AddAchievement() {
+function dateToInputValue(raw?: string): string {
+  if (!raw?.trim()) return "";
+  const s = raw.trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${day}`;
+}
+
+function inferSabukGradeKind(title: string): "KYU" | "DAN" {
+  const t = title.trim();
+  if (SABUK_DAN_TITLES.includes(t)) return "DAN";
+  return "KYU";
+}
+
+function AddAchievementForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resubmitId = searchParams.get("resubmit");
+
   const { user, isLoading: isAuthLoading, isAdmin, isDocumentComplete } = useAuth();
   const certInputRef = useRef<HTMLInputElement>(null);
+  const appliedResubmitRef = useRef<string | null>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isCompressingCert, setIsCompressingCert] = useState(false);
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
-  const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
+  const [resubmitBanner, setResubmitBanner] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    type: 'SABUK',
-    sabukGradeKind: 'KYU' as 'KYU' | 'DAN',
-    title: '',
-    date: '',
-    location: ''
+    type: "SABUK" as "SABUK" | "PIAGAM" | "PELATIHAN",
+    sabukGradeKind: "KYU" as "KYU" | "DAN",
+    title: "",
+    date: "",
+    location: "",
   });
 
-  const isSabuk = formData.type === 'SABUK';
-  const sabukTitleOptions = formData.sabukGradeKind === 'KYU' ? SABUK_KYU_TITLES : SABUK_DAN_TITLES;
+  const isSabuk = formData.type === "SABUK";
+  const sabukTitleOptions = formData.sabukGradeKind === "KYU" ? SABUK_KYU_TITLES : SABUK_DAN_TITLES;
 
   const canSubmitPrestasi = useMemo(() => {
     if (isAdmin) return true;
     if (!user) return false;
-    const nia = typeof user.nia === 'string' ? user.nia.trim() : '';
+    const nia = typeof user.nia === "string" ? user.nia.trim() : "";
     if (!nia) return false;
     return isDocumentComplete;
   }, [user, isAdmin, isDocumentComplete]);
@@ -56,6 +86,75 @@ export default function AddAchievement() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted || isAuthLoading || !user || !resubmitId?.trim() || !canSubmitPrestasi) return;
+    const id = resubmitId.trim();
+    if (appliedResubmitRef.current === id) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.verifications.getMy();
+        if (cancelled) return;
+        const list = Array.isArray(res?.data) ? res.data : [];
+        const c = list.find((x: { id?: string; status?: string }) => x.id === id && x.status === "REJECTED");
+        if (cancelled) return;
+        if (!c) {
+          setToast({
+            show: true,
+            message: "Pengajuan tidak ditemukan atau sudah tidak perlu diperbaiki.",
+            type: "error",
+          });
+          return;
+        }
+
+        appliedResubmitRef.current = id;
+
+        if (c.type === "RANK_PROMOTION") {
+          const p = parseRankPromotionPayload(c.data || "");
+          const kind = inferSabukGradeKind(p.title);
+          setFormData({
+            type: "SABUK",
+            sabukGradeKind: kind,
+            title: p.title || "",
+            date: dateToInputValue(p.date),
+            location: typeof p.location === "string" ? p.location : "",
+          });
+        } else if (c.type === "ACHIEVEMENT") {
+          const o = parseAchievementPayload(c.data || "");
+          const cat = o.category === "PELATIHAN" ? "PELATIHAN" : "PIAGAM";
+          setFormData({
+            type: cat,
+            sabukGradeKind: "KYU",
+            title: o.title || "",
+            date: dateToInputValue(o.date),
+            location: o.location || "",
+          });
+        } else {
+          appliedResubmitRef.current = null;
+          return;
+        }
+
+        const note = c.adminNotes && String(c.adminNotes).trim();
+        setResubmitBanner(
+          note
+            ? `Pengajuan sebelumnya ditolak. Catatan admin: ${note}. Perbaiki data lalu kirim ulang.`
+            : "Pengajuan sebelumnya ditolak. Perbaiki data lalu kirim ulang."
+        );
+
+        router.replace("/achievement/add", { scroll: false });
+      } catch {
+        if (!cancelled) {
+          setToast({ show: true, message: "Gagal memuat data pengajuan lama.", type: "error" });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, isAuthLoading, user, resubmitId, canSubmitPrestasi, router]);
 
   function updateForm(partial: Partial<typeof formData>) {
     setFormData((prev) => ({ ...prev, ...partial }));
@@ -163,7 +262,7 @@ export default function AddAchievement() {
   }
 
   if (!canSubmitPrestasi) {
-    const missingNia = !isAdmin && !(typeof user.nia === 'string' && user.nia.trim());
+    const missingNia = !isAdmin && !(typeof user.nia === "string" && user.nia.trim());
     const missingDocs = !isAdmin && !isDocumentComplete;
     return (
       <div className={styles.container}>
@@ -192,11 +291,11 @@ export default function AddAchievement() {
           </p>
 
           <div className={styles.blockedActions}>
-            <button type="button" className={styles.blockedPrimary} onClick={() => router.push('/documents')}>
+            <button type="button" className={styles.blockedPrimary} onClick={() => router.push("/documents")}>
               <FileText size={18} />
               Buka halaman Dokumen
             </button>
-            <button type="button" className={styles.blockedSecondary} onClick={() => router.push('/profile')}>
+            <button type="button" className={styles.blockedSecondary} onClick={() => router.push("/profile")}>
               Kembali ke Profil
             </button>
           </div>
@@ -214,15 +313,21 @@ export default function AddAchievement() {
         <h1 className={styles.title}>TAMBAH PRESTASI</h1>
       </header>
 
+      {resubmitBanner ? (
+        <div className={styles.resubmitBanner} role="status">
+          {resubmitBanner} Unggah ulang sertifikat jika dokumen perlu diganti.
+        </div>
+      ) : null}
+
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.field}>
           <label className={styles.label}>Tipe Riwayat</label>
           <div className={styles.selectWrapper}>
-            <select 
+            <select
               className={styles.select}
               value={formData.type}
               onChange={(e) => {
-                const nextType = e.target.value;
+                const nextType = e.target.value as "SABUK" | "PIAGAM" | "PELATIHAN";
                 setFormData((prev) => {
                   const wasSabuk = prev.type === "SABUK";
                   const nowSabuk = nextType === "SABUK";
@@ -249,8 +354,8 @@ export default function AddAchievement() {
                 className={styles.select}
                 value={formData.sabukGradeKind}
                 onChange={(e) => {
-                  const sabukGradeKind = e.target.value as 'KYU' | 'DAN';
-                  updateForm({ sabukGradeKind, title: '' });
+                  const sabukGradeKind = e.target.value as "KYU" | "DAN";
+                  updateForm({ sabukGradeKind, title: "" });
                 }}
               >
                 <option value="KYU">Kyu</option>
@@ -300,12 +405,12 @@ export default function AddAchievement() {
           <label className={styles.label}>Tanggal</label>
           <div className={styles.inputWrapper}>
             <Calendar size={20} className={styles.inputIcon} />
-            <input 
-              type="date" 
+            <input
+              type="date"
               className={`${styles.input} ${styles.dateInput}`}
               required
               value={formData.date}
-              onChange={(e) => setFormData({...formData, date: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
             />
           </div>
         </div>
@@ -314,13 +419,13 @@ export default function AddAchievement() {
           <label className={styles.label}>Lokasi</label>
           <div className={styles.inputWrapper}>
             <MapPin size={20} className={styles.inputIcon} />
-            <input 
-              type="text" 
-              placeholder="Contoh: Dojo Pusat atau Jakarta" 
+            <input
+              type="text"
+              placeholder="Contoh: Dojo Pusat atau Jakarta"
               className={styles.input}
               required
               value={formData.location}
-              onChange={(e) => setFormData({...formData, location: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             />
           </div>
         </div>
@@ -383,17 +488,29 @@ export default function AddAchievement() {
           {isSaving ? <Loader2 className={styles.spinner} size={20} /> : "KIRIM UNTUK VALIDASI"}
         </button>
 
-        <p className={styles.hint}>
-          *Data akan divalidasi oleh admin sebelum muncul di profil.
-        </p>
+        <p className={styles.hint}>*Data akan divalidasi oleh admin sebelum muncul di profil.</p>
       </form>
 
-      <CustomToast 
-        isVisible={toast.show} 
-        message={toast.message} 
-        type={toast.type} 
-        onClose={() => setToast({ ...toast, show: false })} 
+      <CustomToast
+        isVisible={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
       />
     </div>
+  );
+}
+
+export default function AddAchievement() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.loadingScreen}>
+          <Loader2 className={styles.spinner} size={40} />
+        </div>
+      }
+    >
+      <AddAchievementForm />
+    </Suspense>
   );
 }
