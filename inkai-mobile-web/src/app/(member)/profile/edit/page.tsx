@@ -307,18 +307,35 @@ function EditProfileContent() {
           <ArrowLeft size={20} />
         </button>
         <h1 className={styles.title}>EDIT PROFIL</h1>
-        <div style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '500' }}>
-          {isSaving ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#3b82f6' }}>
-               <Loader2 size={12} className={styles.spinner} /> Sinkronisasi...
-            </div>
-          ) : lastSaved ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981' }}>
-               <CheckCircle2 size={12} /> Data Tersimpan
-            </div>
-          ) : isDirty ? (
-            <div style={{ color: '#f59e0b' }}>Menunggu input...</div>
-          ) : null}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {isDirty && !isSaving && !phoneError && (
+            <button 
+              onClick={handleSave}
+              style={{ 
+                backgroundColor: 'var(--primary-gold)', 
+                color: 'black', 
+                padding: '6px 12px', 
+                borderRadius: '8px', 
+                fontSize: '12px', 
+                fontWeight: 'bold' 
+              }}
+            >
+              SIMPAN
+            </button>
+          )}
+          <div style={{ fontSize: '11px', fontWeight: '500' }}>
+            {isSaving ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#3b82f6' }}>
+                <Loader2 size={12} className={styles.spinner} /> Sinkronisasi...
+              </div>
+            ) : lastSaved ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981' }}>
+                <CheckCircle2 size={12} /> Data Tersimpan
+              </div>
+            ) : isDirty ? (
+              <div style={{ color: '#f59e0b' }}>Menunggu input...</div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -560,31 +577,34 @@ function EditProfileContent() {
       </form>
 
       {/* Floating Save Button */}
-      <div className="fixed bottom-6 left-0 right-0 px-4 z-10">
+      <div className="fixed bottom-0 left-0 right-0 p-6 z-50 bg-gradient-to-t from-black via-black/80 to-transparent">
         <button
           onClick={handleSave}
           disabled={!isDirty || isSaving || !!phoneError}
-          className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
+          className={`w-full py-4 rounded-2xl font-bold text-white shadow-2xl transition-all flex items-center justify-center gap-2 ${
             !isDirty || isSaving || !!phoneError
-              ? 'bg-gray-600 cursor-not-allowed opacity-50'
-              : 'bg-gradient-to-r from-yellow-600 to-yellow-500 active:scale-95'
+              ? 'bg-gray-800 cursor-not-allowed opacity-50'
+              : 'bg-gradient-to-r from-yellow-600 to-yellow-500 active:scale-95 hover:shadow-yellow-500/20'
           }`}
+          style={{ 
+            boxShadow: isDirty && !isSaving ? '0 10px 30px -10px rgba(245, 158, 11, 0.5)' : 'none'
+          }}
         >
           {isSaving ? (
             <>
               <Loader2 size={20} className="animate-spin" />
-              Menyimpan...
+              Menyimpan ke Server...
             </>
           ) : (
             <>
               <CheckCircle size={20} />
-              Simpan Perubahan
+              {isDirty ? 'Simpan Perubahan Sekarang' : 'Data Sudah Sesuai'}
             </>
           )}
         </button>
         {lastSaved && !isDirty && (
-          <p className="text-center text-xs text-green-400 mt-2 bg-black/50 py-1 rounded-full backdrop-blur-sm mx-auto w-fit px-4">
-            Terakhir disimpan: {lastSaved.toLocaleTimeString()}
+          <p className="text-center text-[10px] text-green-400 mt-3 font-medium tracking-wider uppercase">
+            Terakhir Sinkronisasi: {lastSaved.toLocaleTimeString()}
           </p>
         )}
       </div>
