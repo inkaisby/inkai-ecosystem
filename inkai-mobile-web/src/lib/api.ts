@@ -53,7 +53,9 @@ export const getAssetUrl = (path?: string) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
   const baseUrl = API_BASE_URL.replace('/v1', '');
-  return `${baseUrl}${path}`;
+  // Ensure path starts with a slash if it doesn't already
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl}${normalizedPath}`;
 };
 
 export const authApi = {

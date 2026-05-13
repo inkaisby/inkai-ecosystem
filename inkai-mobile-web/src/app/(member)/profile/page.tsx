@@ -45,7 +45,22 @@ export default function Profile() {
       <section className={styles.profileHeader}>
         <div className={styles.avatarWrapper}>
           {user.photoUrl ? (
-            <Image src={getAssetUrl(user.photoUrl)} alt={user.fullName} width={100} height={100} className={styles.avatar} />
+            <img 
+              src={getAssetUrl(user.photoUrl)} 
+              alt={user.fullName} 
+              className={styles.avatar} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                const parent = (e.target as HTMLImageElement).parentElement;
+                if (parent) {
+                  const placeholder = document.createElement('div');
+                  placeholder.className = styles.avatarPlaceholder;
+                  placeholder.innerText = user.fullName?.substring(0, 1).toUpperCase() || '?';
+                  parent.appendChild(placeholder);
+                }
+              }}
+            />
           ) : (
             <div className={styles.avatarPlaceholder}>
               {user.fullName?.substring(0, 1).toUpperCase()}

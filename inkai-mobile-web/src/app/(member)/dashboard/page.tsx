@@ -124,6 +124,7 @@ export default function Dashboard() {
                 width={40} 
                 height={40} 
                 className={styles.avatar} 
+                style={{ width: '40px', height: '40px', objectFit: 'cover' }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/logo.png";
                 }}
