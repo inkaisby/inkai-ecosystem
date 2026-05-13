@@ -9,10 +9,12 @@ interface MemberCardProps {
   nia: string;
   name: string;
   dojo: string;
+  /** Mis. "Kuning (Kyu 8)" atau "Hitam (Dan 3)" — dari currentRank / riwayat sabuk */
+  highestBelt?: string;
   qrValue?: string;
 }
 
-export default function MemberCard({ nia, name, dojo, qrValue }: MemberCardProps) {
+export default function MemberCard({ nia, name, dojo, highestBelt, qrValue }: MemberCardProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -31,6 +33,10 @@ export default function MemberCard({ nia, name, dojo, qrValue }: MemberCardProps
           <div className={styles.infoBottom}>
             <h1 className={styles.name}>{name}</h1>
             <h2 className={styles.nia}>{nia}</h2>
+            <p className={styles.beltRow}>
+              <span className={styles.beltLabel}>Sabuk tertinggi</span>
+              <span className={styles.beltValue}>{highestBelt?.trim() || "—"}</span>
+            </p>
             <p className={styles.dojo}>{dojo}</p>
           </div>
         </div>

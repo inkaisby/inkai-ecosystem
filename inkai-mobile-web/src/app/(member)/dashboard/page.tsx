@@ -112,6 +112,19 @@ export default function Dashboard() {
     );
   };
 
+  const highestBelt = (() => {
+    if (isAdmin) return "—";
+    const fromCurrent =
+      typeof user.currentRank === "string" ? user.currentRank.trim() : "";
+    if (fromCurrent) return fromCurrent;
+    const firstRank =
+      Array.isArray(user.ranks) && user.ranks.length > 0
+        ? String(user.ranks[0]?.rank ?? "").trim()
+        : "";
+    if (firstRank) return firstRank;
+    return "Belum tercatat";
+  })();
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -182,6 +195,7 @@ export default function Dashboard() {
         <MemberCard 
           nia={user.nia || (isAdmin ? "ADMINISTRATOR" : "MEMPROSES NIA...")} 
           name={user.fullName || "Anggota"} 
+          highestBelt={highestBelt}
           dojo={user.dojo ? `${user.dojo.name} - ${user.dojo.branch?.province?.name || 'Pusat'}` : 'Dojo INKAI - Pusat'} 
           qrValue={typeof window !== 'undefined' ? `${window.location.origin}/v/${user.nia || user.id}` : user.id}
         />

@@ -52,9 +52,15 @@ apiInstance.interceptors.response.use(
 export const getAssetUrl = (path?: string) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
+  
+  // If it's a relative path from the old system, try to point it to the production backend
+  // but warn that it might not exist on Vercel
   const baseUrl = API_BASE_URL.replace('/v1', '');
-  // Ensure path starts with a slash if it doesn't already
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  
+  // Special handling for Supabase paths that might have been saved incorrectly
+  if (path.includes('supabase.co')) return path;
+  
   return `${baseUrl}${normalizedPath}`;
 };
 

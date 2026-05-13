@@ -173,7 +173,18 @@ export default function Documents() {
       </AnimatePresence>
       
       <header className={styles.header}>
-        <button onClick={() => router.back()} className={styles.backBtn}>
+        <button 
+          onClick={() => {
+            if (isSaving) {
+              if (confirm('Data sedang disimpan, yakin ingin kembali?')) {
+                router.push('/profile');
+              }
+            } else {
+              router.push('/profile');
+            }
+          }} 
+          className={styles.backBtn}
+        >
           <ArrowLeft size={20} />
         </button>
         <h1 className={styles.title} style={{ marginRight: isSaving || lastSaved || isAnyChange ? '0' : '40px' }}>DOKUMEN</h1>
