@@ -98,7 +98,11 @@ export default function AddAchievement() {
       const verificationType = formData.type === "SABUK" ? "RANK_PROMOTION" : "ACHIEVEMENT";
       const verificationData =
         formData.type === "SABUK"
-          ? formData.title
+          ? JSON.stringify({
+              title: formData.title,
+              date: formData.date,
+              location: formData.location,
+            })
           : JSON.stringify({
               category: formData.type,
               title: formData.title,

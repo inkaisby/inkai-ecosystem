@@ -19,7 +19,8 @@ import {
   ArrowLeft,
   ChevronDown,
   Calendar,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -51,6 +52,14 @@ function MembersContent() {
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [dateInput, setDateInput] = useState('');
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
+  const [showRankEditModal, setShowRankEditModal] = useState(false);
+  const [editingRank, setEditingRank] = useState<any | null>(null);
+  const [rankEditForm, setRankEditForm] = useState({
+    rank: '',
+    date: '',
+    location: '',
+    isVerified: true,
+  });
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,6 +128,13 @@ function MembersContent() {
       });
     }
   }, [memberId]);
+
+  useEffect(() => {
+    if (!showDetailModal) {
+      setShowRankEditModal(false);
+      setEditingRank(null);
+    }
+  }, [showDetailModal]);
 
   useEffect(() => {
     if (searchParams.get('showAdd') === 'true') {
@@ -250,6 +266,48 @@ function MembersContent() {
       fetchMembers(meta.page, search);
     } catch (err: any) {
       toast.error(err.message || 'Gagal mengubah status');
+    }
+  };
+
+  const openRankEditModal = (rankRow: any) => {
+    setEditingRank(rankRow);
+    setRankEditForm({
+      rank: rankRow.rank || '',
+      date: rankRow.date ? String(rankRow.date).split('T')[0] : '',
+      location: rankRow.location ?? '',
+      isVerified: !!rankRow.isVerified,
+    });
+    setShowRankEditModal(true);
+  };
+
+  const handleSaveMemberRank = async () => {
+    if (!selectedMember || !editingRank) return;
+    const r = rankEditForm.rank.trim();
+    if (!r) {
+      toast.error('Nama tingkatan wajib diisi');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await api.members.updateMemberRank(selectedMember.id, editingRank.id, {
+        rank: r,
+        date: rankEditForm.date,
+        location: rankEditForm.location.trim() || null,
+        isVerified: rankEditForm.isVerified,
+      });
+      const refreshed = await api.members.getDetail(selectedMember.id);
+      setSelectedMember(refreshed.data);
+      setShowRankEditModal(false);
+      setEditingRank(null);
+      toast.success('Riwayat kenaikan tingkat diperbarui');
+      fetchMembers(meta.page, search);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        (typeof err?.message === 'string' ? err.message : 'Gagal menyimpan');
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -856,6 +914,54 @@ function MembersContent() {
                 </div>
               </div>
 
+              {Array.isArray(selectedMember.ranks) && selectedMember.ranks.length > 0 && (
+                <div className="mt-10 border-t border-white/10 pt-8">
+                  <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-4">
+                    Riwayat kenaikan tingkat
+                  </p>
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {selectedMember.ranks.map((r: any) => (
+                      <div
+                        key={r.id}
+                        className="flex items-start justify-between gap-3 p-4 bg-white/5 rounded-xl border border-white/10"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-white">{r.rank}</p>
+                          <p className="text-[11px] text-gray-500 mt-1">
+                            {r.date
+                              ? new Date(r.date).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })
+                              : '-'}{' '}
+                            · Lokasi: {(r.location && String(r.location).trim()) || '—'}
+                          </p>
+                          <p className="text-[10px] mt-1 font-bold uppercase tracking-wider text-amber-500/80">
+                            {r.isVerified ? 'Terverifikasi' : 'Belum terverifikasi'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openRankEditModal(r);
+                          }}
+                          className="shrink-0 p-2.5 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/25 hover:bg-amber-500/25 transition-all"
+                          title="Perbaiki data tingkat"
+                          aria-label="Edit riwayat tingkat"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-600 mt-3 italic">
+                    Admin dapat memperbaiki lokasi, tanggal, atau nama tingkat bila ada kesalahan dari pengajuan anggota.
+                  </p>
+                </div>
+              )}
+
               <div className="mt-10 flex flex-wrap gap-3">
                 <button 
                   onClick={() => setShowDetailModal(false)}
@@ -946,6 +1052,100 @@ function MembersContent() {
                     className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-400 rounded-2xl font-black uppercase tracking-widest transition-all"
                   >
                     Batal
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showRankEditModal && editingRank && selectedMember && (
+            <div className="fixed inset-0 z-[1050] flex items-center justify-center p-5 bg-black/90 backdrop-blur-xl animate-in fade-in">
+              <div className="glass-card-opaque w-full max-w-md p-6 border border-white/15 shadow-2xl animate-in zoom-in-95">
+                <h3 className="text-lg font-black uppercase tracking-tight text-white mb-1">
+                  Edit riwayat tingkat
+                </h3>
+                <p className="text-[10px] text-gray-500 mb-6 uppercase font-bold tracking-wider">
+                  {selectedMember.fullName}
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-amber-500 tracking-widest block mb-2">
+                      Tingkatan
+                    </label>
+                    <input
+                      type="text"
+                      value={rankEditForm.rank}
+                      onChange={(e) =>
+                        setRankEditForm({ ...rankEditForm, rank: e.target.value })
+                      }
+                      className="glass-input w-full px-4 py-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest block mb-2">
+                      Tanggal
+                    </label>
+                    <input
+                      type="date"
+                      value={rankEditForm.date}
+                      onChange={(e) =>
+                        setRankEditForm({ ...rankEditForm, date: e.target.value })
+                      }
+                      className="glass-input w-full px-4 py-3 text-sm"
+                      style={{ colorScheme: 'dark' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest block mb-2">
+                      Lokasi
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Dojo Pusat, Jakarta"
+                      value={rankEditForm.location}
+                      onChange={(e) =>
+                        setRankEditForm({ ...rankEditForm, location: e.target.value })
+                      }
+                      className="glass-input w-full px-4 py-3 text-sm"
+                    />
+                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer text-xs text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={rankEditForm.isVerified}
+                      onChange={(e) =>
+                        setRankEditForm({
+                          ...rankEditForm,
+                          isVerified: e.target.checked,
+                        })
+                      }
+                      className="rounded border-white/20"
+                    />
+                    <span>Terverifikasi pusat</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 mt-8">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowRankEditModal(false);
+                      setEditingRank(null);
+                    }}
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl text-xs font-black uppercase tracking-widest"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveMemberRank}
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-black rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : null}
+                    Simpan
                   </button>
                 </div>
               </div>

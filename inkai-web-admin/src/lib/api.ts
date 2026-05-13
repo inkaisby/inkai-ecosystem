@@ -61,8 +61,14 @@ export const api = {
       return request(`/members?${query}`);
     },
     getProfile: () => request('/members/me'),
+    getDetail: (id: string) => request(`/members/${id}`),
     create: (data: any) => request('/members', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => request(`/members/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    updateMemberRank: (memberId: string, rankId: string, data: any) =>
+      request(`/members/${memberId}/ranks/${rankId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
   },
   org: {
     getProvinces: () => request('/org/provinces'),

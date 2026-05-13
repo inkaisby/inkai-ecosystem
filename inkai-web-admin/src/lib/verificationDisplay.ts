@@ -4,6 +4,30 @@ const TYPE_LABELS: Record<string, string> = {
   ACHIEVEMENT: "Prestasi / Piagam / Pelatihan",
 };
 
+/** RANK_PROMOTION: teks tingkat saja (lama) atau JSON `{ title, date, location }` */
+export function parseRankPromotionPayload(raw: string): {
+  title: string;
+  date?: string;
+  location?: string;
+} {
+  if (!raw) return { title: "—" };
+  try {
+    const o = JSON.parse(raw) as { title?: string; date?: string; location?: string };
+    if (o && typeof o === "object" && typeof o.title === "string" && o.title.trim()) {
+      return {
+        title: o.title.trim(),
+        ...(o.date ? { date: o.date } : {}),
+        ...(typeof o.location === "string" && o.location.trim()
+          ? { location: o.location.trim() }
+          : {}),
+      };
+    }
+  } catch {
+    /* legacy plain string */
+  }
+  return { title: raw.trim() || "—" };
+}
+
 export function verificationTypeLabel(type: string): string {
   return TYPE_LABELS[type] || type.replace(/_/g, " ");
 }
@@ -19,7 +43,7 @@ function categoryLabel(code?: string): string {
 
 export function verificationDataSummary(raw: string, type: string): string {
   if (!raw) return "—";
-  if (type === "RANK_PROMOTION") return raw;
+  if (type === "RANK_PROMOTION") return parseRankPromotionPayload(raw).title;
   if (type === "ACHIEVEMENT") {
     try {
       const o = JSON.parse(raw) as { title?: string };
@@ -43,7 +67,10 @@ export function verificationDataRows(raw: string, type: string): VerificationDet
   const rows: VerificationDetailRow[] = [];
 
   if (type === "RANK_PROMOTION") {
-    rows.push({ label: "Tingkatan diajukan", value: raw || "—" });
+    const p = parseRankPromotionPayload(raw);
+    rows.push({ label: "Tingkatan diajukan", value: p.title || "—" });
+    if (p.date) rows.push({ label: "Tanggal kejadian", value: p.date });
+    if (p.location) rows.push({ label: "Lokasi", value: p.location });
     return rows;
   }
 

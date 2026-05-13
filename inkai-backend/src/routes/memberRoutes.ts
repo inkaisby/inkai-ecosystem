@@ -20,6 +20,7 @@ router.patch('/me', authenticate, memberController.updateMyProfile);
 router.get('/me/children', authenticate, memberController.getMyChildren);
 router.post('/me/children', authenticate, memberController.addChildMember);
 router.post('/upload-document', authenticate, upload.single('document'), memberController.uploadDocument);
+router.patch('/:memberId/ranks/:rankId', authenticate, memberController.updateMemberRank);
 router.post('/bulk', authenticate, memberController.bulkCreateMembers);
 
 // 2. Collection routes

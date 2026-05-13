@@ -143,6 +143,19 @@ export const api = Object.assign(apiInstance, {
     update: (id: string, data: Partial<Member>) => apiInstance.patch(`/members/${id}`, data).then(res => res.data),
     delete: (id: string) => apiInstance.delete(`/members/${id}`).then(res => res.data),
     getDetail: (id: string) => apiInstance.get(`/members/${id}`).then(res => res.data),
+    updateMemberRank: (
+      memberId: string,
+      rankId: string,
+      payload: {
+        rank?: string;
+        date?: string;
+        location?: string | null;
+        isVerified?: boolean;
+      }
+    ) =>
+      apiInstance
+        .patch(`/members/${memberId}/ranks/${rankId}`, payload)
+        .then((res) => res.data),
     verify: (id: string) => apiInstance.get(`/members/verify/${id}`).then(res => res.data),
     uploadDocument: (formData: FormData) => apiInstance.post('/members/upload-document', formData).then(res => res.data),
   },

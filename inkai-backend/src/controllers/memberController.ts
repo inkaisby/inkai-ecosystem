@@ -822,6 +822,118 @@ export const bulkCreateMembers = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Admin corrects a single MemberRank row (tingkat, tanggal, lokasi, verifikasi).
+ * Memperbarui currentRank anggota ke entri terverifikasi terbaru (berdasarkan tanggal).
+ */
+export const updateMemberRank = async (req: AuthRequest, res: Response) => {
+  try {
+    const { memberId, rankId } = req.params;
+    const { rank, date, location, isVerified } = req.body ?? {};
+
+    const row = await prisma.memberRank.findFirst({
+      where: { id: rankId, memberId },
+    });
+
+    if (!row) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Riwayat tingkat tidak ditemukan',
+      });
+    }
+
+    const data: Record<string, unknown> = {};
+
+    if (rank !== undefined) {
+      const t = String(rank).trim();
+      if (!t) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Nama tingkatan tidak boleh kosong',
+        });
+      }
+      data.rank = t;
+    }
+
+    if (date !== undefined) {
+      const d = new Date(date);
+      if (Number.isNaN(d.getTime())) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Format tanggal tidak valid',
+        });
+      }
+      data.date = d;
+    }
+
+    if (location !== undefined) {
+      if (location === null || location === '') {
+        data.location = null;
+      } else {
+        data.location = String(location).trim() || null;
+      }
+    }
+
+    if (isVerified !== undefined) {
+      data.isVerified = Boolean(isVerified);
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Tidak ada data yang diubah',
+      });
+    }
+
+    await prisma.memberRank.update({
+      where: { id: rankId },
+      data: data as any,
+    });
+
+    const newestVerified = await prisma.memberRank.findFirst({
+      where: { memberId, isVerified: true },
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    if (newestVerified) {
+      await prisma.member.update({
+        where: { id: memberId },
+        data: { currentRank: newestVerified.rank },
+      });
+    }
+
+    const member = await prisma.member.findUnique({
+      where: { id: memberId },
+      include: {
+        dojo: {
+          include: {
+            branch: {
+              include: { province: true },
+            },
+          },
+        },
+        user: {
+          select: {
+            email: true,
+            photoUrl: true,
+            phoneNumber: true,
+          },
+        },
+        ranks: { orderBy: { date: 'desc' } },
+        attendances: { take: 10, orderBy: { checkInAt: 'desc' } },
+      },
+    });
+
+    res.json({ status: 'success', data: member });
+  } catch (error: any) {
+    console.error('[updateMemberRank]', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Server error',
+    });
+  }
+};
+
 export const deleteMember = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;

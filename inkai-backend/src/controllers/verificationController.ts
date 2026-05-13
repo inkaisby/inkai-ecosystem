@@ -2,6 +2,30 @@ import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { createNotification } from '../utils/notification';
 
+/** RANK_PROMOTION: legacy plain rank string atau JSON `{ title, date?, location? }` */
+function parseRankPromotionData(raw: string): { title: string; eventDate: Date; location: string | null } {
+  if (!raw || !raw.trim()) {
+    return { title: 'Tanpa nama', eventDate: new Date(), location: null };
+  }
+  try {
+    const o = JSON.parse(raw) as { title?: string; date?: string; location?: string };
+    if (o && typeof o === 'object' && typeof o.title === 'string' && o.title.trim()) {
+      let eventDate = new Date();
+      if (o.date) {
+        const d = new Date(o.date);
+        if (!Number.isNaN(d.getTime())) eventDate = d;
+      }
+      const loc =
+        typeof o.location === 'string' && o.location.trim() ? o.location.trim() : null;
+      return { title: o.title.trim(), eventDate, location: loc };
+    }
+  } catch {
+    /* plain string */
+  }
+  const title = raw.trim();
+  return { title: title || 'Tanpa nama', eventDate: new Date(), location: null };
+}
+
 export const createClaim = async (req: any, res: Response) => {
   try {
     const { type, data, proofUrl } = req.body;
@@ -165,17 +189,19 @@ export const processClaim = async (req: any, res: Response) => {
 
     // If approved and type is RANK_PROMOTION, update member's rank
     if (status === 'APPROVED' && verification.type === 'RANK_PROMOTION') {
+      const { title, eventDate, location } = parseRankPromotionData(verification.data);
+
       await prisma.member.update({
         where: { id: verification.memberId },
-        data: { currentRank: verification.data }
+        data: { currentRank: title }
       });
 
-      // Also add to rank history
       await prisma.memberRank.create({
         data: {
           memberId: verification.memberId,
-          rank: verification.data,
-          date: new Date(),
+          rank: title,
+          date: eventDate,
+          location: location ?? undefined,
           isVerified: true
         }
       });
