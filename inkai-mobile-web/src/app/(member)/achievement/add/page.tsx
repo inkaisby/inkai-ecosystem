@@ -4,8 +4,20 @@ import { useState } from "react";
 import { ArrowLeft, Award, Calendar, MapPin, CloudUpload, Loader2 } from "lucide-react";
 import styles from "./AddAchievement.module.css";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import CustomToast from "@/components/CustomToast/CustomToast";
+
+const SABUK_KYU_TITLES = [
+  "Putih Kyu-10",
+  "Kuning Kyu-8",
+  "Hijau Kyu-6",
+  "Biru Kyu-5",
+  "Biru Kyu-4",
+  "Coklat Kyu-3",
+  "Coklat Kyu-2",
+  "Coklat Kyu-1",
+] as const;
+
+const SABUK_DAN_TITLES = Array.from({ length: 10 }, (_, i) => `Dan ${i + 1}`);
 
 export default function AddAchievement() {
   const router = useRouter();
@@ -13,10 +25,18 @@ export default function AddAchievement() {
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [formData, setFormData] = useState({
     type: 'SABUK',
+    sabukGradeKind: 'KYU' as 'KYU' | 'DAN',
     title: '',
     date: '',
     location: ''
   });
+
+  const isSabuk = formData.type === 'SABUK';
+  const sabukTitleOptions = formData.sabukGradeKind === 'KYU' ? SABUK_KYU_TITLES : SABUK_DAN_TITLES;
+
+  function updateForm(partial: Partial<typeof formData>) {
+    setFormData((prev) => ({ ...prev, ...partial }));
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +70,18 @@ export default function AddAchievement() {
             <select 
               className={styles.select}
               value={formData.type}
-              onChange={(e) => setFormData({...formData, type: e.target.value})}
+              onChange={(e) => {
+                const nextType = e.target.value;
+                setFormData((prev) => {
+                  const wasSabuk = prev.type === "SABUK";
+                  const nowSabuk = nextType === "SABUK";
+                  return {
+                    ...prev,
+                    type: nextType,
+                    title: wasSabuk !== nowSabuk ? "" : prev.title,
+                  };
+                });
+              }}
             >
               <option value="SABUK">Kenaikan Sabuk</option>
               <option value="PIAGAM">Piagam / Pertandingan</option>
@@ -59,19 +90,59 @@ export default function AddAchievement() {
           </div>
         </div>
 
+        {isSabuk && (
+          <div className={styles.field}>
+            <label className={styles.label}>Jenis Tingkatan</label>
+            <div className={styles.selectWrapper}>
+              <select
+                className={styles.select}
+                value={formData.sabukGradeKind}
+                onChange={(e) => {
+                  const sabukGradeKind = e.target.value as 'KYU' | 'DAN';
+                  updateForm({ sabukGradeKind, title: '' });
+                }}
+              >
+                <option value="KYU">Kyu</option>
+                <option value="DAN">DAN</option>
+              </select>
+            </div>
+          </div>
+        )}
+
         <div className={styles.field}>
           <label className={styles.label}>Judul Prestasi / Tingkatan</label>
-          <div className={styles.inputWrapper}>
-            <Award size={20} className={styles.inputIcon} />
-            <input 
-              type="text" 
-              placeholder="Contoh: Juara 1 Kumite atau Sabuk Kuning Kyu 8" 
-              className={styles.input}
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
-            />
-          </div>
+          {isSabuk ? (
+            <div className={styles.inputWrapper}>
+              <Award size={20} className={styles.inputIcon} />
+              <select
+                className={styles.selectInWrapper}
+                required
+                value={formData.title}
+                onChange={(e) => updateForm({ title: e.target.value })}
+              >
+                <option value="" disabled>
+                  Pilih tingkatan
+                </option>
+                {sabukTitleOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className={styles.inputWrapper}>
+              <Award size={20} className={styles.inputIcon} />
+              <input
+                type="text"
+                placeholder="Contoh: Juara 1 Kumite atau sertifikat pelatihan"
+                className={styles.input}
+                required
+                value={formData.title}
+                onChange={(e) => updateForm({ title: e.target.value })}
+              />
+            </div>
+          )}
         </div>
 
         <div className={styles.field}>

@@ -11,8 +11,24 @@ class AddAchievementScreen extends StatefulWidget {
 }
 
 class _AddAchievementScreenState extends State<AddAchievementScreen> {
+  static const List<String> _kyuSabukTitles = [
+    'Putih Kyu-10',
+    'Kuning Kyu-8',
+    'Hijau Kyu-6',
+    'Biru Kyu-5',
+    'Biru Kyu-4',
+    'Coklat Kyu-3',
+    'Coklat Kyu-2',
+    'Coklat Kyu-1',
+  ];
+
+  static List<String> get _danSabukTitles =>
+      List<String>.generate(10, (i) => 'Dan ${i + 1}');
+
   final _formKey = GlobalKey<FormState>();
   String _selectedType = 'SABUK';
+  String _sabukGradeKind = 'KYU';
+  String? _selectedSabukTitle;
   final _titleController = TextEditingController();
   final _dateController = TextEditingController();
   final _locationController = TextEditingController();
@@ -45,9 +61,13 @@ class _AddAchievementScreenState extends State<AddAchievementScreen> {
             children: [
               _buildLabel('Tipe Riwayat'),
               _buildDropdown(),
+              if (_selectedType == 'SABUK') ...[
+                const SizedBox(height: 24),
+                _buildLabel('Jenis Tingkatan'),
+                _buildSabukGradeKindDropdown(),
+              ],
               const SizedBox(height: 24),
-              _buildLabel('Judul Prestasi / Tingkatan'),
-              _buildTextField(_titleController, 'Contoh: Juara 1 Kumite atau Sabuk Kuning Kyu 8', LucideIcons.award),
+              _buildTitleField(),
               const SizedBox(height: 24),
               _buildLabel('Tanggal'),
               _buildTextField(_dateController, 'DD/MM/YYYY', LucideIcons.calendar),
@@ -117,8 +137,98 @@ class _AddAchievementScreenState extends State<AddAchievementScreen> {
             DropdownMenuItem(value: 'PIAGAM', child: Text('Piagam / Pertandingan')),
             DropdownMenuItem(value: 'PELATIHAN', child: Text('Pelatihan / Sertifikasi')),
           ],
-          onChanged: (val) => setState(() => _selectedType = val!),
+          onChanged: (val) {
+            final next = val!;
+            setState(() {
+              final wasSabuk = _selectedType == 'SABUK';
+              final nowSabuk = next == 'SABUK';
+              if (wasSabuk != nowSabuk) {
+                _titleController.clear();
+                _selectedSabukTitle = null;
+              }
+              _selectedType = next;
+            });
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildSabukGradeKindDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _sabukGradeKind,
+          isExpanded: true,
+          dropdownColor: const Color(0xFF1E1E24),
+          style: const TextStyle(color: Colors.white),
+          items: const [
+            DropdownMenuItem(value: 'KYU', child: Text('Kyu')),
+            DropdownMenuItem(value: 'DAN', child: Text('DAN')),
+          ],
+          onChanged: (v) => setState(() {
+            _sabukGradeKind = v!;
+            _selectedSabukTitle = null;
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitleField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel('Judul Prestasi / Tingkatan'),
+        if (_selectedType == 'SABUK')
+          _buildSabukTitleDropdown()
+        else
+          _buildTextField(
+            _titleController,
+            'Contoh: Juara 1 Kumite atau sertifikat pelatihan',
+            LucideIcons.award,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSabukTitleDropdown() {
+    final options = _sabukGradeKind == 'KYU' ? _kyuSabukTitles : _danSabukTitles;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedSabukTitle,
+        isExpanded: true,
+        dropdownColor: const Color(0xFF1E1E24),
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        iconEnabledColor: Colors.white70,
+        decoration: InputDecoration(
+          prefixIcon: Icon(LucideIcons.award, size: 20, color: InkaiTheme.primaryGold.withOpacity(0.5)),
+          hintText: 'Pilih tingkatan',
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.25)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+        ),
+        items: options
+            .map(
+              (t) => DropdownMenuItem<String>(
+                value: t,
+                child: Text(t, overflow: TextOverflow.ellipsis),
+              ),
+            )
+            .toList(),
+        onChanged: (v) => setState(() => _selectedSabukTitle = v),
+        validator: (v) => (v == null || v.isEmpty) ? 'Pilih tingkatan sabuk' : null,
       ),
     );
   }
@@ -165,16 +275,17 @@ class _AddAchievementScreenState extends State<AddAchievementScreen> {
   }
 
   void _saveAchievement() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isSaving = true);
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data berhasil dikirim untuk validasi!'), backgroundColor: Colors.blueAccent),
-        );
-        Navigator.pop(context);
-      }
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    setState(() => _isSaving = true);
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data berhasil dikirim untuk validasi!'), backgroundColor: Colors.blueAccent),
+      );
+      Navigator.pop(context);
     }
   }
 }

@@ -93,6 +93,24 @@
   color: rgba(255, 255, 255, 0.2);
 }
 
+.selectInWrapper {
+  flex: 1;
+  width: 100%;
+  padding: 16px 0;
+  padding-right: 8px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.selectInWrapper option {
+  background-color: #1e1e24;
+  color: white;
+}
+
 .uploadBox {
   width: 100%;
   padding: 32px;
