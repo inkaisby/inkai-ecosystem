@@ -35,8 +35,9 @@ class _RegisterParentScreenState extends State<RegisterParentScreen> {
         email: _emailController.text,
         password: _passwordController.text,
         fullName: _fullNameController.text,
-        dojoId: '', // Kosong untuk pendaftaran awal orang tua
+        dojoId: '',
         phoneNumber: _waController.text,
+        isParent: true,
       );
 
       if (response.data['status'] == 'success' && mounted) {

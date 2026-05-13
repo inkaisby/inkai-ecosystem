@@ -44,14 +44,17 @@ class ApiService {
     required String fullName,
     required String dojoId,
     String? phoneNumber,
+    bool isParent = false,
   }) async {
-    return await _dio.post('/auth/register', data: {
+    final body = <String, dynamic>{
       'email': email,
       'password': password,
       'fullName': fullName,
-      'dojoId': dojoId,
-      'phoneNumber': phoneNumber,
-    });
+      if (dojoId.isNotEmpty) 'dojoId': dojoId,
+      if (phoneNumber != null && phoneNumber.isNotEmpty) 'phoneNumber': phoneNumber,
+      if (isParent) 'isParent': true,
+    };
+    return await _dio.post('/auth/register', data: body);
   }
 
   Future<Response> getProvinces() async {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Eye, EyeOff, User, Mail, Smartphone, Lock, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff, User, Mail, Smartphone, Lock, ShieldCheck, MapPin } from "lucide-react";
 import CustomToast from "@/components/CustomToast/CustomToast";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -17,14 +17,95 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [dojos, setDojos] = useState<{ id: string; name: string }[]>([]);
+  const [provinceId, setProvinceId] = useState('');
+  const [branchId, setBranchId] = useState('');
+  const [dojoId, setDojoId] = useState('');
+  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
+  const [isLoadingDojos, setIsLoadingDojos] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    let cancelled = false;
+    (async () => {
+      setIsLoadingProvinces(true);
+      try {
+        const res = await api.org.getProvinces();
+        if (!cancelled && res.status === 'success' && Array.isArray(res.data)) {
+          setProvinces(res.data);
+        }
+      } catch {
+        if (!cancelled) setToast({ show: true, message: 'Gagal memuat daftar provinsi.', type: 'error' });
+      } finally {
+        if (!cancelled) setIsLoadingProvinces(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted]);
+
+  const fetchBranches = async (pid: string) => {
+    setIsLoadingBranches(true);
+    try {
+      const res = await api.org.getBranches(pid);
+      if (res.status === 'success' && Array.isArray(res.data)) setBranches(res.data);
+      else setBranches([]);
+    } catch {
+      setBranches([]);
+      setToast({ show: true, message: 'Gagal memuat cabang.', type: 'error' });
+    } finally {
+      setIsLoadingBranches(false);
+    }
+  };
+
+  const fetchDojos = async (bid: string) => {
+    setIsLoadingDojos(true);
+    try {
+      const res = await api.org.getDojos(bid);
+      if (res.status === 'success' && Array.isArray(res.data)) setDojos(res.data);
+      else setDojos([]);
+    } catch {
+      setDojos([]);
+      setToast({ show: true, message: 'Gagal memuat dojo.', type: 'error' });
+    } finally {
+      setIsLoadingDojos(false);
+    }
+  };
+
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setProvinceId(val);
+    setBranchId('');
+    setDojoId('');
+    setBranches([]);
+    setDojos([]);
+    if (val) void fetchBranches(val);
+  };
+
+  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setBranchId(val);
+    setDojoId('');
+    setDojos([]);
+    if (val) void fetchDojos(val);
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
       setToast({ show: true, message: 'Harap lengkapi semua kolom pendaftaran.', type: 'error' });
+      return;
+    }
+    if (!dojoId) {
+      setToast({ show: true, message: 'Silakan pilih Provinsi, Cabang, dan Dojo/Ranting.', type: 'error' });
       return;
     }
     
@@ -34,7 +115,8 @@ export default function Register() {
         fullName: formData.name,
         email: formData.email,
         phoneNumber: formData.phone,
-        password: formData.password
+        password: formData.password,
+        dojoId,
       });
       
       const loginSuccess = await login(formData.email, formData.password);
@@ -85,7 +167,10 @@ export default function Register() {
           </button>
 
           <h1 className="text-2xl font-black text-white mb-2">Pendaftaran Anggota</h1>
-          <p className="text-gray-500 text-10 font-bold uppercase tracking-widest">Lengkapi data untuk bergabung</p>
+          <p className="text-gray-500 text-10 font-bold uppercase tracking-widest">Pilih dojo, lalu lengkapi kontak dan kata sandi</p>
+          <p className="text-gray-400 text-xs leading-relaxed mt-3">
+            Nomor Induk Anggota (NIA) mengikuti proses verifikasi pengurus setelah Anda melengkapi profil dan dokumen di langkah berikutnya.
+          </p>
         </motion.div>
         
         {/* Form Container */}
@@ -114,6 +199,87 @@ export default function Register() {
                   disabled={isLoading} 
                 />
               </div>
+            </div>
+
+            {/* Wilayah latihan */}
+            <div className="space-y-4 pb-2 border-b border-white/5">
+              <p className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Wilayah latihan</p>
+
+              <div className="space-y-2">
+                <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Provinsi</label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2, pointerEvents: 'none' }}>
+                    <MapPin size={18} />
+                  </div>
+                  <select
+                    className="glass-input w-full py-4 pl-12 pr-10 text-sm appearance-none cursor-pointer disabled:opacity-40"
+                    value={provinceId}
+                    onChange={handleProvinceChange}
+                    required
+                    disabled={isLoading || isLoadingProvinces}
+                  >
+                    <option value="">Pilih provinsi</option>
+                    {provinces.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  {isLoadingProvinces && (
+                    <Loader2 className="animate-spin" size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }} />
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Cabang</label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2, pointerEvents: 'none' }}>
+                    <MapPin size={18} />
+                  </div>
+                  <select
+                    className="glass-input w-full py-4 pl-12 pr-10 text-sm appearance-none cursor-pointer disabled:opacity-40"
+                    value={branchId}
+                    onChange={handleBranchChange}
+                    required
+                    disabled={isLoading || !provinceId || isLoadingBranches}
+                  >
+                    <option value="">Pilih cabang</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                  {isLoadingBranches && (
+                    <Loader2 className="animate-spin" size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }} />
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Dojo / Ranting</label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2, pointerEvents: 'none' }}>
+                    <MapPin size={18} />
+                  </div>
+                  <select
+                    className="glass-input w-full py-4 pl-12 pr-10 text-sm appearance-none cursor-pointer disabled:opacity-40"
+                    value={dojoId}
+                    onChange={(e) => setDojoId(e.target.value)}
+                    required
+                    disabled={isLoading || !branchId || isLoadingDojos}
+                  >
+                    <option value="">Pilih dojo atau ranting</option>
+                    {dojos.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                  {isLoadingDojos && (
+                    <Loader2 className="animate-spin" size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }} />
+                  )}
+                </div>
+              </div>
+
+              <p className="text-gray-500 text-[11px] italic ml-1 leading-snug -mt-1">
+                Pilihan dojo tidak dapat diubah sendiri setelah pendaftaran.
+              </p>
             </div>
 
             {/* Email */}

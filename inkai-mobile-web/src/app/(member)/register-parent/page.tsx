@@ -35,7 +35,7 @@ export default function ParentRegister() {
         email: formData.email,
         phoneNumber: formData.phone,
         password: formData.password,
-        role: 'PARENT'
+        isParent: true,
       });
       
       const loginSuccess = await login(formData.email, formData.password);
