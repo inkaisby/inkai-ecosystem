@@ -107,12 +107,15 @@ app.use((err: unknown, req: Request, res: Response, _next: any) => {
 
 const httpServer = createServer(app);
 
-httpServer.listen(PORT, () => {
-  console.log(`
+/** Vercel menyuntik handler serverless — jangan `listen()` di platform itu. */
+if (!process.env.VERCEL) {
+  httpServer.listen(PORT, () => {
+    console.log(`
   🚀 Server ready at http://localhost:${PORT}
   Environment: ${process.env.NODE_VERSION || 'development'}
   `);
-});
+  });
+}
 
 export default app;
 

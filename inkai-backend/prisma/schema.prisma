@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  /// Wajib untuk deploy Vercel / Lambda (OpenSSL 3). Lokal tetap pakai target `native`.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

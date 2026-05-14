@@ -143,7 +143,16 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { identifier, password } = req.body; // identifier can be email or NIA
+    const identifier =
+      typeof req.body?.identifier === 'string' ? req.body.identifier.trim() : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+
+    if (!identifier || !password) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Email/NIA dan kata sandi wajib diisi',
+      });
+    }
 
     console.log(`Login attempt for: ${identifier}`);
 
@@ -152,8 +161,8 @@ export const login = async (req: Request, res: Response) => {
       where: {
         OR: [
           { email: { equals: identifier, mode: 'insensitive' } },
-          { member: { nia: identifier } }
-        ]
+          { member: { nia: identifier } },
+        ],
       },
       include: sessionUserInclude,
     });
@@ -214,10 +223,13 @@ export const login = async (req: Request, res: Response) => {
       code: error.code,
       meta: error.meta
     });
-    res.status(500).json({ 
+    res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan pada server saat login',
-      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      debug:
+        process.env.NODE_ENV === 'development' || process.env.INKAI_LOGIN_DEBUG === '1'
+          ? error.message
+          : undefined,
     });
   }
 };
@@ -257,14 +269,23 @@ export const getSession = async (req: any, res: Response) => {
 
 export const adminLogin = async (req: Request, res: Response) => {
   try {
-    const { identifier, password } = req.body;
+    const identifier =
+      typeof req.body?.identifier === 'string' ? req.body.identifier.trim() : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+
+    if (!identifier || !password) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Email dan kata sandi wajib diisi',
+      });
+    }
 
     let user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: { equals: identifier, mode: 'insensitive' } },
-          { member: { nia: identifier } }
-        ]
+          { member: { nia: identifier } },
+        ],
       },
       include: { 
         member: {
@@ -367,10 +388,13 @@ export const adminLogin = async (req: Request, res: Response) => {
       code: error.code,
       meta: error.meta
     });
-    res.status(500).json({ 
+    res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan pada server saat login admin',
-      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      debug:
+        process.env.NODE_ENV === 'development' || process.env.INKAI_LOGIN_DEBUG === '1'
+          ? error.message
+          : undefined,
     });
   }
 };
