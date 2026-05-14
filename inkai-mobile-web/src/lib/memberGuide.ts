@@ -1,4 +1,5 @@
 import defaultJson from "@guide/member-welcome.json";
+import { getPublicApiV1Base } from "./publicApiBase";
 
 export type MemberWelcomeGuideJson = {
   version: string;
@@ -13,17 +14,6 @@ export type MemberWelcomeGuideJson = {
 };
 
 export const FALLBACK_MEMBER_GUIDE = defaultJson as MemberWelcomeGuideJson;
-
-function apiV1Base(): string {
-  if (typeof window !== "undefined") {
-    if (window.location.hostname.includes("vercel.app")) {
-      return "https://inkai-ecosystem.vercel.app/v1";
-    }
-  }
-  const fromEnv = process.env.NEXT_PUBLIC_API_URL;
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
-  return "http://127.0.0.1:5001/v1";
-}
 
 function isValidGuideData(data: unknown): data is MemberWelcomeGuideJson {
   if (!data || typeof data !== "object") return false;
@@ -42,7 +32,7 @@ function isValidGuideData(data: unknown): data is MemberWelcomeGuideJson {
 /** Konten panduan: API jika sudah diisi admin, selain itu file `guide/member-welcome.json`. */
 export async function fetchMemberGuideResolved(): Promise<MemberWelcomeGuideJson> {
   try {
-    const res = await fetch(`${apiV1Base()}/member-mobile-welcome`, {
+    const res = await fetch(`${getPublicApiV1Base()}/member-mobile-welcome`, {
       cache: "no-store",
     });
     const json = await res.json();

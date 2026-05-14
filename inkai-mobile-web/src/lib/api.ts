@@ -1,24 +1,14 @@
 import axios from 'axios';
-
-const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    if (window.location.hostname.includes('vercel.app')) {
-      return 'https://inkai-ecosystem.vercel.app/v1';
-    }
-  }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5001/v1';
-};
-
-const API_BASE_URL = getBaseUrl();
-
+import { getPublicApiV1Base } from './publicApiBase';
 
 const apiInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getPublicApiV1Base(),
   timeout: 30000, // Tingkatkan timeout ke 30 detik untuk upload file
 });
 
 // Interceptor for token
 apiInstance.interceptors.request.use((config) => {
+  config.baseURL = getPublicApiV1Base();
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('inkai_token') || localStorage.getItem('token');
     if (token) {
@@ -56,7 +46,8 @@ export const getAssetUrl = (path?: string) => {
   
   // If it's a relative path from the old system, try to point it to the production backend
   // but warn that it might not exist on Vercel
-  const baseUrl = API_BASE_URL.replace('/v1', '');
+  const v1Base = getPublicApiV1Base();
+  const baseUrl = v1Base.replace(/\/v1\/?$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   
   // Special handling for Supabase paths that might have been saved incorrectly
