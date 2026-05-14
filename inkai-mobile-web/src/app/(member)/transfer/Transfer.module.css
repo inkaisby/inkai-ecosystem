@@ -20,7 +20,7 @@
 .backBtn {
   background: none;
   border: none;
-  color: white;
+  color: var(--dash-header-icon);
   padding: 8px;
   cursor: pointer;
   display: flex;

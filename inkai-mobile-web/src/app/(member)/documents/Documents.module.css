@@ -25,7 +25,7 @@
   align-items: center;
   justify-content: center;
   background-color: rgba(255, 255, 255, 0.05);
-  color: white;
+  color: var(--dash-header-icon);
   transition: all 0.2s ease;
 }
 
@@ -39,6 +39,23 @@
   font-weight: 800;
   color: white;
   letter-spacing: 0.5px;
+}
+
+:global(html[data-clock-phase="day"]) .header {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+:global(html[data-clock-phase="day"]) .backBtn {
+  background-color: rgba(15, 23, 42, 0.06);
+}
+
+:global(html[data-clock-phase="day"]) .backBtn:active {
+  background-color: rgba(15, 23, 42, 0.1);
+}
+
+:global(html[data-clock-phase="day"]) .title {
+  color: var(--text-light);
 }
 
 .content {
@@ -66,7 +83,7 @@
 .infoText h3 {
   font-size: 14px;
   font-weight: bold;
-  color: white;
+  color: var(--text-light);
   margin-bottom: 4px;
 }
 
@@ -127,7 +144,7 @@
 .docHeader h4 {
   font-size: 15px;
   font-weight: bold;
-  color: white;
+  color: var(--text-light);
   flex: 1;
 }
 

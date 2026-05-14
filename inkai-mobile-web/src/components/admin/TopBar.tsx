@@ -125,12 +125,12 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-16 border-b border-white/5 bg-[#0a0a0c]/80 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between px-0">
+    <header className="h-16 border-b border-white/5 adm-chrome-soft backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between mobile-hpad">
       <div className="flex items-center gap-2.5">
         <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
           <Shield size={16} className="text-black" strokeWidth={3} />
         </div>
-        <h1 className="text-xs font-black tracking-tighter text-white uppercase">INKAI <span className="text-amber-500">ADMIN</span></h1>
+        <h1 className="text-xs font-black tracking-tighter text-white uppercase truncate">INKAI <span className="text-amber-500">ADMIN</span></h1>
       </div>
 
       <div className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export default function TopBar() {
           >
             <Bell size={20} strokeWidth={2} />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-[#0a0a0c]"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-[var(--background-dark)]"></span>
             )}
           </button>
 
@@ -258,7 +258,7 @@ export default function TopBar() {
             </button>
 
             {/* Dropdown Menu */}
-            <div className="absolute right-0 mt-2 w-48 bg-[#16161a] border border-white/10 rounded-2xl shadow-2xl opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all duration-200 p-2 overflow-hidden">
+            <div className="absolute right-0 mt-2 w-48 bg-[var(--card-dark)] border border-white/10 rounded-2xl shadow-2xl opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all duration-200 p-2 overflow-hidden">
               <button 
                 onClick={() => router.push('/settings')}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"

@@ -30,7 +30,7 @@ export default function RootLayout({
     <html lang="id">
       <body>
         <Script id="inkai-clock-phase-boot" strategy="beforeInteractive">
-          {`(function(){try{var p=window.location.pathname||'';var admin=p.indexOf('/admin')===0;var phase=admin?'night':(new Date().getHours()<12?'day':'night');document.documentElement.setAttribute('data-clock-phase',phase);document.documentElement.style.colorScheme=phase==='day'?'light':'dark';}catch(e){}})();`}
+          {`(function(){try{var phase=new Date().getHours()<12?'day':'night';document.documentElement.setAttribute('data-clock-phase',phase);document.documentElement.style.colorScheme=phase==='day'?'light':'dark';}catch(e){}})();`}
         </Script>
         <AutomaticClockTheme />
         <div className="mobile-wrapper">

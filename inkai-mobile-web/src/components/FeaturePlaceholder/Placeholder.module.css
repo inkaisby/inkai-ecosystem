@@ -13,7 +13,7 @@
 }
 
 .backBtn {
-  color: white;
+  color: var(--dash-header-icon);
 }
 
 .title {

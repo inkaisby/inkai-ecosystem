@@ -23,7 +23,7 @@
   --gradient-card: linear-gradient(155deg, #1e222a 0%, #252a33 45%, #1a1d24 100%);
 }
 
-/* AM (00–11): cerah untuk area anggota. PM = gelap. Rute /admin selalu gelap (diatur di JS). */
+/* AM (00–11): cerah. PM = gelap — anggota & admin sama. */
 html[data-clock-phase="day"] {
   color-scheme: light;
   --background-dark: #eef2f6;
@@ -215,6 +215,15 @@ html[data-clock-phase="day"] .mobile-content {
   border: 1px solid var(--glass-border);
   border-radius: 1.25rem;
   padding: 1.25rem;
+}
+
+/** Latar fullscreen admin (ganti #0A0A0C); ikut jam siang/malam */
+.adm-bg {
+  background-color: var(--background-dark);
+}
+
+.adm-chrome-soft {
+  background-color: color-mix(in srgb, var(--background-dark) 88%, transparent);
 }
 
 .animate-in {
@@ -866,6 +875,10 @@ html[data-clock-phase="day"] .mobile-content {
   background-color: rgba(0, 0, 0, 0.2);
 }
 
+.bg-black-30 {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
 .bg-black-40 {
   background-color: rgba(0, 0, 0, 0.4);
 }
@@ -876,6 +889,10 @@ html[data-clock-phase="day"] .mobile-content {
 
 .bg-black-80 {
   background-color: rgba(0, 0, 0, 0.8);
+}
+
+.bg-black-90 {
+  background-color: rgba(0, 0, 0, 0.9);
 }
 
 .glass-input {
@@ -1320,6 +1337,10 @@ html[data-clock-phase="day"] .text-gray-500 {
   font-weight: 600;
 }
 
+html[data-clock-phase="day"] .text-gray-300 {
+  color: #334155 !important;
+}
+
 html[data-clock-phase="day"] .text-gray-600 {
   color: #334155 !important;
 }
@@ -1332,6 +1353,46 @@ html[data-clock-phase="day"] .skeleton {
     rgba(15, 23, 42, 0.04) 75%
   );
   background-size: 200% 100%;
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .bg-black {
+  background-color: var(--background-dark) !important;
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .bg-black-20 {
+  background-color: rgba(255, 255, 255, 0.88);
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .bg-black-30 {
+  background-color: rgba(248, 250, 252, 0.92);
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .bg-black-40 {
+  background-color: rgba(241, 245, 249, 0.95);
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .bg-black-60 {
+  background-color: rgba(226, 232, 240, 0.9);
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .bg-black-80 {
+  background-color: rgba(15, 23, 42, 0.42);
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .bg-black-90 {
+  background-color: rgba(15, 23, 42, 0.52);
+}
+
+html[data-clock-phase="day"] .bg-dark-modal {
+  background-color: rgba(248, 250, 252, 0.97);
+}
+
+html[data-clock-phase="day"] .bg-dark-card {
+  background-color: #e2e8f0;
+}
+
+html[data-clock-phase="day"] .bg-dark-panel {
+  background-color: rgba(255, 255, 255, 0.97);
 }
 
 /* Custom Scrollbar */

@@ -321,7 +321,7 @@ function MembersContent() {
     <div suppressHydrationWarning className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Premium Confirm Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black-80 backdrop-blur-md">
           <div className="glass-card-opaque w-full max-w-sm p-8 text-center border border-white/10 shadow-2xl">
             <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Trash2 size={32} />
@@ -551,7 +551,7 @@ function MembersContent() {
 
       {/* Form Modal (Add / Edit) */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 bg-[#0A0A0C] animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">
@@ -1041,7 +1041,7 @@ function MembersContent() {
           
           {/* Premium Input Modal (Reset Password) */}
           {showResetModal && (
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black/90 backdrop-blur-xl animate-in fade-in">
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black-90 backdrop-blur-xl animate-in fade-in">
               <div className="glass-card-opaque w-full max-w-sm p-8 border border-white/10 shadow-2xl animate-in zoom-in-95">
                 <div className="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
                   <UserCheck size={32} />
@@ -1084,7 +1084,7 @@ function MembersContent() {
           )}
 
           {showRankEditModal && editingRank && selectedMember && (
-            <div className="fixed inset-0 z-[1050] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black/90 backdrop-blur-xl animate-in fade-in">
+            <div className="fixed inset-0 z-[1050] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black-90 backdrop-blur-xl animate-in fade-in">
               <div className="glass-card-opaque w-full max-w-md p-6 border border-white/15 shadow-2xl animate-in zoom-in-95">
                 <h3 className="text-lg font-black uppercase tracking-tight text-white mb-1">
                   Edit riwayat tingkat
@@ -1182,7 +1182,7 @@ function MembersContent() {
 
       {/* Bulk Import Modal */}
       {showBulkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 bg-[#0A0A0C] animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
           <div className="modal-gradient w-full max-w-2xl p-6 rounded-2xl shadow-2xl border border-white/10 max-h-[90vh] flex flex-col animate-in">
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -1211,7 +1211,7 @@ function MembersContent() {
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
                 placeholder="Tempel data di sini..."
-                className="flex-1 w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-mono focus:outline-none focus:border-amber-500/50 text-gray-300 resize-none"
+                className="flex-1 w-full bg-black-40 border border-white/10 rounded-xl p-4 text-xs font-mono focus:outline-none focus:border-amber-500/50 text-gray-300 resize-none"
               />
 
               <div className="p-4 bg-white/5 rounded-xl border border-white/10">

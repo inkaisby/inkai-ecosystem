@@ -155,7 +155,7 @@ function VerificationContent() {
 
               {selectedClaim?.id === item.id && (
                 <div className="pt-4 border-t border-white/5 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                  <div className="p-4 bg-black/30 rounded-xl border border-white/5 space-y-2">
+                  <div className="p-4 bg-black-30 rounded-xl border border-white/5 space-y-2">
                     <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Detail pengajuan</p>
                     {verificationDataRows(item.data, item.type).map((row) => (
                       <div key={row.label} className="flex justify-between gap-3 text-[11px] border-b border-white/5 pb-2 last:border-0 last:pb-0">
@@ -165,7 +165,7 @@ function VerificationContent() {
                     ))}
                   </div>
 
-                  <div className="p-4 bg-black/40 rounded-xl border border-white/5 text-center">
+                  <div className="p-4 bg-black-40 rounded-xl border border-white/5 text-center">
                     <p className="text-[10px] text-amber-500 font-bold uppercase tracking-widest mb-2">Dokumen Pendukung</p>
                     <p className="text-[10px] text-gray-500 break-all mb-4">
                       {isOpenableProofUrl(item.proofUrl) ? item.proofUrl : item.proofUrl || 'Belum ada file / tidak tersedia'}

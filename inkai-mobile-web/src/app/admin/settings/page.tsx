@@ -81,7 +81,7 @@ export default function SettingsPage() {
                 <input 
                   type="text" 
                   defaultValue={user?.fullName || user?.email?.split('@')[0]}
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                  className="w-full bg-black-20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
                 />
               </div>
               <div className="space-y-2">
@@ -90,7 +90,7 @@ export default function SettingsPage() {
                   type="email" 
                   defaultValue={user?.email}
                   disabled
-                  className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm text-gray-500 cursor-not-allowed"
+                  className="w-full bg-black-40 border border-white/5 rounded-xl px-4 py-3 text-sm text-gray-500 cursor-not-allowed"
                 />
               </div>
             </div>
@@ -127,7 +127,7 @@ export default function SettingsPage() {
                 <input 
                   type="text" 
                   placeholder="-6.234567"
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                  className="w-full bg-black-20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
                 />
               </div>
               <div className="space-y-2">
@@ -135,7 +135,7 @@ export default function SettingsPage() {
                 <input 
                   type="text" 
                   placeholder="106.876543"
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                  className="w-full bg-black-20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
                 />
               </div>
               <div className="space-y-2">
@@ -143,7 +143,7 @@ export default function SettingsPage() {
                 <input 
                   type="number" 
                   defaultValue={50}
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                  className="w-full bg-black-20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
                 />
               </div>
             </div>

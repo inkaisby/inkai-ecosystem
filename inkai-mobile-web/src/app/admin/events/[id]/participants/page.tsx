@@ -304,14 +304,14 @@ export default function EventParticipantsPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedParticipant(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              className="absolute inset-0 bg-black-80 backdrop-blur-md"
             />
             <motion.div 
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-[480px] bg-[#0D0D10] border-t border-white/10 rounded-t-[3.5rem] shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.5)] mobile-hpad pt-8 pb-[calc(env(safe-area-inset-bottom,24px)+24px)] max-h-[95vh] overflow-y-auto z-[1000]"
+              className="relative w-full max-w-[480px] bg-[var(--card-dark)] border-t border-white/10 rounded-t-[3.5rem] shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.5)] mobile-hpad pt-8 pb-[calc(env(safe-area-inset-bottom,24px)+24px)] max-h-[95vh] overflow-y-auto z-[1000]"
             >
               <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-8 opacity-50" />
               

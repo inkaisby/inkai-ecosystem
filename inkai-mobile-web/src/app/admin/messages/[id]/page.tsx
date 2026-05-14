@@ -184,7 +184,7 @@ export default function AdminChatRoomPage() {
                     isMe ? 'text-black justify-end' : 'text-gray-400'
                   }`}>
                     {new Date(msg.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    {isMe && <div className="w-1 h-1 rounded-full bg-black/20" />}
+                    {isMe && <div className="w-1 h-1 rounded-full bg-black-20" />}
                   </div>
                 </div>
               </motion.div>

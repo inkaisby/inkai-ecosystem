@@ -344,16 +344,19 @@ function EditProfileContent() {
           Selamat datang! Silakan lengkapi data profil Anda terlebih dahulu.
         </div>
       ) : !isProfileComplete ? (
-        <div style={{ padding: '16px', backgroundColor: 'rgba(255,255,255,0.03)', color: 'white', borderRadius: '16px', marginBottom: '24px', textAlign: 'left', fontSize: '14px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontWeight: 'bold', color: '#ef4444' }}>
+        <div className={styles.auditPanel}>
+          <div className={styles.auditHeading}>
             <AlertTriangle size={18} />
             Mode Audit: Profil Belum Lengkap
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }}>
+          <div className={styles.auditGrid}>
             {auditFields.map(f => (
-              <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: f.isComplete ? '#10b981' : '#666', opacity: f.isComplete ? 1 : 0.8 }}>
-                {f.isComplete ? <CheckCircle2 size={14} /> : <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#ef4444' }} />}
-                <span style={{ textDecoration: f.isComplete ? 'line-through' : 'none' }}>{f.label}</span>
+              <div
+                key={f.key}
+                className={`${styles.auditField} ${f.isComplete ? styles.auditFieldDone : ""}`}
+              >
+                {f.isComplete ? <CheckCircle2 size={14} /> : <div className={styles.auditDot} />}
+                <span style={{ textDecoration: f.isComplete ? "line-through" : "none" }}>{f.label}</span>
               </div>
             ))}
           </div>
@@ -378,7 +381,7 @@ function EditProfileContent() {
                 <User size={40} color="#666" />
               )}
             </label>
-            <p style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>Ketuk untuk mengganti foto</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>Ketuk untuk mengganti foto</p>
           </div>
         </div>
 

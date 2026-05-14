@@ -789,7 +789,7 @@ function OrganizationContent() {
 
       {/* Edit Dojo Modal */}
       {showEditDojoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 bg-black animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Edit Dojo / Ranting</h3>
@@ -931,7 +931,7 @@ function OrganizationContent() {
 
       {/* Add Dojo Modal */}
       {showAddDojoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 bg-black animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Tambah Dojo Baru</h3>
@@ -1051,7 +1051,7 @@ function OrganizationContent() {
 
       {/* Add Province Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 bg-black animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Tambah Wilayah Baru</h3>
@@ -1140,7 +1140,7 @@ function OrganizationContent() {
 
       {/* Edit Branch Modal */}
       {showEditBranchModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 bg-black animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Edit Cabang</h3>
@@ -1227,7 +1227,7 @@ function OrganizationContent() {
 
       {/* Edit Province Modal */}
       {showEditProvinceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 bg-black animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Edit Wilayah (PENGPROV)</h3>
@@ -1314,7 +1314,7 @@ function OrganizationContent() {
 
       {/* Add Branch Modal */}
       {showAddBranchModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 bg-black animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Tambah Cabang Baru</h3>

@@ -91,7 +91,7 @@ export default function InventoryPage() {
                 <input 
                   type="text" 
                   placeholder="Cari produk..." 
-                  className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-amber-500/50 text-white"
+                  className="w-full bg-black-20 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-amber-500/50 text-white"
                 />
               </div>
             </div>

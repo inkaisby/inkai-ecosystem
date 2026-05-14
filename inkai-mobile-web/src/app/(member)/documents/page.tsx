@@ -361,7 +361,7 @@ export default function Documents() {
           </div>
         </section>
 
-        <p style={{ textAlign: 'center', fontSize: '12px', color: '#666', marginTop: '20px' }}>
+        <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', marginTop: '20px' }}>
           * Dokumen akan disimpan secara otomatis dalam latar belakang.
         </p>
       </main>

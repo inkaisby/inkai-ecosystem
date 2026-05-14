@@ -70,14 +70,14 @@ export default function AttendancePage() {
             <input 
               type="text" 
               placeholder="Cari anggota..." 
-              className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-amber-500/50"
+              className="w-full bg-black-20 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-amber-500/50"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto relative min-h-[300px]">
           {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0A0A0C] z-10 rounded-xl">
+            <div className="absolute inset-0 flex items-center justify-center adm-bg z-10 rounded-xl">
               <Loader2 className="animate-spin text-amber-500" size={40} />
             </div>
           ) : error ? (

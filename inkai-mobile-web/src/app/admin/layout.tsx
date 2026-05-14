@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isLoginPage = pathname?.includes('/login');
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] text-white overflow-x-hidden flex flex-col">
+    <div data-admin-shell className="min-h-screen bg-[var(--background-dark)] text-[var(--text-light)] overflow-x-hidden flex flex-col">
       {!isLoginPage && <TopBar />}
       <main className={`flex-1 flex flex-col ${isLoginPage ? 'p-0' : 'px-0 pt-4 pb-32'}`}>
         {children}

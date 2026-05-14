@@ -11,7 +11,7 @@
 }
 
 .backBtn {
-  color: white;
+  color: var(--dash-header-icon);
 }
 
 .title {
@@ -20,6 +20,7 @@
   flex: 1;
   text-align: center;
   margin-right: 40px;
+  color: var(--text-light);
 }
 
 .form {
@@ -62,9 +63,14 @@
   background: none;
   border: none;
   padding: 16px 0;
-  color: white;
+  color: var(--text-light);
   font-size: 14px;
   outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.9;
 }
 
 .radioGroup {
@@ -86,7 +92,7 @@
 .radioActive {
   background-color: rgba(245, 158, 11, 0.1);
   border-color: var(--primary-gold);
-  color: white;
+  color: var(--text-light);
 }
 
 .saveBtn {
@@ -168,6 +174,54 @@
   padding-left: 4px;
 }
 
+.auditPanel {
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  margin-bottom: 24px;
+  text-align: left;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  color: var(--text-light);
+}
+
+.auditHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-weight: bold;
+  color: #ef4444;
+}
+
+.auditGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+}
+
+.auditField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.auditFieldDone {
+  opacity: 1;
+  color: #10b981;
+}
+
+.auditDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #ef4444;
+}
+
 .uppercase {
   text-transform: uppercase;
 }
@@ -247,3 +301,35 @@
   font-weight: bold;
 }
 
+:global(html[data-clock-phase="day"]) .inputWrapper {
+  background-color: #ffffff;
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+:global(html[data-clock-phase="day"]) .radioBtn {
+  background-color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(15, 23, 42, 0.12);
+  color: var(--text-muted);
+}
+
+:global(html[data-clock-phase="day"]) .radioActive {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: var(--text-light);
+}
+
+:global(html[data-clock-phase="day"]) .avatarLabel {
+  background-color: rgba(255, 255, 255, 0.92);
+}
+
+:global(html[data-clock-phase="day"]) .auditPanel {
+  background-color: #ffffff;
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+:global(html[data-clock-phase="day"]) .auditField {
+  color: var(--text-muted);
+}
+
+:global(html[data-clock-phase="day"]) .auditFieldDone {
+  color: #059669;
+}

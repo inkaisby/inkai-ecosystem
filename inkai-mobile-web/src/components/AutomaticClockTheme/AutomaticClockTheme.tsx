@@ -1,17 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
 
-/** Jam 12:00 siang sampai jam 23:59:59 → malam (gelap). AM → siang untuk area selain admin. */
-export function computeClockPhaseForPath(pathname: string): "day" | "night" {
-  if (pathname.startsWith("/admin")) return "night";
+/** Jam 12:00–23:59:59 → malam (gelap). 00:00–11:59 → siang — berlaku untuk semua rute termasuk admin. */
+export function computeClockPhase(): "day" | "night" {
   const h = new Date().getHours();
   return h >= 12 ? "night" : "day";
 }
 
-export function applyClockPhaseToDocument(pathname: string) {
-  const phase = computeClockPhaseForPath(pathname);
+export function applyClockPhaseToDocument() {
+  const phase = computeClockPhase();
   document.documentElement.setAttribute("data-clock-phase", phase);
   document.documentElement.style.colorScheme =
     phase === "day" ? "light" : "dark";
@@ -38,14 +36,12 @@ export function msUntilNextClockBoundary(now: Date = new Date()): number {
 }
 
 export default function AutomaticClockTheme() {
-  const pathname = usePathname() ?? "";
-
   useEffect(() => {
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout>;
 
     const tick = () => {
-      applyClockPhaseToDocument(pathname);
+      applyClockPhaseToDocument();
       if (cancelled) return;
       timeoutId = setTimeout(tick, msUntilNextClockBoundary());
     };
@@ -55,7 +51,7 @@ export default function AutomaticClockTheme() {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [pathname]);
+  }, []);
 
   return null;
 }

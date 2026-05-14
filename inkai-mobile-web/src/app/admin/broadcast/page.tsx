@@ -64,7 +64,7 @@ export default function BroadcastPage() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Masukkan judul pesan..." 
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-black-20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
               />
             </div>
             <div>
@@ -75,7 +75,7 @@ export default function BroadcastPage() {
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Tuliskan detail pengumuman di sini..." 
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 resize-none"
+                className="w-full bg-black-20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 resize-none"
               ></textarea>
             </div>
             
@@ -85,7 +85,7 @@ export default function BroadcastPage() {
                 <select 
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
+                  className="w-full bg-black-20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
                 >
                   <option value="INFO">Informasi Umum</option>
                   <option value="WARNING">Peringatan Penting</option>

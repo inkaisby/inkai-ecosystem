@@ -41,9 +41,9 @@ export default function AdminMessagesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] text-white pb-20">
+    <div className="min-h-screen adm-bg text-white pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#0A0A0C]/80 backdrop-blur-xl border-b border-white/5 px-0 py-4 pt-[env(safe-area-inset-top,24px)]">
+      <div className="sticky top-0 z-30 adm-chrome-soft backdrop-blur-xl border-b border-white/5 px-0 py-4 pt-[env(safe-area-inset-top,24px)]">
         <div className="flex items-center justify-between mb-4">
           <button 
             onClick={() => router.back()}

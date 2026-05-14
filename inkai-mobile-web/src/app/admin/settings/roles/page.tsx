@@ -170,7 +170,7 @@ export default function RolesPage() {
                           className={`group flex items-center justify-between p-5 rounded-2xl border cursor-pointer transition-all ${
                             isChecked 
                               ? 'bg-amber-500/5 border-amber-500/30 text-white' 
-                              : 'bg-black/20 border-white/5 text-gray-500 hover:border-white/20'
+                              : 'bg-black-20 border-white/5 text-gray-500 hover:border-white/20'
                           }`}
                         >
                           <div className="flex flex-col">

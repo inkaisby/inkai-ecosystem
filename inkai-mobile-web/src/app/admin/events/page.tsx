@@ -422,12 +422,12 @@ export default function EventsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[999999] bg-[#0A0A0C] flex flex-col overflow-hidden"
+            className="fixed inset-0 z-[999999] adm-bg flex flex-col overflow-hidden"
           >
             {/* Mobile-focused container for wide screens */}
-            <div className="flex-1 flex flex-col w-full max-w-[480px] mx-auto relative bg-[#0A0A0C] shadow-2xl overflow-hidden">
+            <div className="flex-1 flex flex-col w-full max-w-[480px] mx-auto relative adm-bg shadow-2xl overflow-hidden">
               {/* FIXED TOP BAR */}
-              <div className="mobile-hpad py-4 flex justify-between items-center z-50 pt-[calc(env(safe-area-inset-top,24px)+8px)] bg-[#0A0A0C]/80 backdrop-blur-xl border-b border-white/5">
+              <div className="mobile-hpad py-4 flex justify-between items-center z-50 pt-[calc(env(safe-area-inset-top,24px)+8px)] adm-chrome-soft backdrop-blur-xl border-b border-white/5">
                 <button
                   onClick={() => setShowDetailModal(false)}
                   className="p-2.5 bg-white/5 text-white rounded-xl border border-white/10 active:scale-90 transition-all"
@@ -595,7 +595,7 @@ export default function EventsPage() {
               </div>
 
               {/* BOTTOM ACTION BAR */}
-              <div className="mobile-hpad pt-6 bg-[#0A0A0C]/80 backdrop-blur-xl border-t border-white/5 mt-auto pb-[calc(env(safe-area-inset-bottom,24px)+32px)]">
+              <div className="mobile-hpad pt-6 adm-chrome-soft backdrop-blur-xl border-t border-white/5 mt-auto pb-[calc(env(safe-area-inset-bottom,24px)+32px)]">
                 <div className="flex gap-4 items-center">
                   <button
                     onClick={() => {
@@ -622,11 +622,11 @@ export default function EventsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[999999] bg-[#0A0A0C] flex flex-col overflow-hidden h-[100dvh]"
+            className="fixed inset-0 z-[999999] adm-bg flex flex-col overflow-hidden h-[100dvh]"
           >
             {/* Mobile-focused container for wide screens */}
-            <div className="flex-1 flex flex-col w-full max-w-[480px] mx-auto relative bg-[#0A0A0C] shadow-2xl overflow-hidden h-full">
-              <div className="flex justify-between items-center mobile-hpad pb-5 border-b border-white/5 pt-[calc(env(safe-area-inset-top,24px)+12px)] bg-[#0A0A0C]">
+            <div className="flex-1 flex flex-col w-full max-w-[480px] mx-auto relative adm-bg shadow-2xl overflow-hidden h-full">
+              <div className="flex justify-between items-center mobile-hpad pb-5 border-b border-white/5 pt-[calc(env(safe-area-inset-top,24px)+12px)] adm-bg">
                 <div>
                   <h3 className="text-xl font-black uppercase tracking-tight text-white leading-none mb-1">
                     {modalMode === "create" ? "Buat Agenda" : "Edit Agenda"}
@@ -902,7 +902,7 @@ export default function EventsPage() {
               </div>
 
               {/* BOTTOM ACTION BAR */}
-              <div className="mobile-hpad pt-6 bg-[#0A0A0C]/80 backdrop-blur-xl border-t border-white/5 mt-auto pb-[calc(env(safe-area-inset-bottom,24px)+24px)]">
+              <div className="mobile-hpad pt-6 adm-chrome-soft backdrop-blur-xl border-t border-white/5 mt-auto pb-[calc(env(safe-area-inset-bottom,24px)+24px)]">
                 <div className="flex gap-3">
                   <button
                     type="button"
@@ -938,7 +938,7 @@ export default function EventsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1000000] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 z-[1000000] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black-80 backdrop-blur-md"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
