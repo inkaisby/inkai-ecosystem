@@ -44,6 +44,89 @@
   color: var(--text-light);
 }
 
+.sessionBar {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--surface-row-border);
+  background: var(--surface-row-bg);
+}
+
+.sessionRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sessionLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.sessionName {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-light);
+  line-height: 1.35;
+}
+
+.sessionEmail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+.sessionRole {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--primary-gold);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.sessionRoleMember {
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--text-muted);
+  border-color: var(--hairline);
+}
+
+.editGuideBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #0a0a0c;
+  background: var(--gradient-gold);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
+}
+
+.editHint {
+  margin-top: 12px;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
 .content {
   padding: 20px 0 32px;
 }
