@@ -41,7 +41,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex-1 bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="flex-1 bg-black flex flex-col items-center justify-center py-12 px-0 relative overflow-hidden">
       {/* Ambient Background Elements - Very subtle */}
       <div 
         className="absolute bg-amber-500/[0.02] rounded-full blur-[100px] animate-pulse-slow" 

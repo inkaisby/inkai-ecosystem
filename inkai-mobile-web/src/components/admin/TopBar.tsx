@@ -125,7 +125,7 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-16 border-b border-white/5 bg-[#0a0a0c]/80 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between px-5">
+    <header className="h-16 border-b border-white/5 bg-[#0a0a0c]/80 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between px-0">
       <div className="flex items-center gap-2.5">
         <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
           <Shield size={16} className="text-black" strokeWidth={3} />

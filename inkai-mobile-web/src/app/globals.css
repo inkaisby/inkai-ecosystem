@@ -16,33 +16,67 @@
   --hairline: rgba(255, 255, 255, 0.05);
   --surface-row-bg: rgba(255, 255, 255, 0.03);
   --surface-row-border: rgba(255, 255, 255, 0.05);
+  --member-card-heading: #ffffff;
+  --member-card-belt: rgba(255, 255, 255, 0.92);
+  --member-card-border: rgba(255, 255, 255, 0.1);
+  --dash-header-icon: #f4f4f5;
+  --gradient-card: linear-gradient(155deg, #1e222a 0%, #252a33 45%, #1a1d24 100%);
 }
 
 /* AM (00–11): cerah untuk area anggota. PM = gelap. Rute /admin selalu gelap (diatur di JS). */
 html[data-clock-phase="day"] {
   color-scheme: light;
-  --background-dark: #f4f6f8;
+  --background-dark: #eef2f6;
   --card-dark: #ffffff;
-  --text-light: #18181b;
-  --text-muted: #52525b;
-  --border-light: rgba(0, 0, 0, 0.06);
-  --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(0, 0, 0, 0.08);
+  --text-light: #0f172a;
+  --text-muted: #475569;
+  --border-light: rgba(15, 23, 42, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(15, 23, 42, 0.1);
   --gradient-dark: linear-gradient(
     180deg,
-    rgba(248, 250, 252, 0.95) 0%,
-    rgba(236, 242, 248, 0.98) 100%
+    rgba(248, 250, 252, 0.96) 0%,
+    rgba(235, 241, 248, 0.99) 100%
   );
-  --shell-outer-bg: #e8ecf2;
+  --shell-outer-bg: #dfe6ef;
   --ambient-orb-amber: rgba(245, 158, 11, 0.1);
   --ambient-orb-blue: rgba(59, 130, 246, 0.08);
-  --hairline: rgba(15, 23, 42, 0.1);
-  --surface-row-bg: rgba(255, 255, 255, 0.72);
-  --surface-row-border: rgba(15, 23, 42, 0.08);
+  --hairline: rgba(15, 23, 42, 0.12);
+  --surface-row-bg: #ffffff;
+  --surface-row-border: rgba(15, 23, 42, 0.11);
+  --member-card-heading: #0f172a;
+  --member-card-belt: #334155;
+  --member-card-border: rgba(15, 23, 42, 0.09);
+  --dash-header-icon: #334155;
+  --gradient-card: linear-gradient(162deg, #ffffff 0%, #f1f5f9 48%, #e8eff7 100%);
 }
 
 html[data-clock-phase="night"] {
   color-scheme: dark;
+}
+
+/**
+ * Overlay / kolom tetap lintas viewport mengikuti lebar kolom utama + safe-area
+ * (karena keluar dari .mobile-content yang sudah bermargin).
+ */
+.mobile-safe-modal-gutter {
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+}
+
+.mobile-fixed-bottom-bar {
+  padding-top: 1.25rem;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/** Padding horizontal konsisten untuk isi kolom atau sheet full-screen yang tidak mewarisi .mobile-content */
+.mobile-hpad {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
 * {
@@ -94,8 +128,10 @@ button {
   box-shadow: 0 0 80px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 2rem);
-  padding-top: env(safe-area-inset-top, 0);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 html[data-clock-phase="day"] .mobile-content {
@@ -1211,19 +1247,20 @@ html[data-clock-phase="day"] .btn-secondary {
 }
 
 html[data-clock-phase="day"] .glass-input {
-  background: rgba(248, 250, 252, 0.98);
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  color: #18181b !important;
+  background: rgba(255, 255, 255, 1);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  color: var(--text-light) !important;
+  font-weight: 500;
 }
 
 html[data-clock-phase="day"] .glass-input::placeholder {
-  color: rgba(24, 24, 27, 0.45) !important;
+  color: rgba(15, 23, 42, 0.5) !important;
 }
 
 html[data-clock-phase="day"] .glass-input:focus {
   background: #ffffff;
-  border-color: rgba(245, 158, 11, 0.45);
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.55);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
 }
 
 html[data-clock-phase="day"] .modal-gradient {
@@ -1274,9 +1311,17 @@ html[data-clock-phase="day"] .text-white {
   color: var(--text-light);
 }
 
-html[data-clock-phase="day"] .text-gray-400,
-html[data-clock-phase="day"] .text-gray-500 {
+html[data-clock-phase="day"] .text-gray-400 {
   color: #64748b !important;
+}
+
+html[data-clock-phase="day"] .text-gray-500 {
+  color: #475569 !important;
+  font-weight: 600;
+}
+
+html[data-clock-phase="day"] .text-gray-600 {
+  color: #334155 !important;
 }
 
 html[data-clock-phase="day"] .skeleton {

@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-white overflow-x-hidden flex flex-col">
       {!isLoginPage && <TopBar />}
-      <main className={`flex-1 flex flex-col ${isLoginPage ? 'p-0' : 'px-5 pt-4 pb-32'}`}>
+      <main className={`flex-1 flex flex-col ${isLoginPage ? 'p-0' : 'px-0 pt-4 pb-32'}`}>
         {children}
       </main>
       {!isLoginPage && <BottomNav />}

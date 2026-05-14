@@ -145,11 +145,11 @@ export default function Register() {
     <div className="flex flex-col" style={{ minHeight: '100vh', backgroundColor: 'var(--background-dark)', position: 'relative', overflow: 'hidden' }}>
       {/* Background Blurs */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '70%', height: '70%', backgroundColor: 'rgba(245, 158, 11, 0.08)', filter: 'blur(100px)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', backgroundColor: 'rgba(59, 130, 246, 0.05)', filter: 'blur(100px)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '70%', height: '70%', backgroundColor: 'var(--ambient-orb-amber)', filter: 'blur(100px)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', backgroundColor: 'var(--ambient-orb-blue)', filter: 'blur(100px)', borderRadius: '50%' }} />
       </div>
 
-      <div className="flex flex-col px-6 py-6" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '480px', margin: '0 auto', flex: 1 }}>
+      <div className="flex flex-col py-6" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '480px', margin: '0 auto', flex: 1 }}>
         
         {/* Header Section */}
         <motion.div 

@@ -39,7 +39,7 @@ export default function VerificationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center justify-center px-0 py-8 text-center">
         <Loader2 className="animate-spin text-amber-500 mb-4" size={48} />
         <p className="text-gray-500 font-black uppercase tracking-widest text-xs animate-pulse">Memverifikasi Data...</p>
       </div>
@@ -48,7 +48,7 @@ export default function VerificationPage() {
 
   if (error || !member) {
     return (
-      <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center justify-center px-0 py-8 text-center">
         <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-6 border border-red-500/20">
           <XCircle size={40} />
         </div>
@@ -67,7 +67,7 @@ export default function VerificationPage() {
   const isActive = member.status === 'Active' || member.status === 'AKTIF' || member.isAdmin;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] text-white p-6 pb-20 animate-in fade-in duration-700">
+    <div className="min-h-screen bg-[#0A0A0C] text-white px-0 py-8 pb-24 animate-in fade-in duration-700">
       <div className="max-w-md mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center gap-4">

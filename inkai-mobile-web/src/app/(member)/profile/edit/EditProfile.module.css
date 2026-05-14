@@ -4,7 +4,7 @@
 }
 
 .header {
-  padding: 24px;
+  padding: 14px 0 16px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -23,7 +23,7 @@
 }
 
 .form {
-  padding: 0 24px 40px;
+  padding: 0 0 140px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -184,7 +184,10 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 24px;
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
 }
 
 .modalContent {

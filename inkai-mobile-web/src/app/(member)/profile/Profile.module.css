@@ -4,22 +4,25 @@
 }
 
 .header {
-  padding: 24px;
+  padding: 12px 0 18px;
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
 .backBtn {
-  color: white;
+  color: var(--dash-header-icon);
+  display: flex;
+  align-items: center;
 }
 
 .title {
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 800;
   flex: 1;
   text-align: center;
   margin-right: 40px;
+  color: var(--text-light);
 }
 
 .profileHeader {
@@ -131,7 +134,7 @@
 
 .infoSection {
   margin-top: 24px;
-  padding: 0 20px;
+  padding: 0;
 }
 
 .infoCard {
@@ -152,27 +155,28 @@
 
 .infoLabel {
   font-size: 11px;
-  color: #999;
+  color: var(--text-muted);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .infoValue {
   font-size: 14px;
-  color: white;
+  color: var(--text-light);
   font-weight: 600;
 }
 
 .menuSection {
-  padding: 0 24px 32px;
+  padding: 0 0 32px;
 }
 
 .sectionLabel {
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 800;
   color: var(--text-muted);
   margin-bottom: 16px;
-  padding-left: 4px;
+  padding-left: 2px;
 }
 
 .menuList {
@@ -204,7 +208,8 @@
 .menuLabel {
   flex: 1;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--text-light);
 }
 
 .chevron {
@@ -234,7 +239,7 @@
 }
 
 .logoutSection {
-  padding: 0 24px 40px;
+  padding: 0 0 40px;
 }
 
 .logoutBtn {
@@ -265,4 +270,23 @@
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+:global(html[data-clock-phase="day"]) .name {
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  -webkit-text-fill-color: unset;
+  color: var(--text-light);
+}
+
+:global(html[data-clock-phase="day"]) .infoCard {
+  background-color: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.07);
+}
+
+:global(html[data-clock-phase="day"]) .menuItem {
+  background-color: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }

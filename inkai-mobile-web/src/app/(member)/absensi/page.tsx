@@ -110,7 +110,7 @@ export default function AttendanceScannerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] text-white p-6 pb-24 space-y-8 animate-in fade-in duration-700">
+    <div className="min-h-screen bg-[#0A0A0C] text-white px-0 py-8 pb-28 space-y-8 animate-in fade-in duration-700">
       {/* Header */}
       <div className="flex items-center gap-4">
         <button 

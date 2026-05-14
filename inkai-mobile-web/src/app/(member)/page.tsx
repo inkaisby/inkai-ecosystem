@@ -56,7 +56,7 @@ export default function Login() {
         <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', backgroundColor: 'var(--ambient-orb-blue)', filter: 'blur(100px)', borderRadius: '50%' }} />
       </div>
 
-      <div className="flex flex-col px-6 py-8" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '480px', margin: '0 auto', flex: 1 }}>
+      <div className="flex flex-col py-8" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '480px', margin: '0 auto', flex: 1 }}>
         
         {/* Logo Section */}
         <motion.div 

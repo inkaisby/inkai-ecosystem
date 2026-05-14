@@ -6,7 +6,7 @@
 }
 
 .hero {
-  padding: 24px;
+  padding: 20px 0 28px;
   background: linear-gradient(to bottom, #1e1e24, #0a0a0c);
   position: relative;
   min-height: 250px;
@@ -47,7 +47,7 @@
 }
 
 .content {
-  padding: 24px;
+  padding: 16px 0 40px;
   flex: 1;
 }
 
@@ -137,7 +137,9 @@
 }
 
 .footer {
-  padding: 24px;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px))
+    calc(16px + env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
   position: sticky;

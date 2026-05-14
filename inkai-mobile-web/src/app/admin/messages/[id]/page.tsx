@@ -124,7 +124,7 @@ export default function AdminChatRoomPage() {
   return (
     <div className="flex flex-col h-[100dvh] bg-[#F8F9FA] text-[#1A1A1A] overflow-hidden safe-bottom">
       {/* Header */}
-      <div className="shrink-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-200 px-5 py-4 flex items-center gap-4 shadow-sm">
+      <div className="shrink-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-200 px-0 py-4 flex items-center gap-4 shadow-sm">
         <button 
           onClick={() => router.back()}
           className="p-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 active:scale-90 transition-all"
@@ -158,7 +158,7 @@ export default function AdminChatRoomPage() {
       </div>
 
       {/* Messages List */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-[#F0F2F5] bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.05),transparent_40%)]">
+      <div className="flex-1 overflow-y-auto py-5 px-0 space-y-4 custom-scrollbar bg-[#F0F2F5] bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.05),transparent_40%)]">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <Loader2 className="animate-spin text-amber-500" size={32} />

@@ -577,7 +577,7 @@ function EditProfileContent() {
       </form>
 
       {/* Floating Save Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 z-50 bg-gradient-to-t from-black via-black/80 to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black via-black/80 to-transparent mobile-fixed-bottom-bar">
         <button
           onClick={handleSave}
           disabled={!isDirty || isSaving || !!phoneError}

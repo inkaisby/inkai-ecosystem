@@ -4,7 +4,7 @@
   height: auto;
   background: var(--gradient-card);
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--member-card-border);
   position: relative;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(245, 158, 11, 0.1);
@@ -54,8 +54,9 @@
 
 .badgeText {
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 800;
   letter-spacing: 1.5px;
+  color: var(--text-light);
 }
 
 .infoBottom {
@@ -67,7 +68,7 @@
 .name {
   font-size: 18px;
   font-weight: 800;
-  color: white;
+  color: var(--member-card-heading);
   margin: 0;
   text-transform: uppercase;
 }
@@ -98,7 +99,7 @@
 .beltValue {
   font-size: 13px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--member-card-belt);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   line-height: 1.25;

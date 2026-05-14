@@ -4,7 +4,7 @@
 }
 
 .header {
-  padding: 24px;
+  padding: 14px 0 16px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -20,7 +20,7 @@
 }
 
 .summaryCard {
-  margin: 0 24px 32px;
+  margin: 0 0 32px;
   padding: 24px;
   background: linear-gradient(135deg, #2c2c34, #1e1e24);
   border-radius: 24px;
@@ -61,7 +61,7 @@
 }
 
 .section {
-  padding: 0 24px;
+  padding: 0;
 }
 
 .sectionTitle {

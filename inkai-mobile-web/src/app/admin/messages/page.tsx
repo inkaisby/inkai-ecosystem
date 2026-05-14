@@ -43,7 +43,7 @@ export default function AdminMessagesPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-white pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#0A0A0C]/80 backdrop-blur-xl border-b border-white/5 px-5 py-4 pt-[env(safe-area-inset-top,24px)]">
+      <div className="sticky top-0 z-30 bg-[#0A0A0C]/80 backdrop-blur-xl border-b border-white/5 px-0 py-4 pt-[env(safe-area-inset-top,24px)]">
         <div className="flex items-center justify-between mb-4">
           <button 
             onClick={() => router.back()}
@@ -71,7 +71,7 @@ export default function AdminMessagesPage() {
         </div>
       </div>
 
-      <div className="p-5 space-y-3">
+      <div className="py-5 px-0 space-y-3">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="animate-spin text-amber-500" size={32} />
