@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import {
   Calendar,
   Plus,
@@ -108,6 +109,12 @@ export default function EventsPage() {
 
   const isAnyModalOpen = showDetailModal || showEventModal || showDeleteModal;
 
+  const portalReady = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
   // Hide BottomNav and AdminMenu when modal is open
   useEffect(() => {
     const bottomNav = document.querySelector("nav");
@@ -209,6 +216,7 @@ export default function EventsPage() {
   };
 
   return (
+    <>
     <div className="w-full max-w-[480px] mx-auto min-h-full">
       {/* Main Page Content - Completely unmount when modal is open to prevent "leaking" or overlapping */}
       {!isAnyModalOpen && (
@@ -419,7 +427,11 @@ export default function EventsPage() {
         </motion.div>
       )}
 
-      <AnimatePresence>
+    </div>
+
+    {portalReady &&
+      createPortal(
+        <AnimatePresence>
         {/* Event Detail Modal - FULL SCREEN OVERLAY WITH BLUR */}
         {showDetailModal && selectedEvent && (
           <motion.div
@@ -427,10 +439,9 @@ export default function EventsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[999999] adm-bg flex flex-col overflow-hidden h-[100dvh] min-h-0"
+            className="fixed inset-0 z-[999999] flex justify-center items-stretch sm:items-center sm:p-4 bg-black/80 backdrop-blur-md h-[100dvh] min-h-0 overflow-hidden"
           >
-            {/* Mobile-focused container for wide screens */}
-            <div className="flex-1 flex flex-col w-full max-w-[480px] mx-auto relative adm-bg shadow-2xl overflow-hidden min-h-0 min-w-0">
+            <div className="flex flex-col w-full max-w-[480px] h-full min-h-0 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] relative adm-bg shadow-2xl overflow-hidden min-w-0 sm:rounded-[1.75rem] border-0 sm:border sm:border-white/10">
               {/* FIXED TOP BAR */}
               <div className="mobile-hpad-compact py-2.5 min-[390px]:py-3.5 flex justify-between items-center gap-2 z-50 pt-[max(6px,env(safe-area-inset-top,0px))] adm-chrome-soft backdrop-blur-xl border-b border-white/5 shrink-0">
                 <button
@@ -627,10 +638,9 @@ export default function EventsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[999999] adm-bg flex flex-col overflow-hidden h-[100dvh]"
+            className="fixed inset-0 z-[999999] flex justify-center items-stretch sm:items-center sm:p-4 bg-black/80 backdrop-blur-md h-[100dvh] min-h-0 overflow-hidden"
           >
-            {/* Mobile-focused container for wide screens */}
-            <div className="flex-1 flex flex-col w-full max-w-[480px] mx-auto relative adm-bg shadow-2xl overflow-hidden h-full">
+            <div className="flex flex-col w-full max-w-[480px] h-full min-h-0 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] relative adm-bg shadow-2xl overflow-hidden min-w-0 sm:rounded-[1.75rem] border-0 sm:border sm:border-white/10">
               <div className="flex justify-between items-center mobile-hpad pb-5 border-b border-white/5 pt-[calc(env(safe-area-inset-top,24px)+12px)] adm-bg">
                 <div>
                   <h3 className="text-xl font-black uppercase tracking-tight text-white leading-none mb-1">
@@ -987,7 +997,9 @@ export default function EventsPage() {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
-    </div>
+        </AnimatePresence>,
+        document.body,
+      )}
+    </>
   );
 }
