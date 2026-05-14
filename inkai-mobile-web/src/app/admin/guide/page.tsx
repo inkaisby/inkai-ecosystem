@@ -206,7 +206,7 @@ export default function AdminMemberGuidePage() {
           <button
             type="button"
             onClick={loadDefault}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] text-sm font-semibold text-gray-200 hover:bg-white/10 px-3 py-2.5 min-h-[44px] text-center leading-snug sm:px-4 sm:shrink-0"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[color:var(--surface-row-border)] bg-[var(--surface-row-bg)] text-[var(--text-light)] shadow-sm text-sm font-semibold hover:brightness-[0.96] px-3 py-2.5 min-h-[44px] text-center leading-snug sm:px-4 sm:shrink-0"
           >
             <RotateCcw size={18} className="shrink-0" aria-hidden />
             <span>Muat contoh bawaan</span>
@@ -227,16 +227,16 @@ export default function AdminMemberGuidePage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex gap-3 text-sm text-gray-300">
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex gap-3 text-sm text-[var(--text-muted)]">
         <Info className="shrink-0 text-amber-500 mt-0.5" size={20} />
         <div className="space-y-2">
           <p>
-            <strong className="text-amber-200">Versi:</strong> setiap kali Anda mengubah
+            <strong className="text-[var(--primary-gold)]">Versi:</strong> setiap kali Anda mengubah
             isi penting, ganti nomor ini (contoh 1 → 2). Anggota yang sudah menekan
             &quot;Mengerti&quot; akan melihat popup lagi dengan teks baru.
           </p>
           <p>
-            <strong className="text-amber-200">Poin panduan:</strong> tiap blok punya
+            <strong className="text-[var(--primary-gold)]">Poin panduan:</strong> tiap blok punya
             judul kecil (mis. &quot;Dashboard&quot;) dan penjelasan satu atau dua kalimat.
           </p>
         </div>
