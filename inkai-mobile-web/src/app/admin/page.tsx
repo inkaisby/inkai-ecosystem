@@ -454,32 +454,32 @@ export default function Dashboard() {
       </div>
 
       {/* Announcements Section */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center px-1">
-          <h3 className="text-lg font-black text-white tracking-tight">Pengumuman</h3>
+      <div className="space-y-4 min-w-0 max-w-full overflow-x-hidden">
+        <div className="flex justify-between items-center px-1 gap-3 min-w-0">
+          <h3 className="text-lg font-black text-white tracking-tight min-w-0 flex-1 truncate">Pengumuman</h3>
           <button 
             onClick={() => router.push('/admin/broadcast')}
-            className="text-[10px] text-amber-500 font-black uppercase tracking-[0.15em]"
+            className="text-[10px] text-amber-500 font-black uppercase tracking-[0.15em] shrink-0 whitespace-nowrap"
           >
             Buat Baru
           </button>
         </div>
-        <div className="grid gap-3">
+        <div className="grid gap-3 min-w-0">
           {announcements.length > 0 ? (
             announcements.slice(0, 3).map((news, i) => (
               <div
                 key={i}
-                className="glass-card flex items-center gap-4 border-white/5 p-4 hover:bg-white/[0.02] transition-all"
+                className="glass-card flex w-full max-w-full min-w-0 items-center gap-3 sm:gap-4 border-white/5 p-4 hover:bg-white/[0.02] transition-all overflow-hidden"
               >
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-amber-500/50">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-white/5 flex items-center justify-center text-amber-500/50">
                   <MessageSquare size={18} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <span className="text-[9px] text-amber-500 uppercase font-black tracking-widest">
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <div className="flex justify-between items-start gap-2 min-w-0">
+                    <span className="text-[9px] text-amber-500 uppercase font-black tracking-widest truncate">
                       {news.type || 'BROADCAST'}
                     </span>
-                    <span className="text-[9px] text-gray-600 font-bold">
+                    <span className="text-[9px] text-gray-600 font-bold whitespace-nowrap shrink-0 tabular-nums">
                       {new Date(news.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
@@ -490,7 +490,7 @@ export default function Dashboard() {
                     {news.content}
                   </p>
                 </div>
-                <ChevronRight size={14} className="text-gray-700" />
+                <ChevronRight size={14} className="text-gray-700 shrink-0" />
               </div>
             ))
           ) : (

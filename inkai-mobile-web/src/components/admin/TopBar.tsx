@@ -1,35 +1,40 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { User, LogOut, Bell, ChevronDown, Check, Shield, Trash2, X } from 'lucide-react';
+import { User, LogOut, Bell, Check, Shield, Trash2, X, Settings, Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TopBar() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { logout, isAuthenticated } = useAuth();
   const router = useRouter();
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Close notifications when clicking outside
+  // Tutup panel saat klik di luar (touch + mouse)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: Event) => {
       const target = event.target as HTMLElement;
       if (showNotifications && !target.closest('.notifications-container')) {
         setShowNotifications(false);
       }
+      if (showUserMenu && !target.closest('.user-menu-container')) {
+        setShowUserMenu(false);
+      }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showNotifications]);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, [showNotifications, showUserMenu]);
 
-  // Lock body scroll on mobile when notifications are open
+  // Kunci scroll di mobile saat sheet terbuka
   useEffect(() => {
-    if (showNotifications && window.innerWidth < 640) {
+    const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches;
+    if ((showNotifications || showUserMenu) && mobile) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -37,10 +42,10 @@ export default function TopBar() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showNotifications]);
+  }, [showNotifications, showUserMenu]);
 
   const fetchNotifications = async () => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated) return;
     try {
       const res = await api.notifications.getMy();
       setNotifications(res.data || []);
@@ -53,13 +58,13 @@ export default function TopBar() {
   };
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated) {
       fetchNotifications();
       // Refresh notifications every 1 minute
       const interval = setInterval(fetchNotifications, 60000);
       return () => clearInterval(interval);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     logout();
@@ -108,22 +113,6 @@ export default function TopBar() {
     return `${days}d`;
   };
 
-  const getRoleBadge = (user: any) => {
-    const role = user?.roles?.[0];
-    const branchName = user?.managedBranchName;
-    const provinceName = user?.managedProvinceName;
-    const dojoName = user?.managedDojoName;
-
-    switch (role) {
-      case 'ADMINISTRATOR': return 'Super Admin';
-      case 'ADMIN_PUSAT': return 'PP INKAI';
-      case 'ADMIN_PROVINCE': return provinceName ? `PENGPROV ${provinceName}` : 'Admin Provinsi';
-      case 'ADMIN_BRANCH': return branchName ? `PENGCAB ${branchName}` : 'Admin Cabang';
-      case 'ADMIN_DOJO': return dojoName ? `DOJO ${dojoName}` : 'Admin Dojo';
-      default: return role || 'Admin';
-    }
-  };
-
   return (
     <header className="h-16 border-b border-white/5 adm-chrome-soft backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between mobile-hpad">
       <div className="flex items-center gap-2.5">
@@ -137,9 +126,14 @@ export default function TopBar() {
         {/* Notifications */}
         <div className="relative notifications-container">
           <button 
+            type="button"
+            aria-expanded={showNotifications}
+            aria-label="Notifikasi"
             onClick={() => {
-              setShowNotifications(!showNotifications);
-              if (!showNotifications) fetchNotifications();
+              setShowUserMenu(false);
+              const next = !showNotifications;
+              setShowNotifications(next);
+              if (next) fetchNotifications();
             }}
             className={`p-2 rounded-full text-gray-400 hover:text-white transition-all relative ${showNotifications ? 'bg-white/10 text-white' : ''}`}
           >
@@ -167,7 +161,8 @@ export default function TopBar() {
                         {unreadCount} BARU
                       </span>
                     )}
-                    <button 
+                    <button
+                      type="button"
                       onClick={() => setShowNotifications(false)}
                       className="p-1 text-gray-500 hover:text-white transition-colors sm:hidden"
                     >
@@ -216,7 +211,8 @@ export default function TopBar() {
                 {/* Footer Actions */}
                 <div className="p-4 border-t border-white/5 bg-white/[0.02] grid grid-cols-2 gap-2">
                   {unreadCount > 0 ? (
-                    <button 
+                    <button
+                      type="button"
                       onClick={handleMarkAllAsRead}
                       className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all"
                     >
@@ -230,7 +226,8 @@ export default function TopBar() {
                   )}
                   
                   {notifications.some(n => n.isRead) ? (
-                    <button 
+                    <button
+                      type="button"
                       onClick={handleClearRead}
                       className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-wider text-red-500/60 hover:text-red-500 transition-all"
                     >
@@ -248,33 +245,83 @@ export default function TopBar() {
           )}
         </div>
 
-        {/* User Profile */}
-        <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-          <div className="group relative">
-            <button className="flex items-center justify-center w-9 h-9 bg-white/5 rounded-full hover:bg-white/10 transition-all overflow-hidden border border-white/10">
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                <User size={18} strokeWidth={2} />
-              </div>
+        {/* User Profile — klik/sentuh (bukan hover saja) */}
+        <div className="flex items-center gap-2 pl-2 border-l border-white/10 user-menu-container">
+          <div className="relative">
+            <button
+              type="button"
+              aria-expanded={showUserMenu}
+              aria-haspopup="true"
+              aria-label="Menu akun"
+              onClick={() => {
+                setShowNotifications(false);
+                setShowUserMenu((v) => !v);
+              }}
+              className={`flex items-center justify-center w-9 h-9 rounded-full transition-all overflow-hidden border border-white/10 ${
+                showUserMenu ? 'bg-white/15 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <User size={18} strokeWidth={2} />
             </button>
 
-            {/* Dropdown Menu */}
-            <div className="absolute right-0 mt-2 w-48 bg-[var(--card-dark)] border border-white/10 rounded-2xl shadow-2xl opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all duration-200 p-2 overflow-hidden">
-              <button 
-                onClick={() => router.push('/settings')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-              >
-                <User size={18} />
-                Profil Saya
-              </button>
-              <div className="h-px bg-white/5 my-1 mx-2" />
-              <button 
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-              >
-                <LogOut size={18} />
-                Keluar
-              </button>
-            </div>
+            {showUserMenu && (
+              <>
+                <div
+                  className="fixed inset-0 bg-black-80 backdrop-blur-md z-45 sm:hidden"
+                  onClick={() => setShowUserMenu(false)}
+                  aria-hidden
+                />
+                <div className="fixed inset-x-0 bottom-0 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-48 z-50 flex flex-col sm:rounded-2xl overflow-hidden border-t sm:border border-white/10 bg-dark-panel shadow-2xl animate-in slide-in-from-bottom sm:slide-none duration-200">
+                  <div className="flex justify-between items-center p-4 border-b border-white/5 sm:hidden">
+                    <span className="text-sm font-black uppercase tracking-widest text-white/90">Akun</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowUserMenu(false)}
+                      className="p-1 text-gray-500 hover:text-white transition-colors"
+                      aria-label="Tutup"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/admin/settings');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                    >
+                      <Settings size={18} />
+                      Pengaturan Admin
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/dashboard');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                    >
+                      <Home size={18} />
+                      Home portal
+                    </button>
+                    <div className="h-px bg-white/5 my-1 mx-2" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                    >
+                      <LogOut size={18} />
+                      Keluar
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

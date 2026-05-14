@@ -1,7 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, LogOut, MessageCircle, QrCode, Wallet, BookOpen, ShoppingBag, Award, Scroll, GraduationCap, ArrowRightLeft, FileText, CalendarCheck, ChevronRight, Trophy, Loader2, Lock } from "lucide-react";
+import {
+  Bell,
+  LogOut,
+  MessageCircle,
+  QrCode,
+  Wallet,
+  BookOpen,
+  ShoppingBag,
+  Award,
+  Scroll,
+  GraduationCap,
+  ArrowRightLeft,
+  FileText,
+  CalendarCheck,
+  ChevronRight,
+  Trophy,
+  Loader2,
+  Lock,
+} from "lucide-react";
 import styles from "./Dashboard.module.css";
 import MemberCard from "@/components/MemberCard/MemberCard";
 import BottomNav from "@/components/BottomNav/BottomNav";
@@ -13,7 +31,14 @@ import { eventApi, getAssetUrl, api } from "@/lib/api";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, logout, isLoading: isAuthLoading, isAdmin, isProfileComplete, isDocumentComplete } = useAuth();
+  const {
+    user,
+    logout,
+    isLoading: isAuthLoading,
+    isAdmin,
+    isProfileComplete,
+    isDocumentComplete,
+  } = useAuth();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
@@ -37,7 +62,7 @@ export default function Dashboard() {
     if (!user) return;
     try {
       const res = await api.notifications.getMy();
-      if (res.status === 'success') {
+      if (res.status === "success") {
         const count = (res.data || []).filter((n: any) => !n.isRead).length;
         setUnreadCount(count);
       }
@@ -52,13 +77,13 @@ export default function Dashboard() {
     try {
       const [upcomingRes, myEventsRes] = await Promise.all([
         eventApi.getEvents(),
-        eventApi.getMyEvents()
+        eventApi.getMyEvents(),
       ]);
-      
-      if (upcomingRes.data.status === 'success') {
+
+      if (upcomingRes.data.status === "success") {
         setUpcomingEvents(upcomingRes.data.data.slice(0, 3));
       }
-      if (myEventsRes.data.status === 'success') {
+      if (myEventsRes.data.status === "success") {
         setMyEvents(myEventsRes.data.data || []);
       }
     } catch (error) {
@@ -75,7 +100,11 @@ export default function Dashboard() {
     { icon: <ShoppingBag />, label: "Store", path: "/store" },
     { icon: <Award />, label: "Sabuk", path: "/achievement?tab=Sabuk" },
     { icon: <Scroll />, label: "Piagam", path: "/achievement?tab=Piagam" },
-    { icon: <GraduationCap />, label: "Pelatihan", path: "/achievement?tab=Pelatihan" },
+    {
+      icon: <GraduationCap />,
+      label: "Pelatihan",
+      path: "/achievement?tab=Pelatihan",
+    },
     { icon: <ArrowRightLeft />, label: "Pindah", path: "/transfer" },
     { icon: <FileText />, label: "Dokumen", path: "/documents" },
     { icon: <CalendarCheck />, label: "Event", path: "/events" },
@@ -90,21 +119,35 @@ export default function Dashboard() {
   }
 
   const renderEventItem = (event: any, isHistory = false) => {
-    const isUKT = event.title?.toUpperCase().includes('UKT') || event.title?.toUpperCase().includes('UJIAN');
+    const isUKT =
+      event.title?.toUpperCase().includes("UKT") ||
+      event.title?.toUpperCase().includes("UJIAN");
     return (
-      <div key={event.id} className={styles.eventItem} onClick={() => router.push(`/events/${event.id}`)}>
-        <div className={`${styles.eventIcon} ${isUKT ? styles.ukt : styles.tourney}`}>
+      <div
+        key={event.id}
+        className={styles.eventItem}
+        onClick={() => router.push(`/events/${event.id}`)}
+      >
+        <div
+          className={`${styles.eventIcon} ${isUKT ? styles.ukt : styles.tourney}`}
+        >
           {isUKT ? <Award size={20} /> : <Trophy size={20} />}
         </div>
         <div className={styles.eventInfo}>
           <h3 className={styles.eventTitle}>{event.title}</h3>
           <p className={styles.eventMeta}>
-            {new Date(event.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} | {event.location || 'Indonesia'}
+            {new Date(event.startDate).toLocaleDateString("id-ID", {
+              day: "2-digit",
+              month: "short",
+            })}{" "}
+            | {event.location || "Indonesia"}
           </p>
           {isHistory && event.registrationStatus && (
-             <span className={`${styles.statusBadge} ${event.registrationStatus === 'PAID' ? styles.paid : styles.pending}`}>
-                {event.registrationStatus === 'PAID' ? 'LUNAS' : 'PENDING'}
-             </span>
+            <span
+              className={`${styles.statusBadge} ${event.registrationStatus === "PAID" ? styles.paid : styles.pending}`}
+            >
+              {event.registrationStatus === "PAID" ? "LUNAS" : "PENDING"}
+            </span>
           )}
         </div>
         <ChevronRight size={16} className={styles.chevron} />
@@ -131,14 +174,19 @@ export default function Dashboard() {
         <div className={styles.userProfile}>
           <div className={styles.avatarWrapper}>
             {user?.photoUrl ? (
-              <img 
+              <img
                 key={user.photoUrl}
-                src={getAssetUrl(user.photoUrl)} 
-                alt={user?.fullName || "Member"} 
-                width={40} 
-                height={40} 
-                className={styles.avatar} 
-                style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '50%' }}
+                src={getAssetUrl(user.photoUrl)}
+                alt={user?.fullName || "Member"}
+                width={40}
+                height={40}
+                className={styles.avatar}
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  objectFit: "cover",
+                  borderRadius: "50%",
+                }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
@@ -146,65 +194,108 @@ export default function Dashboard() {
                 }}
               />
             ) : (
-              <Image 
-                src="/logo.png" 
-                alt="Member" 
-                width={40} 
-                height={40} 
-                className={styles.avatar} 
+              <Image
+                src="/logo.png"
+                alt="Member"
+                width={40}
+                height={40}
+                className={styles.avatar}
               />
             )}
           </div>
           <div className={styles.userInfo}>
-            <h1 className={styles.greeting}>Oss, {user.fullName ? user.fullName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Member')}!</h1>
+            <h1 className={styles.greeting}>
+              Oss,{" "}
+              {user.fullName
+                ? user.fullName.split(" ")[0]
+                : user.email
+                  ? user.email.split("@")[0]
+                  : "Member"}
+              !
+            </h1>
             <p className={styles.role}>
-              {(user.roles?.includes('ADMINISTRATOR') || (Array.isArray(user.roles) && user.roles.some((r: any) => r === 'ADMINISTRATOR' || r.name === 'ADMINISTRATOR')))
-                ? 'Administrator' 
-                : (user.status === 'PENDING' ? 'Anggota Pending' : 'Anggota Aktif')}
+              {user.roles?.includes("ADMINISTRATOR") ||
+              (Array.isArray(user.roles) &&
+                user.roles.some(
+                  (r: any) =>
+                    r === "ADMINISTRATOR" || r.name === "ADMINISTRATOR",
+                ))
+                ? "Administrator"
+                : user.status === "PENDING"
+                  ? "Anggota Pending"
+                  : "Anggota Aktif"}
             </p>
           </div>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.iconBtn} onClick={() => router.push("/messages")}><MessageCircle size={20} /></button>
-          <button className={styles.iconBtn} onClick={() => router.push("/notifications")}>
-            <Bell size={20} />
-            {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
+          <button
+            className={styles.iconBtn}
+            onClick={() => router.push("/messages")}
+          >
+            <MessageCircle size={20} />
           </button>
-          <button 
+          <button
+            className={styles.iconBtn}
+            onClick={() => router.push("/notifications")}
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className={styles.badge}>
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+          <button
             className={`${styles.iconBtn} ${styles.logout}`}
-            onClick={() => { logout(); router.push("/"); }}
+            onClick={() => {
+              logout();
+              router.push("/");
+            }}
           >
             <LogOut size={20} />
           </button>
         </div>
       </header>
-      
-      {user.status === 'PENDING' && !isAdmin && (
+
+      {user.status === "PENDING" && !isAdmin && (
         <section className={styles.section}>
           <div className={styles.pendingNotice}>
             <Bell size={24} className={styles.pulse} />
             <div>
-              <p><b>Akun Sedang Diverifikasi</b></p>
-              <p>Pemberitahuan telah dikirimkan ke <b>Ketua Ranting</b> Anda untuk proses aktivasi NIA.</p>
+              <p>
+                <b>Akun Sedang Diverifikasi</b>
+              </p>
+              <p>
+                Pemberitahuan telah dikirimkan ke <b>Ketua Ranting</b> Anda
+                untuk proses aktivasi NIA.
+              </p>
             </div>
           </div>
         </section>
       )}
 
       <section className={styles.section}>
-        <MemberCard 
-          nia={user.nia || (isAdmin ? "ADMINISTRATOR" : "MEMPROSES NIA...")} 
-          name={user.fullName || "Anggota"} 
+        <MemberCard
+          nia={user.nia || (isAdmin ? "ADMINISTRATOR" : "MEMPROSES NIA...")}
+          name={user.fullName || "Anggota"}
           highestBelt={highestBelt}
-          dojo={user.dojo ? `${user.dojo.name} - ${user.dojo.branch?.province?.name || 'Pusat'}` : 'Dojo INKAI - Pusat'} 
-          qrValue={typeof window !== 'undefined' ? `${window.location.origin}/v/${user.nia || user.id}` : user.id}
+          dojo={
+            user.dojo
+              ? `${user.dojo.name} - ${user.dojo.branch?.province?.name || "Pusat"}`
+              : "Dojo INKAI - Pusat"
+          }
+          qrValue={
+            typeof window !== "undefined"
+              ? `${window.location.origin}/v/${user.nia || user.id}`
+              : user.id
+          }
         />
       </section>
 
       <section className={styles.section}>
         <div className={styles.grid}>
           {quickActions.map((action, i) => (
-            <motion.div 
+            <motion.div
               key={action.label}
               whileTap={{ scale: 0.95 }}
               className={styles.actionItem}
@@ -227,7 +318,7 @@ export default function Dashboard() {
             <h2 className={styles.sectionTitle}>Kegiatan Saya</h2>
           </div>
           <div className={styles.eventList}>
-            {myEvents.map(event => renderEventItem(event, true))}
+            {myEvents.map((event) => renderEventItem(event, true))}
           </div>
         </section>
       )}
@@ -235,19 +326,27 @@ export default function Dashboard() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Event Terdekat</h2>
-          <button className={styles.seeAll} onClick={() => router.push("/events")}>Lihat Semua</button>
+          <button
+            className={styles.seeAll}
+            onClick={() => router.push("/events")}
+          >
+            Lihat Semua
+          </button>
         </div>
         <div className={styles.eventList}>
           {!user.nia && !isAdmin ? (
             <div className={styles.lockedState}>
-               <Lock size={32} className={styles.lockedIcon} />
-               <p className={styles.lockedText}>
-                 Event terdekat belum dapat diakses.<br/>
-                 Tunggu sampai <b>NIA</b> Anda aktif untuk dapat mendaftar.
-               </p>
+              <Lock size={32} className={styles.lockedIcon} />
+              <p className={styles.lockedText}>
+                Event terdekat belum dapat diakses.
+                <br />
+                Tunggu sampai <b>NIA</b> Anda aktif untuk dapat mendaftar.
+              </p>
             </div>
           ) : isEventsLoading ? (
-             <div className={styles.loaderSmall}><Loader2 className={styles.spinner} size={24} /></div>
+            <div className={styles.loaderSmall}>
+              <Loader2 className={styles.spinner} size={24} />
+            </div>
           ) : upcomingEvents.length > 0 ? (
             upcomingEvents.map((event) => renderEventItem(event))
           ) : (
@@ -256,26 +355,45 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <div style={{ height: '100px' }} />
+      <div style={{ height: "100px" }} />
       <BottomNav />
 
       {(!isProfileComplete || !isDocumentComplete) && (
         <div className={styles.profileLockOverlay}>
           <div className={styles.profileLockContent}>
-            <Award size={48} color="#ffc107" style={{ marginBottom: '16px' }} />
-            <h2 style={{ fontSize: '20px', marginBottom: '8px', fontWeight: '600' }}>
-              {!isProfileComplete ? 'Profil Belum Lengkap' : 'Dokumen Belum Lengkap'}
-            </h2>
-            <p style={{ fontSize: '14px', color: '#ccc', marginBottom: '24px', lineHeight: '1.5' }}>
-              {!isProfileComplete 
-                ? 'Silakan lengkapi data diri Anda (Foto, No WA, Tempat & Tanggal Lahir, Alamat, serta Dojo/Ranting) untuk dapat menggunakan fitur INKAI Mobile.'
-                : 'Data diri Anda sudah lengkap. Sekarang silakan lengkapi Dokumen Keanggotaan Anda (Akte Kelahiran & BPJS) untuk menggunakan fitur sepenuhnya.'}
-            </p>
-            <button 
-              className={styles.primaryBtn} 
-              onClick={() => router.push(!isProfileComplete ? '/profile/edit' : '/documents')}
+            <Award size={48} color="#ffc107" style={{ marginBottom: "16px" }} />
+            <h2
+              style={{
+                fontSize: "20px",
+                marginBottom: "8px",
+                fontWeight: "600",
+              }}
             >
-              {!isProfileComplete ? 'Lengkapi Profil Anda Sekarang' : 'Lengkapi Dokumen Keanggotaan'}
+              {!isProfileComplete
+                ? "Profil Belum Lengkap"
+                : "Dokumen Belum Lengkap"}
+            </h2>
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#ccc",
+                marginBottom: "24px",
+                lineHeight: "1.5",
+              }}
+            >
+              {!isProfileComplete
+                ? "Silakan lengkapi data diri Anda (Foto, No WA, Tempat & Tanggal Lahir, Alamat, serta Dojo/Ranting) untuk dapat menggunakan fitur INKAI Mobile."
+                : "Data diri Anda sudah lengkap. Sekarang silakan lengkapi Dokumen Keanggotaan Anda (Akte Kelahiran & BPJS) untuk menggunakan fitur sepenuhnya."}
+            </p>
+            <button
+              className={styles.primaryBtn}
+              onClick={() =>
+                router.push(!isProfileComplete ? "/profile/edit" : "/documents")
+              }
+            >
+              {!isProfileComplete
+                ? "Lengkapi Profil Anda Sekarang"
+                : "Lengkapi Dokumen Keanggotaan"}
             </button>
           </div>
         </div>
