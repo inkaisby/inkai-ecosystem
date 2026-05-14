@@ -185,7 +185,7 @@ export default function AdminMemberGuidePage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+      <div className="space-y-4">
         <div>
           <div className="flex items-center gap-2 text-amber-500 mb-2">
             <ScrollText size={20} />
@@ -201,27 +201,28 @@ export default function AdminMemberGuidePage() {
             Panduan.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end sm:gap-3 w-full max-w-full">
           <button
             type="button"
             onClick={loadDefault}
-            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 text-sm font-semibold text-gray-300 hover:bg-white/5"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] text-sm font-semibold text-gray-200 hover:bg-white/10 px-3 py-2.5 min-h-[44px] text-center leading-snug sm:px-4 sm:shrink-0"
           >
-            <RotateCcw size={18} />
-            Muat contoh bawaan
+            <RotateCcw size={18} className="shrink-0" aria-hidden />
+            <span>Muat contoh bawaan</span>
           </button>
           <button
             type="button"
             onClick={save}
             disabled={saving}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 text-black text-sm font-bold hover:bg-amber-400 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 text-black text-sm font-bold hover:bg-amber-400 disabled:opacity-50 px-3 py-2.5 min-h-[44px] text-center leading-snug sm:px-5 sm:shrink-0"
           >
             {saving ? (
-              <Loader2 className="animate-spin" size={18} />
+              <Loader2 className="animate-spin shrink-0" size={18} />
             ) : (
-              <Save size={18} />
+              <Save size={18} className="shrink-0" aria-hidden />
             )}
-            Simpan ke server
+            <span>Simpan ke server</span>
           </button>
         </div>
       </div>
