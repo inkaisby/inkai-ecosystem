@@ -241,7 +241,12 @@ export default function EventsPage() {
 
             <p className="text-[11px] text-gray-500 leading-relaxed">
               Kelola jadwal turnamen, ujian kenaikan tingkat, dan gashuku
-              nasional.
+              nasional. Event dengan tanggal mulai terdekat otomatis tampil di
+              beranda anggota pada bagian{" "}
+              <span className="text-amber-500/90 font-semibold">
+                Event Terdekat
+              </span>{" "}
+              (hingga tiga item, urut mulai tanggal).
             </p>
 
             <button
@@ -422,46 +427,46 @@ export default function EventsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[999999] adm-bg flex flex-col overflow-hidden"
+            className="fixed inset-0 z-[999999] adm-bg flex flex-col overflow-hidden h-[100dvh] min-h-0"
           >
             {/* Mobile-focused container for wide screens */}
-            <div className="flex-1 flex flex-col w-full max-w-[480px] mx-auto relative adm-bg shadow-2xl overflow-hidden">
+            <div className="flex-1 flex flex-col w-full max-w-[480px] mx-auto relative adm-bg shadow-2xl overflow-hidden min-h-0 min-w-0">
               {/* FIXED TOP BAR */}
-              <div className="mobile-hpad py-4 flex justify-between items-center z-50 pt-[calc(env(safe-area-inset-top,24px)+8px)] adm-chrome-soft backdrop-blur-xl border-b border-white/5">
+              <div className="mobile-hpad-compact py-2.5 min-[390px]:py-3.5 flex justify-between items-center gap-2 z-50 pt-[max(6px,env(safe-area-inset-top,0px))] adm-chrome-soft backdrop-blur-xl border-b border-white/5 shrink-0">
                 <button
                   onClick={() => setShowDetailModal(false)}
-                  className="p-2.5 bg-white/5 text-white rounded-xl border border-white/10 active:scale-90 transition-all"
+                  className="p-2 min-[390px]:p-2.5 bg-white/5 text-white rounded-xl border border-white/10 active:scale-90 transition-all shrink-0"
                 >
                   <ChevronLeft size={20} />
                 </button>
 
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 min-[390px]:gap-2 shrink-0">
                   <button
                     onClick={() => {
                       setShowDetailModal(false);
                       openEditModal(selectedEvent);
                     }}
-                    className="p-2.5 bg-white/5 text-white rounded-xl border border-white/10 active:scale-90 transition-all"
+                    className="p-2 min-[390px]:p-2.5 bg-white/5 text-white rounded-xl border border-white/10 active:scale-90 transition-all"
                   >
                     <Edit2 size={18} />
                   </button>
                   <button
                     onClick={(e) => handleDeleteEvent(selectedEvent.id, e)}
-                    className="p-2.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 active:scale-90 transition-all"
+                    className="p-2 min-[390px]:p-2.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 active:scale-90 transition-all"
                   >
                     <Trash2 size={18} />
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
-                {/* HERO SECTION - Improved for Premium Mobile Look */}
-                <div className="pt-12 pb-8 bg-gradient-to-b from-amber-500/10 via-transparent to-transparent relative flex flex-col items-center justify-center overflow-hidden">
-                  <div className="relative z-10 text-center mobile-hpad w-full">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+                {/* HERO SECTION - compact on narrow devices */}
+                <div className="pt-5 pb-4 min-[390px]:pt-8 min-[390px]:pb-6 bg-gradient-to-b from-amber-500/10 via-transparent to-transparent relative flex flex-col items-center justify-center overflow-hidden">
+                  <div className="relative z-10 text-center mobile-hpad-compact w-full min-w-0">
                     <motion.div
                       initial={{ y: -20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className={`w-full max-w-[280px] mx-auto py-2.5 rounded-full mb-6 flex items-center justify-center shadow-2xl border border-white/10 ${
+                      className={`w-full max-w-[min(280px,100%)] mx-auto py-2 min-[390px]:py-2.5 rounded-full mb-3 min-[390px]:mb-5 flex items-center justify-center shadow-2xl border border-white/10 ${
                         selectedEvent.title.toLowerCase().includes("kejurnas")
                           ? "bg-blue-500 text-white"
                           : selectedEvent.title.toLowerCase().includes("ujian")
@@ -482,13 +487,13 @@ export default function EventsPage() {
                       )}
                     </motion.div>
 
-                    <h3 className="text-xl font-black uppercase tracking-tighter text-white leading-[1.1] mb-6 max-w-[320px] mx-auto">
+                    <h3 className="text-[16px] min-[390px]:text-xl font-black uppercase tracking-tighter text-white leading-[1.15] mb-3 min-[390px]:mb-5 max-w-[min(320px,100%)] mx-auto px-0.5">
                       {selectedEvent.title}
                     </h3>
 
-                    <div className="flex flex-wrap gap-2 justify-center">
+                    <div className="flex flex-col min-[340px]:flex-row min-[340px]:flex-wrap gap-2 justify-center items-stretch min-[340px]:items-center max-w-[min(320px,100%)] min-[340px]:max-w-none mx-auto w-full">
                       <span
-                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase border ${
+                        className={`flex items-center justify-center w-full min-[340px]:w-auto shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase border text-center min-h-[40px] ${
                           selectedEvent.title.toLowerCase().includes("kejurnas")
                             ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
                             : selectedEvent.title
@@ -504,9 +509,9 @@ export default function EventsPage() {
                             ? "UJIAN KENAIKAN"
                             : "KEGIATAN UMUM"}
                       </span>
-                      <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-gray-400">
-                        <MapPin size={12} className="text-amber-500" />
-                        <span className="uppercase tracking-widest truncate max-w-[180px]">
+                      <div className="flex items-center justify-center min-[340px]:justify-start gap-2 px-3 min-[390px]:px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-gray-400 min-w-0">
+                        <MapPin size={12} className="text-amber-500 shrink-0" />
+                        <span className="uppercase tracking-widest break-words text-center min-[340px]:text-left">
                           {selectedEvent.location || "INDONESIA"}
                         </span>
                       </div>
@@ -514,18 +519,18 @@ export default function EventsPage() {
                   </div>
                 </div>
 
-                <div className="pb-32 mobile-hpad py-4 space-y-8">
-                  <div className="space-y-8">
+                <div className="pb-28 min-[390px]:pb-32 mobile-hpad-compact pt-2 min-[390px]:pt-4 space-y-5 min-[390px]:space-y-8">
+                  <div className="space-y-5 min-[390px]:space-y-8">
                     {/* Waktu Pelaksanaan */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-amber-500 px-1">
+                    <div className="space-y-3 min-[390px]:space-y-4">
+                      <div className="flex items-center gap-2 text-amber-500 px-0.5">
                         <Calendar size={16} />
                         <h4 className="text-[11px] font-black uppercase tracking-[0.2em]">
                           Waktu Pelaksanaan
                         </h4>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white/[0.02] p-5 rounded-3xl border border-white/5 shadow-inner">
+                      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 min-[390px]:gap-4">
+                        <div className="bg-white/[0.02] p-3.5 min-[390px]:p-5 rounded-2xl min-[390px]:rounded-3xl border border-white/5 shadow-inner">
                           <p className="text-[9px] text-gray-600 uppercase font-black mb-1.5 tracking-widest">
                             Mulai
                           </p>
@@ -539,7 +544,7 @@ export default function EventsPage() {
                             })}
                           </p>
                         </div>
-                        <div className="bg-white/[0.02] p-5 rounded-3xl border border-white/5 shadow-inner">
+                        <div className="bg-white/[0.02] p-3.5 min-[390px]:p-5 rounded-2xl min-[390px]:rounded-3xl border border-white/5 shadow-inner">
                           <p className="text-[9px] text-gray-600 uppercase font-black mb-1.5 tracking-widest">
                             Selesai
                           </p>
@@ -558,20 +563,20 @@ export default function EventsPage() {
                     </div>
 
                     {/* Informasi Peserta */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-amber-500 px-1">
+                    <div className="space-y-3 min-[390px]:space-y-4">
+                      <div className="flex items-center gap-2 text-amber-500 px-0.5">
                         <Users size={16} />
                         <h4 className="text-[11px] font-black uppercase tracking-[0.2em]">
                           Informasi Peserta
                         </h4>
                       </div>
-                      <div className="bg-white/[0.02] p-6 rounded-[2.5rem] border border-white/5 space-y-6 shadow-inner">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[11px] text-gray-500 uppercase font-black tracking-widest">
+                      <div className="bg-white/[0.02] p-4 min-[390px]:p-6 rounded-[1.75rem] min-[390px]:rounded-[2.5rem] border border-white/5 space-y-4 min-[390px]:space-y-6 shadow-inner">
+                        <div className="flex flex-col gap-2 min-[360px]:flex-row min-[360px]:justify-between min-[360px]:items-center">
+                          <span className="text-[11px] text-gray-500 uppercase font-black tracking-widest shrink-0">
                             Pendaftar Saat Ini
                           </span>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-4xl font-black text-amber-500">
+                            <span className="text-3xl min-[390px]:text-4xl font-black text-amber-500">
                               {selectedEvent._count?.registrations || 0}
                             </span>
                             <span className="text-[10px] text-gray-700 font-bold uppercase">
@@ -579,8 +584,8 @@ export default function EventsPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="pt-6 border-t border-white/5">
-                          <p className="text-[9px] text-gray-600 uppercase font-black mb-3 tracking-[0.2em]">
+                        <div className="pt-4 min-[390px]:pt-6 border-t border-white/5">
+                          <p className="text-[9px] text-gray-600 uppercase font-black mb-2 min-[390px]:mb-3 tracking-[0.2em]">
                             Deskripsi Agenda
                           </p>
                           <p className="text-[13px] text-gray-400 leading-relaxed font-medium">
@@ -595,8 +600,8 @@ export default function EventsPage() {
               </div>
 
               {/* BOTTOM ACTION BAR */}
-              <div className="mobile-hpad pt-6 adm-chrome-soft backdrop-blur-xl border-t border-white/5 mt-auto pb-[calc(env(safe-area-inset-bottom,24px)+32px)]">
-                <div className="flex gap-4 items-center">
+              <div className="mobile-hpad-compact pt-3 min-[390px]:pt-5 adm-chrome-soft backdrop-blur-xl border-t border-white/5 mt-auto shrink-0 pb-[max(14px,calc(env(safe-area-inset-bottom,0px)+16px))] min-[390px]:pb-[calc(env(safe-area-inset-bottom,24px)+24px)]">
+                <div className="flex gap-3 items-center">
                   <button
                     onClick={() => {
                       setShowDetailModal(false);
@@ -604,7 +609,7 @@ export default function EventsPage() {
                         `/admin/events/${selectedEvent.id}/participants`,
                       );
                     }}
-                    className="flex-1 py-4 rounded-2xl bg-amber-500 text-black text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 min-h-[48px] py-3 min-[390px]:py-4 rounded-2xl bg-amber-500 text-black text-[10px] min-[390px]:text-[11px] font-black uppercase tracking-[0.15em] min-[390px]:tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 px-2"
                   >
                     <Users size={18} />
                     Kelola Peserta Event
@@ -664,10 +669,11 @@ export default function EventsPage() {
                       }
 
                       const eventPayload = {
-                        ...formData,
                         title: finalTitle,
+                        description: formData.description,
                         startDate: new Date(formData.startDate).toISOString(),
                         endDate: new Date(formData.endDate).toISOString(),
+                        location: formData.location,
                       };
 
                       if (modalMode === "create") {

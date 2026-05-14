@@ -6,6 +6,82 @@ import prisma from '../utils/prisma';
 import { supabase } from '../utils/supabase';
 import path from 'path';
 
+/** Payload ringkas untuk session (login / GET /auth/me) — selaras bentuk `/members/me` tanpa ranks/attendance/registrations besar */
+const sessionUserInclude = {
+  member: {
+    include: {
+      dojo: {
+        include: {
+          branch: {
+            include: { province: { select: { name: true } } },
+          },
+        },
+      },
+    },
+  },
+  managedProvince: { select: { name: true } },
+  managedBranch: { select: { name: true } },
+  managedDojo: { select: { name: true } },
+  roles: {
+    select: {
+      name: true,
+      permissions: {
+        select: {
+          permission: { select: { slug: true } },
+        },
+      },
+    },
+  },
+};
+
+function collectPermissionSlugs(
+  roles: Array<{ permissions: Array<{ permission: { slug: string } | null }> }>,
+): string[] {
+  const slugs = roles.flatMap((role) =>
+    role.permissions.map((rp) => rp.permission?.slug).filter(Boolean),
+  );
+  return Array.from(new Set(slugs as string[]));
+}
+
+function buildSessionUserResponse(user: any, permissionSlugs: string[]) {
+  if (user.member) {
+    const m = user.member;
+    return {
+      ...m,
+      email: user.email,
+      photoUrl: user.photoUrl,
+      phoneNumber: user.phoneNumber,
+      nik: m.nik,
+      roles: user.roles.map((r: any) => r.name),
+      permissions: permissionSlugs,
+      managedProvinceId: user.managedProvinceId,
+      managedBranchId: user.managedBranchId,
+      managedDojoId: user.managedDojoId,
+      managedProvinceName: user.managedProvince?.name ?? null,
+      managedBranchName: user.managedBranch?.name ?? null,
+      managedDojoName: user.managedDojo?.name ?? null,
+    };
+  }
+
+  return {
+    fullName: user.fullName,
+    email: user.email,
+    photoUrl: user.photoUrl,
+    phoneNumber: user.phoneNumber,
+    roles: user.roles.map((r: any) => r.name),
+    permissions: permissionSlugs,
+    managedProvinceId: user.managedProvinceId,
+    managedBranchId: user.managedBranchId,
+    managedDojoId: user.managedDojoId,
+    managedProvinceName: user.managedProvince?.name ?? null,
+    managedBranchName: user.managedBranch?.name ?? null,
+    managedDojoName: user.managedDojo?.name ?? null,
+    status: 'AKTIF',
+    currentRank: '-',
+    nia: null,
+  };
+}
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, fullName, phoneNumber, dojoId, isParent } = req.body;
@@ -79,21 +155,7 @@ export const login = async (req: Request, res: Response) => {
           { member: { nia: identifier } }
         ]
       },
-      include: { 
-        member: true,
-        managedProvince: { select: { name: true } },
-        managedBranch: { select: { name: true } },
-        managedDojo: { select: { name: true } },
-        roles: {
-          include: {
-            permissions: {
-              include: {
-                permission: true
-              }
-            }
-          }
-        }
-      }
+      include: sessionUserInclude,
     });
 
     if (!user) {
@@ -115,11 +177,7 @@ export const login = async (req: Request, res: Response) => {
     }
     console.log(`Password valid for user: ${user.email}`);
 
-    // Flatten permissions
-    const permissions = user.roles.flatMap(role => 
-      role.permissions.map(rp => rp.permission?.slug).filter(Boolean)
-    );
-    const uniquePermissions = Array.from(new Set(permissions as string[]));
+    const uniquePermissions = collectPermissionSlugs(user.roles);
 
     // Generate JWT
     const token = jwt.sign(
@@ -139,27 +197,13 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
+    const sessionUser = buildSessionUserResponse(user, uniquePermissions);
 
     res.json({
       status: 'success',
       token,
       data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.member?.fullName || user.fullName,
-          phoneNumber: user.phoneNumber,
-          photoUrl: user.photoUrl,
-          nia: user.member?.nia,
-          roles: user.roles.map(r => r.name),
-          permissions: uniquePermissions,
-          managedProvinceId: user.managedProvinceId,
-          managedBranchId: user.managedBranchId,
-          managedDojoId: user.managedDojoId,
-          managedProvinceName: user.managedProvince?.name,
-          managedBranchName: user.managedBranch?.name,
-          managedDojoName: user.managedDojo?.name
-        }
+        user: sessionUser,
       }
     });
   } catch (error: any) {
@@ -174,6 +218,39 @@ export const login = async (req: Request, res: Response) => {
       message: 'Terjadi kesalahan pada server saat login',
       debug: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+};
+
+/** Profil sesi ringkas untuk bootstrap app (tanpa ranks/attendance/registrations besar) */
+export const getSession = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: sessionUserInclude,
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.' });
+    }
+
+    const permissionSlugs = collectPermissionSlugs(user.roles);
+
+    res.json({
+      status: 'success',
+      data: buildSessionUserResponse(user, permissionSlugs),
+    });
+  } catch (error: any) {
+    console.error('[getSession]', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 

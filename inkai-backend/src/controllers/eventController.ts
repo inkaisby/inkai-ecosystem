@@ -98,6 +98,14 @@ export const createEvent = async (req: any, res: Response) => {
     const { title, description, startDate, endDate, location, categories } = req.body;
     const userId = req.user?.id;
 
+    const categoryCreates =
+      Array.isArray(categories) && categories.length > 0
+        ? categories.map((c: { name: string; fee?: number | string }) => ({
+            name: c.name,
+            fee: parseFloat(String(c.fee ?? 0)),
+          }))
+        : [];
+
     const event = await prisma.event.create({
       data: {
         title,
@@ -106,9 +114,13 @@ export const createEvent = async (req: any, res: Response) => {
         endDate: new Date(endDate),
         location,
         createdById: userId,
-        categories: {
-          create: categories // Array of { name, fee }
-        }
+        ...(categoryCreates.length > 0
+          ? {
+              categories: {
+                create: categoryCreates,
+              },
+            }
+          : {}),
       },
       include: { categories: true }
     });

@@ -20,11 +20,22 @@ import chatRoutes from './routes/chatRoutes';
 import memberGuideRoutes from './routes/memberGuideRoutes';
 import { createServer } from 'http';
 import prisma from './utils/prisma';
+import { initSentryBackend, captureSafeException } from './utils/sentry';
 
 dotenv.config();
 
+initSentryBackend();
+
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+if (
+  !!process.env.VERCEL ||
+  process.env.TRUST_PROXY === '1' ||
+  process.env.TRUST_PROXY === 'true'
+) {
+  app.set('trust proxy', 1);
+}
 
 // Middleware
 app.use(helmet({
@@ -69,13 +80,29 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-// Error handling middleware
-app.use((err: any, req: Request, res: Response, next: any) => {
-  console.error(err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: 'Internal Server Error'
+// Error handling middleware (hanya jalan bila controller memanggil `next(error)`).
+app.use((err: unknown, req: Request, res: Response, _next: any) => {
+  console.error(err);
+  captureSafeException(err instanceof Error ? err : new Error(String(err)), {
+    path: req.path,
+    method: req.method,
   });
+
+  const status =
+    typeof err === 'object' &&
+    err !== null &&
+    'statusCode' in err &&
+    typeof (err as { statusCode: unknown }).statusCode === 'number'
+      ? (err as { statusCode: number }).statusCode
+      : 500;
+
+  const code = status >= 400 && status < 600 ? status : 500;
+  const body: { status: string; message: string } = {
+    status: 'error',
+    message:
+      code === 500 ? 'Internal Server Error' : (err as Error)?.message || 'Request error',
+  };
+  res.status(code).json(body);
 });
 
 const httpServer = createServer(app);

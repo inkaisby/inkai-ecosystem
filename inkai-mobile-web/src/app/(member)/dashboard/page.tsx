@@ -82,7 +82,19 @@ export default function Dashboard() {
       ]);
 
       if (upcomingRes.data.status === "success") {
-        setUpcomingEvents(upcomingRes.data.data.slice(0, 3));
+        const raw = upcomingRes.data.data || [];
+        const now = Date.now();
+        const nearest = [...raw]
+          .filter((e: { endDate?: string }) =>
+            e.endDate ? new Date(e.endDate).getTime() >= now : true,
+          )
+          .sort(
+            (a: { startDate: string }, b: { startDate: string }) =>
+              new Date(a.startDate).getTime() -
+              new Date(b.startDate).getTime(),
+          )
+          .slice(0, 3);
+        setUpcomingEvents(nearest);
       }
       if (myEventsRes.data.status === "success") {
         setMyEvents(myEventsRes.data.data || []);

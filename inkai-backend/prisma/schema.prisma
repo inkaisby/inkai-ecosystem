@@ -73,6 +73,8 @@ model User {
   managedProvinceId String?
   managedDojoId     String?
   photoUrl          String?
+  resetToken        String?   @unique
+  resetTokenExpiry  DateTime?
   childrenMembers   Member[]       @relation("ParentChildren")
   member            Member?
   messages          Message[]

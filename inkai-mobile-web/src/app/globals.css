@@ -79,6 +79,19 @@ html[data-clock-phase="night"] {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
+/** Lebih rapat untuk layar sangat sempit (320–389px); naik ke 16px di layar sedikit lebih lebar */
+.mobile-hpad-compact {
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 390px) {
+  .mobile-hpad-compact {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+}
+
 * {
   box-sizing: border-box;
   padding: 0;

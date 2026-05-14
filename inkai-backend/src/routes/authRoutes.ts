@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { login, adminLogin, register, changePassword, uploadProfilePhoto, forgotPassword, resetPassword, updateProfile, uploadFile } from '../controllers/authController';
+import { login, adminLogin, getSession, register, changePassword, uploadProfilePhoto, forgotPassword, resetPassword, updateProfile, uploadFile } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
+import { authLoginLimiter } from '../middleware/loginRateLimit';
 import multer from 'multer';
 import path from 'path';
 
@@ -14,8 +15,9 @@ const upload = multer({
 const router = Router();
 
 router.post('/register', register);
-router.post('/login', login);
-router.post('/admin-login', adminLogin);
+router.post('/login', authLoginLimiter, login);
+router.get('/me', authenticate, getSession);
+router.post('/admin-login', authLoginLimiter, adminLogin);
 router.put('/profile', authenticate, updateProfile);
 router.put('/change-password', authenticate, changePassword);
 router.post('/upload-photo', authenticate, upload.single('photo'), uploadProfilePhoto);

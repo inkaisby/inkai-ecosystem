@@ -28,12 +28,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const savedToken = localStorage.getItem('inkai_token') || localStorage.getItem('token');
     if (savedToken) {
       setToken(savedToken);
-      if (!user) fetchProfile();
+      loadSessionBootstrap();
     } else {
       setIsLoading(false);
     }
+    // intentionally once on mount — token restores session via loadSessionBootstrap
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const loadSessionBootstrap = async () => {
+    try {
+      const response = await authApi.getSession();
+      if (response.data.status === 'success') {
+        setUser(response.data.data);
+      }
+    } catch (error) {
+      console.error('Fetch session error:', error);
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /** Muat `/members/me` lengkap — untuk halaman yang butuh ranks, attendance, registrations, dll. */
   const fetchProfile = async () => {
     try {
       const response = await authApi.getProfile();
@@ -56,7 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const newToken = response.data.token;
         setToken(newToken);
         localStorage.setItem('inkai_token', newToken);
-        await fetchProfile();
+        const sessionUser = response.data.data?.user;
+        if (sessionUser) {
+          setUser(sessionUser);
+        } else {
+          await loadSessionBootstrap();
+        }
         return true;
       }
     } catch (error) {

@@ -67,6 +67,9 @@ export const getAssetUrl = (path?: string) => {
 export const authApi = {
   login: (identifier: string, password: string) => 
     apiInstance.post('/auth/login', { identifier, password }),
+  /** Ringkas untuk session bootstrap (bukan `/members/me` yang berat) */
+  getSession: () =>
+    apiInstance.get('/auth/me'),
   getProfile: () => 
     apiInstance.get('/members/me'),
   getConnectedProfiles: () => 
