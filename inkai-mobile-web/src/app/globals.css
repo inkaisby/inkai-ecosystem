@@ -176,6 +176,9 @@ html[data-clock-phase="day"] .mobile-content {
 .isolate {
   isolation: isolate;
 }
+.touch-manipulation {
+  touch-action: manipulation;
+}
 .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
 .inset-x-5 { left: 1.25rem; right: 1.25rem; }
 .top-20 { top: 5rem; }
@@ -218,6 +221,46 @@ html[data-clock-phase="day"] .mobile-content {
   border: 1px solid var(--glass-border);
   border-radius: 1.25rem;
   padding: 1.25rem;
+}
+
+/** Header admin tetap bisa di-tap — fixed supaya tidak tertimpa konten scroll (sticky + flex). */
+[data-admin-shell] {
+  --admin-topbar-top: max(16px, env(safe-area-inset-top, 0px));
+  --admin-topbar-h: 4rem;
+}
+
+.admin-topbar-fixed {
+  position: fixed;
+  z-index: 110;
+  top: var(--admin-topbar-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  height: var(--admin-topbar-h);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  pointer-events: auto;
+}
+
+.admin-topbar-spacer {
+  height: var(--admin-topbar-h);
+  flex-shrink: 0;
+}
+
+@media (max-width: 639px) {
+  .admin-notif-sheet,
+  .admin-account-sheet {
+    top: calc(var(--admin-topbar-top) + var(--admin-topbar-h));
+  }
+}
+
+@media (min-width: 640px) {
+  .admin-notif-sheet,
+  .admin-account-sheet {
+    bottom: auto;
+  }
 }
 
 /** Latar fullscreen admin (ganti #0A0A0C); ikut jam siang/malam */
