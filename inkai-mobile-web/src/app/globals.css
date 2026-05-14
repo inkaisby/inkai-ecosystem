@@ -262,6 +262,77 @@ html[data-clock-phase="day"] .mobile-content {
   flex-shrink: 0;
 }
 
+/**
+ * Modal lewat createPortal(ke body). Wajib pakai z-index di globals — proyek ini tanpa Tailwind,
+ * jadi class seperti z-[999999] dan sm:* tidak pernah ter-apply.
+ */
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  min-height: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: rgba(0, 0, 0, 0.8);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 640px) {
+  .admin-modal-overlay {
+    align-items: center;
+    padding: 1rem;
+  }
+}
+
+/** Dialog tengah (hapus konfirmasi, dll.) */
+.admin-modal-overlay--dialog {
+  align-items: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: max(2rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+}
+
+.admin-modal-sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--background-dark);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 640px) {
+  .admin-modal-sheet {
+    height: calc(100dvh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    border-radius: 1.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+.admin-modal-dialog-panel {
+  width: 100%;
+  max-width: 360px;
+  padding: 2rem;
+  text-align: center;
+  border-radius: 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  background-color: #1e1e24;
+  position: relative;
+  overflow: hidden;
+}
+
 @media (max-width: 639px) {
   .admin-notif-sheet,
   .admin-account-sheet {
