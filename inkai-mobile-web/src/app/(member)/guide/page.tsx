@@ -14,7 +14,7 @@ import styles from "./Guide.module.css";
 
 export default function GuidePage() {
   const router = useRouter();
-  const { user, isLoading: isAuthLoading, isAdmin } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [guide, setGuide] = useState<MemberWelcomeGuideJson | null>(null);
 
@@ -35,10 +35,9 @@ export default function GuidePage() {
   useEffect(() => {
     if (!mounted || isAuthLoading) return;
     if (!user) router.replace("/");
-    else if (isAdmin) router.replace("/admin");
-  }, [mounted, isAuthLoading, user, isAdmin, router]);
+  }, [mounted, isAuthLoading, user, router]);
 
-  if (!mounted || isAuthLoading || !user || isAdmin) {
+  if (!mounted || isAuthLoading || !user) {
     return (
       <div className={styles.loadingContainer}>
         <Loader2 className={styles.spinner} size={40} />
