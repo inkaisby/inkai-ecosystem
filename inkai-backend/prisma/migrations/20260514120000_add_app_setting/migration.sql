@@ -1,4 +1,4 @@
-// Generated manually — jalankan `npx prisma migrate deploy` atau `db push` setelah pull
+-- Generated manually — jalankan `npx prisma migrate deploy` atau `db push` setelah pull
 CREATE TABLE IF NOT EXISTS "AppSetting" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
