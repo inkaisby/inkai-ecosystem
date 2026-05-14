@@ -51,9 +51,9 @@ export default function Login() {
         <motion.div 
           animate={{ opacity: [0.1, 0.15, 0.1] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          style={{ position: 'absolute', top: '-10%', left: '-10%', width: '70%', height: '70%', backgroundColor: 'rgba(245, 158, 11, 0.12)', filter: 'blur(100px)', borderRadius: '50%' }} 
+          style={{ position: 'absolute', top: '-10%', left: '-10%', width: '70%', height: '70%', backgroundColor: 'var(--ambient-orb-amber)', filter: 'blur(100px)', borderRadius: '50%' }} 
         />
-        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', backgroundColor: 'rgba(59, 130, 246, 0.05)', filter: 'blur(100px)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', backgroundColor: 'var(--ambient-orb-blue)', filter: 'blur(100px)', borderRadius: '50%' }} />
       </div>
 
       <div className="flex flex-col px-6 py-8" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '480px', margin: '0 auto', flex: 1 }}>
@@ -80,7 +80,7 @@ export default function Login() {
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.05))', zIndex: 1 }} />
             </div>
           </div>
-          <h1 className="mt-6 font-black tracking-widest text-center uppercase" style={{ fontSize: '1.25rem', color: '#fff', letterSpacing: '0.2em' }}>
+          <h1 className="mt-6 font-black tracking-widest text-center uppercase" style={{ fontSize: '1.25rem', color: 'var(--text-light)', letterSpacing: '0.2em' }}>
             INKAI PORTAL
           </h1>
           <p className="text-gray-500 text-10 font-bold tracking-widest uppercase mt-2">
@@ -183,9 +183,9 @@ export default function Login() {
           className="mt-8 space-y-4 mb-8"
         >
           <div className="flex items-center px-4" style={{ position: 'relative' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--hairline)' }} />
             <span className="px-4 text-10 font-black text-gray-500 tracking-widest uppercase">Registrasi</span>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--hairline)' }} />
           </div>
 
           <div className="grid grid-cols-1 gap-4">
@@ -193,7 +193,10 @@ export default function Login() {
               whileTap={{ scale: 0.98 }}
               onClick={() => router.push("/register")}
               className="flex items-center justify-between p-4 rounded-2xl"
-              style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+              style={{
+                backgroundColor: "var(--surface-row-bg)",
+                border: "1px solid var(--surface-row-border)",
+              }}
             >
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center rounded-xl" style={{ width: '44px', height: '44px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: 'var(--primary-gold)' }}>
@@ -211,7 +214,10 @@ export default function Login() {
               whileTap={{ scale: 0.98 }}
               onClick={() => router.push("/register-parent")}
               className="flex items-center justify-between p-4 rounded-2xl"
-              style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+              style={{
+                backgroundColor: "var(--surface-row-bg)",
+                border: "1px solid var(--surface-row-border)",
+              }}
             >
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center rounded-xl" style={{ width: '44px', height: '44px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>

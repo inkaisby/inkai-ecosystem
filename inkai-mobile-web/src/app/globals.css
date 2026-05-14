@@ -10,6 +10,39 @@
   --glass-border: rgba(255, 255, 255, 0.1);
   --gradient-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   --gradient-dark: linear-gradient(180deg, rgba(20, 20, 24, 0.8) 0%, rgba(10, 10, 12, 0.9) 100%);
+  --shell-outer-bg: #000000;
+  --ambient-orb-amber: rgba(245, 158, 11, 0.12);
+  --ambient-orb-blue: rgba(59, 130, 246, 0.05);
+  --hairline: rgba(255, 255, 255, 0.05);
+  --surface-row-bg: rgba(255, 255, 255, 0.03);
+  --surface-row-border: rgba(255, 255, 255, 0.05);
+}
+
+/* AM (00–11): cerah untuk area anggota. PM = gelap. Rute /admin selalu gelap (diatur di JS). */
+html[data-clock-phase="day"] {
+  color-scheme: light;
+  --background-dark: #f4f6f8;
+  --card-dark: #ffffff;
+  --text-light: #18181b;
+  --text-muted: #52525b;
+  --border-light: rgba(0, 0, 0, 0.06);
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --gradient-dark: linear-gradient(
+    180deg,
+    rgba(248, 250, 252, 0.95) 0%,
+    rgba(236, 242, 248, 0.98) 100%
+  );
+  --shell-outer-bg: #e8ecf2;
+  --ambient-orb-amber: rgba(245, 158, 11, 0.1);
+  --ambient-orb-blue: rgba(59, 130, 246, 0.08);
+  --hairline: rgba(15, 23, 42, 0.1);
+  --surface-row-bg: rgba(255, 255, 255, 0.72);
+  --surface-row-border: rgba(15, 23, 42, 0.08);
+}
+
+html[data-clock-phase="night"] {
+  color-scheme: dark;
 }
 
 * {
@@ -48,7 +81,7 @@ button {
   display: flex;
   justify-content: center;
   min-height: 100vh;
-  background-color: #000;
+  background-color: var(--shell-outer-bg);
   overflow-x: hidden;
 }
 
@@ -63,6 +96,10 @@ button {
   flex-direction: column;
   padding-bottom: env(safe-area-inset-bottom, 2rem);
   padding-top: env(safe-area-inset-top, 0);
+}
+
+html[data-clock-phase="day"] .mobile-content {
+  box-shadow: 0 0 60px rgba(15, 23, 42, 0.08);
 }
 
 /* Responsive Grid Fixes */
@@ -1161,6 +1198,95 @@ select {
 
 .focus-border-amber:focus {
   border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* Mode siang: komponen yang masih pakai warna “malam” keras */
+html[data-clock-phase="day"] .glass-card-opaque {
+  background: #ffffff;
+}
+
+html[data-clock-phase="day"] .btn-secondary {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+html[data-clock-phase="day"] .glass-input {
+  background: rgba(248, 250, 252, 0.98);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  color: #18181b !important;
+}
+
+html[data-clock-phase="day"] .glass-input::placeholder {
+  color: rgba(24, 24, 27, 0.45) !important;
+}
+
+html[data-clock-phase="day"] .glass-input:focus {
+  background: #ffffff;
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+}
+
+html[data-clock-phase="day"] .modal-gradient {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+}
+
+html[data-clock-phase="day"] select {
+  color-scheme: light;
+}
+
+html[data-clock-phase="day"] select option {
+  background-color: #ffffff !important;
+  color: #18181b !important;
+}
+
+html[data-clock-phase="day"] select optgroup {
+  background-color: #f8fafc !important;
+  color: var(--primary-gold) !important;
+}
+
+html[data-clock-phase="day"] .premium-glass {
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.08);
+}
+
+html[data-clock-phase="day"] .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
+}
+
+html[data-clock-phase="day"] .border {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+html[data-clock-phase="day"] .border-t {
+  border-top-color: rgba(15, 23, 42, 0.1);
+}
+
+html[data-clock-phase="day"] .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+html[data-clock-phase="day"] .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+html[data-clock-phase="day"] .text-white {
+  color: var(--text-light);
+}
+
+html[data-clock-phase="day"] .text-gray-400,
+html[data-clock-phase="day"] .text-gray-500 {
+  color: #64748b !important;
+}
+
+html[data-clock-phase="day"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.04) 25%,
+    rgba(15, 23, 42, 0.09) 50%,
+    rgba(15, 23, 42, 0.04) 75%
+  );
+  background-size: 200% 100%;
 }
 
 /* Custom Scrollbar */

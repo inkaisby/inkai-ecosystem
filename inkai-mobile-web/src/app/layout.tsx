@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "react-hot-toast";
 import PWARegistration from "@/components/PWARegistration";
+import AutomaticClockTheme from "@/components/AutomaticClockTheme/AutomaticClockTheme";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -26,6 +28,10 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body>
+        <Script id="inkai-clock-phase-boot" strategy="beforeInteractive">
+          {`(function(){try{var p=window.location.pathname||'';var admin=p.indexOf('/admin')===0;var phase=admin?'night':(new Date().getHours()<12?'day':'night');document.documentElement.setAttribute('data-clock-phase',phase);document.documentElement.style.colorScheme=phase==='day'?'light':'dark';}catch(e){}})();`}
+        </Script>
+        <AutomaticClockTheme />
         <div className="mobile-wrapper">
           <main className="mobile-content">
             <AuthProvider>
