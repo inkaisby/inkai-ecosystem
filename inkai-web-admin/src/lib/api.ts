@@ -91,7 +91,16 @@ export const api = {
   events: {
     getAll: () => request('/events'),
     getById: (id: string) => request(`/events/${id}`),
-    create: (data: any) => request('/events', { method: 'POST', body: JSON.stringify(data) }),
+    create: (data: unknown) =>
+      request('/events', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: unknown) =>
+      request(`/events/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
     delete: (id: string) => request(`/events/${id}`, { method: 'DELETE' }),
   },
   notifications: {

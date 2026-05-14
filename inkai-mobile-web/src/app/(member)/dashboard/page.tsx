@@ -6,7 +6,6 @@ import {
   LogOut,
   MessageCircle,
   QrCode,
-  Wallet,
   BookOpen,
   ShoppingBag,
   Award,
@@ -41,6 +40,7 @@ export default function Dashboard() {
     isDocumentComplete,
   } = useAuth();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [pastEvents, setPastEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -84,10 +84,10 @@ export default function Dashboard() {
       if (upcomingRes.data.status === "success") {
         const raw = upcomingRes.data.data || [];
         const now = Date.now();
-        const nearest = [...raw]
-          .filter((e: { endDate?: string }) =>
-            e.endDate ? new Date(e.endDate).getTime() >= now : true,
-          )
+        const upcomingFiltered = [...raw].filter((e: { endDate?: string }) =>
+          e.endDate ? new Date(e.endDate).getTime() >= now : true,
+        );
+        const nearest = upcomingFiltered
           .sort(
             (a: { startDate: string }, b: { startDate: string }) =>
               new Date(a.startDate).getTime() -
@@ -95,6 +95,18 @@ export default function Dashboard() {
           )
           .slice(0, 3);
         setUpcomingEvents(nearest);
+
+        const pastFiltered = [...raw]
+          .filter((e: { endDate?: string }) =>
+            e.endDate ? new Date(e.endDate).getTime() < now : false,
+          )
+          .sort(
+            (a: { endDate?: string }, b: { endDate?: string }) =>
+              new Date(b.endDate || "").getTime() -
+              new Date(a.endDate || "").getTime(),
+          )
+          .slice(0, 5);
+        setPastEvents(pastFiltered);
       }
       if (myEventsRes.data.status === "success") {
         setMyEvents(myEventsRes.data.data || []);
@@ -108,7 +120,6 @@ export default function Dashboard() {
 
   const quickActions = [
     { icon: <QrCode />, label: "Absensi", path: "/absensi" },
-    { icon: <Wallet />, label: "Iuran", path: "/billing" },
     { icon: <BookOpen />, label: "Materi", path: "/library" },
     { icon: <ShoppingBag />, label: "Store", path: "/store" },
     { icon: <Award />, label: "Sabuk", path: "/achievement?tab=Sabuk" },
@@ -153,7 +164,11 @@ export default function Dashboard() {
               day: "2-digit",
               month: "short",
             })}{" "}
-            | {event.location || "Indonesia"}
+            |{" "}
+            {event.branch?.name ||
+              event.branch?.city ||
+              event.location ||
+              "Indonesia"}
           </p>
           {isHistory && event.registrationStatus && (
             <span
@@ -375,6 +390,25 @@ export default function Dashboard() {
           )}
         </div>
       </section>
+
+      {(user.nia || isAdmin) &&
+        pastEvents.length > 0 &&
+        !isEventsLoading && (
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Riwayat agenda</h2>
+              <button
+                className={styles.seeAll}
+                onClick={() => router.push("/events")}
+              >
+                Lihat riwayat
+              </button>
+            </div>
+            <div className={styles.eventList}>
+              {pastEvents.map((event) => renderEventItem(event, true))}
+            </div>
+          </section>
+        )}
 
       <div style={{ height: "100px" }} />
       <BottomNav />

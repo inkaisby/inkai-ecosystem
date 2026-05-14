@@ -30,6 +30,7 @@ model Branch {
   province   Province @relation(fields: [provinceId], references: [id])
   dojos      Dojo[]
   admins     User[]   @relation("BranchAdmin")
+  events     Event[]
 
   @@unique([name, provinceId])
 }
@@ -129,6 +130,8 @@ model Member {
   parentUserId        String?
   birthCertificateUrl String?
   bpjsCardUrl         String?
+  bpjsCardNumber      String?
+  bpjsOcrExtracted    Json?
   attendances         Attendance[]
   billings            Billing[]
   eventRegistrations  EventRegistration[]
@@ -199,11 +202,13 @@ model Event {
   startDate     DateTime
   endDate       DateTime
   location      String?
+  branchId      String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   isDeleted     Boolean             @default(false)
   createdById   String?
   createdBy     User?               @relation("UserEvents", fields: [createdById], references: [id])
+  branch        Branch?             @relation(fields: [branchId], references: [id])
   categories    EventCategory[]
   registrations EventRegistration[]
   verifications Verification[]

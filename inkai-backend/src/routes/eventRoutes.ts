@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import * as eventController from '../controllers/eventController';
-import { authenticate } from '../middleware/authMiddleware';
+import { authenticate, optionalAuthenticate } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get('/', eventController.getAllEvents);
+router.get('/', optionalAuthenticate, eventController.getAllEvents);
 router.get('/my/registrations', authenticate, eventController.getMyEvents);
-router.get('/:id', eventController.getEventById);
+router.get('/:id', optionalAuthenticate, eventController.getEventById);
 router.post('/', authenticate, eventController.createEvent);
 router.post('/register', authenticate, eventController.registerForEvent);
 router.put('/register/:id', authenticate, eventController.updateRegistration);

@@ -1,102 +1,129 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { notifyAdmins, createNotification } from '../utils/notification';
-import { getOrSetCache, invalidateCache } from '../utils/redis';
+import { invalidateCache } from '../utils/redis';
+import {
+  JwtEventUser,
+  buildEventVisibilityWhere,
+  resolveBranchIdForCreate,
+  viewerCanMutateEvent,
+  provinceOwnsBranch,
+} from '../utils/eventScope';
 
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
-    const events = await getOrSetCache('events:all', async () => {
-      return await prisma.event.findMany({
-        include: {
-          categories: true,
-          _count: {
-            select: { registrations: true }
-          }
-        }
-      });
-    }, 300); // Cache for 5 minutes
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user as JwtEventUser | undefined;
+    const vis = await buildEventVisibilityWhere(jwtUser ?? null);
+
+    const events = await prisma.event.findMany({
+      where: { isDeleted: false, ...vis },
+      include: {
+        categories: true,
+        branch: { select: { id: true, name: true, city: true } },
+        _count: {
+          select: { registrations: true },
+        },
+      },
+      orderBy: { startDate: 'desc' },
+    });
 
     res.json({ status: 'success', data: events });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: errMessage });
   }
 };
 
-export const getMyEvents = async (req: any, res: Response) => {
+export const getMyEvents = async (req: Request, res: Response) => {
   try {
-    const memberId = req.user.memberId;
+    const memberId = (req as Request & { user?: JwtEventUser }).user?.memberId;
     if (!memberId) {
       return res.json({ status: 'success', data: [] });
     }
 
     const registrations = await prisma.eventRegistration.findMany({
-      where: { 
+      where: {
         memberId,
         event: {
-          endDate: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          }
-        }
+          isDeleted: false,
+        },
       },
       include: {
         event: {
-          include: { categories: true }
+          include: { categories: true },
         },
-        category: true
+        category: true,
       },
-      orderBy: { event: { startDate: 'desc' } }
+      orderBy: { event: { startDate: 'desc' } },
     });
 
-    const events = registrations.map(reg => ({
+    const events = registrations.map((reg) => ({
       ...reg.event,
       registrationStatus: reg.status,
-      selectedCategory: reg.category
+      selectedCategory: reg.category,
     }));
 
     res.json({ status: 'success', data: events });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: errMessage });
   }
 };
 
 export const getEventById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const event = await prisma.event.findUnique({
-      where: { id },
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user as JwtEventUser | undefined;
+
+    const vis = await buildEventVisibilityWhere(jwtUser ?? null);
+
+    const event = await prisma.event.findFirst({
+      where: { id, isDeleted: false, ...vis },
       include: {
         categories: true,
+        branch: { select: { id: true, name: true, city: true } },
         registrations: {
           include: {
             member: {
               include: {
                 dojo: {
-                  include: { branch: true }
+                  include: { branch: true },
                 },
                 billings: {
-                  where: { type: 'EVENT_FEE' }
-                }
-              }
+                  where: { type: 'EVENT_FEE' },
+                },
+              },
             },
-            category: true
-          }
-        }
-      }
+            category: true,
+          },
+        },
+      },
     });
     if (!event) return res.status(404).json({ message: 'Event not found' });
     res.json({ status: 'success', data: event });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: errMessage });
   }
 };
 
-export const createEvent = async (req: any, res: Response) => {
+export const createEvent = async (req: Request, res: Response) => {
   try {
     const { title, description, startDate, endDate, location, categories } = req.body;
-    const userId = req.user?.id;
+    const { branchId: rawBranchFromBody } = req.body;
+
+    const userId = (req as Request & { user?: JwtEventUser }).user?.userId;
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user ?? {};
+    let branchId: string | null;
+    try {
+      branchId = await resolveBranchIdForCreate(jwtUser, rawBranchFromBody);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Wilayah tidak valid untuk agenda ini';
+      return res.status(400).json({ status: 'error', message: msg });
+    }
 
     const categoryCreates =
       Array.isArray(categories) && categories.length > 0
@@ -113,6 +140,7 @@ export const createEvent = async (req: any, res: Response) => {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         location,
+        branchId,
         createdById: userId,
         ...(categoryCreates.length > 0
           ? {
@@ -122,28 +150,47 @@ export const createEvent = async (req: any, res: Response) => {
             }
           : {}),
       },
-      include: { categories: true }
+      include: { categories: true, branch: { select: { id: true, name: true, city: true } } },
     });
 
-    // Invalidate cache
-    invalidateCache('events:all');
+    await invalidateCache('events:all');
 
     res.status(201).json({ status: 'success', data: event });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: errMessage });
   }
 };
 
 export const registerForEvent = async (req: Request, res: Response) => {
   try {
     const { eventId, memberId, categoryId } = req.body;
-    
-    // Check if already registered
-    const existing = await prisma.eventRegistration.findFirst({
-      where: { eventId, memberId }
+
+    const eventRecord = await prisma.event.findUnique({
+      where: { id: eventId },
     });
-    
+    if (!eventRecord || eventRecord.isDeleted) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    if (eventRecord.branchId) {
+      const memberRecord = await prisma.member.findUnique({
+        where: { id: memberId },
+        select: { dojo: { select: { branchId: true } } },
+      });
+      const mBranch = memberRecord?.dojo?.branchId;
+      if (!mBranch || mBranch !== eventRecord.branchId) {
+        return res.status(403).json({
+          message: 'Acara ini hanya untuk anggota di wilayah cabang yang sama',
+        });
+      }
+    }
+
+    const existing = await prisma.eventRegistration.findFirst({
+      where: { eventId, memberId },
+    });
+
     if (existing) {
       return res.status(400).json({ message: 'Already registered for this event. Use update instead.' });
     }
@@ -153,22 +200,21 @@ export const registerForEvent = async (req: Request, res: Response) => {
         eventId,
         memberId,
         categoryId,
-        status: 'PENDING'
+        status: 'PENDING',
       },
       include: {
         member: {
           include: {
             dojo: {
-              include: { branch: true }
-            }
-          }
+              include: { branch: true },
+            },
+          },
         },
         event: true,
-        category: true
-      }
+        category: true,
+      },
     });
 
-    // Create Billing record if category has fee
     if (registration.category && registration.category.fee > 0) {
       await prisma.billing.create({
         data: {
@@ -177,42 +223,41 @@ export const registerForEvent = async (req: Request, res: Response) => {
           type: 'EVENT_FEE',
           amount: registration.category.fee,
           description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-          status: 'PENDING'
-        }
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          status: 'PENDING',
+        },
       });
 
-      // Notify Member
       if (registration.member.userId) {
         await createNotification({
           userId: registration.member.userId,
           title: 'Tagihan Pendaftaran Event',
           content: `Silakan lanjut pembayaran untuk ${registration.event.title} kategori ${registration.category.name} sebesar Rp ${registration.category.fee.toLocaleString('id-ID')}`,
-          type: 'INFO'
+          type: 'INFO',
         });
       }
     }
 
-    // Notify Branch Admin
     if (registration.member.dojo.branchId) {
       await notifyAdmins({
         title: 'Pendaftaran Event Baru',
         content: `Anggota ${registration.member.fullName} mendaftar ke ${registration.event.title}${registration.category ? ` (Kategori: ${registration.category.name})` : ''}`,
         branchId: registration.member.dojo.branchId,
-        type: 'SUCCESS'
+        type: 'SUCCESS',
       });
     }
 
     res.status(201).json({ status: 'success', data: registration });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: errMessage });
   }
 };
 
 export const updateRegistration = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params; // Registration ID
+    const { id } = req.params;
     const { categoryId } = req.body;
 
     const registration = await prisma.eventRegistration.update({
@@ -222,35 +267,33 @@ export const updateRegistration = async (req: Request, res: Response) => {
         member: {
           include: {
             dojo: {
-              include: { branch: true }
-            }
-          }
+              include: { branch: true },
+            },
+          },
         },
         event: true,
-        category: true
-      }
+        category: true,
+      },
     });
 
-    // Update/Create Billing record if category has fee
     if (registration.category && registration.category.fee > 0) {
-      // Find existing billing for this member and type (simplified logic: check recent pending ones)
       const existingBilling = await prisma.billing.findFirst({
-        where: { 
+        where: {
           memberId: registration.memberId,
           registrationId: registration.id,
           type: 'EVENT_FEE',
-          status: 'PENDING'
-        }
+          status: 'PENDING',
+        },
       });
 
       if (existingBilling) {
         await prisma.billing.update({
           where: { id: existingBilling.id },
-          data: { 
+          data: {
             amount: registration.category.fee,
             description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          }
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
         });
       } else {
         await prisma.billing.create({
@@ -261,61 +304,99 @@ export const updateRegistration = async (req: Request, res: Response) => {
             amount: registration.category.fee,
             description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            status: 'PENDING'
-          }
+            status: 'PENDING',
+          },
         });
       }
 
-      // Notify Member
       if (registration.member.userId) {
         await createNotification({
           userId: registration.member.userId,
           title: 'Pendaftaran Event Diperbarui',
           content: `Pendaftaran Anda untuk ${registration.event.title} telah diperbarui ke kategori ${registration.category.name}. Silakan cek tagihan Anda.`,
-          type: 'INFO'
+          type: 'INFO',
         });
       }
     }
 
-    // Notify Branch Admin about update
     if (registration.member.dojo.branchId) {
       await notifyAdmins({
         title: 'Pendaftaran Event Diperbarui',
         content: `Anggota ${registration.member.fullName} memperbarui pendaftaran ke ${registration.event.title}${registration.category ? ` (Kategori Baru: ${registration.category.name})` : ''}`,
         branchId: registration.member.dojo.branchId,
-        type: 'INFO'
+        type: 'INFO',
       });
     }
 
     res.json({ status: 'success', data: registration });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: errMessage });
   }
 };
 
-export const updateEvent = async (req: any, res: Response) => {
+async function resolveBranchIdForUpdate(args: {
+  jwtUser: JwtEventUser;
+  existingBranchId: string | null;
+  bodyBranchId: unknown;
+}): Promise<string | null> {
+  const { jwtUser, existingBranchId, bodyBranchId } = args;
+  const roles = jwtUser.roles || [];
+
+  if (roles.some((r) => ['ADMINISTRATOR', 'ADMIN_PUSAT'].includes(r))) {
+    if (bodyBranchId === undefined) return existingBranchId;
+    return bodyBranchId === null || bodyBranchId === '' ? null : String(bodyBranchId);
+  }
+
+  if (roles.includes('ADMIN_PROVINCE') && jwtUser.managedProvinceId) {
+    if (bodyBranchId === undefined) return existingBranchId;
+    if (bodyBranchId === null || bodyBranchId === '') return null;
+    const ok = await provinceOwnsBranch(jwtUser.managedProvinceId, String(bodyBranchId));
+    if (!ok) {
+      throw new Error('Cabang tidak termasuk provinsi Anda');
+    }
+    return String(bodyBranchId);
+  }
+
+  return existingBranchId;
+}
+
+export const updateEvent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, description, startDate, endDate, location, categories } = req.body;
-    const userId = req.user?.id;
-    const userRoles = req.user?.roles || [];
+    const { title, description, startDate, endDate, location, categories, branchId: bodyBranchId } = req.body;
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user ?? {};
 
-    // Check ownership or admin role
     const existingEvent = await prisma.event.findUnique({ where: { id } });
     if (!existingEvent) return res.status(404).json({ message: 'Event not found' });
 
-    const isAdmin = userRoles.some((role: string) => ['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH'].includes(role));
-    const isOwner = existingEvent.createdById === userId;
+    const allowed = await viewerCanMutateEvent(
+      {
+        branchId: existingEvent.branchId,
+        createdById: existingEvent.createdById,
+      },
+      jwtUser,
+    );
 
-    if (!isAdmin && !isOwner) {
+    if (!allowed) {
       return res.status(403).json({ message: 'You do not have permission to update this event' });
     }
 
-    // Use transaction to update event and categories
+    let nextBranchId: string | null;
+    try {
+      nextBranchId = await resolveBranchIdForUpdate({
+        jwtUser,
+        existingBranchId: existingEvent.branchId,
+        bodyBranchId,
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Wilayah tidak valid';
+      return res.status(400).json({ message: msg });
+    }
+
     const event = await prisma.$transaction(async (tx) => {
-      // 1. Update basic info
-      const updatedEvent = await tx.event.update({
+      await tx.event.update({
         where: { id },
         data: {
           title,
@@ -323,77 +404,80 @@ export const updateEvent = async (req: any, res: Response) => {
           startDate: new Date(startDate),
           endDate: new Date(endDate),
           location,
+          branchId: nextBranchId,
         },
       });
 
-      // 2. If categories are provided, replace them
       if (categories && Array.isArray(categories)) {
-        // Delete existing categories
         await tx.eventCategory.deleteMany({
-          where: { eventId: id }
+          where: { eventId: id },
         });
 
-        // Create new ones
         await tx.event.update({
           where: { id },
           data: {
             categories: {
-              create: categories.map((c: any) => ({
+              create: categories.map((c: { name: string; fee: number | string }) => ({
                 name: c.name,
-                fee: parseFloat(c.fee)
-              }))
-            }
-          }
+                fee: parseFloat(String(c.fee)),
+              })),
+            },
+          },
         });
       }
 
       return tx.event.findUnique({
         where: { id },
-        include: { categories: true }
+        include: {
+          categories: true,
+          branch: { select: { id: true, name: true, city: true } },
+        },
       });
     });
 
-    // Invalidate cache
-    invalidateCache('events:all');
+    await invalidateCache('events:all');
 
     res.json({ status: 'success', data: event });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: errMessage });
   }
 };
 
-export const deleteEvent = async (req: any, res: Response) => {
+export const deleteEvent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
-    const userRoles = req.user?.roles || [];
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user ?? {};
 
-    // Check ownership or admin role
     const existingEvent = await prisma.event.findUnique({ where: { id } });
     if (!existingEvent) return res.status(404).json({ message: 'Event not found' });
 
-    const isAdmin = userRoles.some((role: string) => ['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH'].includes(role));
-    const isOwner = existingEvent.createdById === userId;
+    const allowed = await viewerCanMutateEvent(
+      {
+        branchId: existingEvent.branchId,
+        createdById: existingEvent.createdById,
+      },
+      jwtUser,
+    );
 
-    if (!isAdmin && !isOwner) {
+    if (!allowed) {
       return res.status(403).json({ message: 'You do not have permission to delete this event' });
     }
-    
-    // Use transaction to ensure all related data is deleted
+
     await prisma.$transaction([
       prisma.eventCategory.deleteMany({ where: { eventId: id } }),
       prisma.eventRegistration.deleteMany({ where: { eventId: id } }),
       prisma.verification.deleteMany({ where: { eventId: id } }),
-      prisma.event.delete({ where: { id } })
+      prisma.event.delete({ where: { id } }),
     ]);
 
-    // Invalidate cache
-    invalidateCache('events:all');
+    await invalidateCache('events:all');
 
     res.json({ status: 'success', message: 'Event deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: errMessage });
   }
 };

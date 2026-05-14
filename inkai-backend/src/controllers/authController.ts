@@ -184,6 +184,7 @@ export const login = async (req: Request, res: Response) => {
       { 
         userId: user.id, 
         memberId: user.member?.id,
+        memberBranchId: user.member?.dojo?.branchId ?? null,
         roles: user.roles.map(r => r.name),
         permissions: uniquePermissions,
         managedProvinceId: user.managedProvinceId,
@@ -266,7 +267,11 @@ export const adminLogin = async (req: Request, res: Response) => {
         ]
       },
       include: { 
-        member: true,
+        member: {
+          include: {
+            dojo: { select: { branchId: true } },
+          },
+        },
         managedProvince: { select: { name: true } },
         managedBranch: { select: { name: true } },
         managedDojo: { select: { name: true } },
@@ -318,6 +323,7 @@ export const adminLogin = async (req: Request, res: Response) => {
       { 
         userId: user.id, 
         memberId: user.member?.id,
+        memberBranchId: user.member?.dojo?.branchId ?? null,
         roles: userRoleNames,
         permissions: uniquePermissions,
         managedProvinceId: user.managedProvinceId,
@@ -349,7 +355,8 @@ export const adminLogin = async (req: Request, res: Response) => {
           managedDojoId: user.managedDojoId,
           managedProvinceName: user.managedProvince?.name,
           managedBranchName: user.managedBranch?.name,
-          managedDojoName: user.managedDojo?.name
+          managedDojoName: user.managedDojo?.name,
+          memberBranchId: user.member?.dojo?.branchId ?? null
         }
       }
     });

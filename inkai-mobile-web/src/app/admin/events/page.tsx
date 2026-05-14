@@ -16,11 +16,13 @@ import {
   Loader2,
   X,
   Edit2,
+  Building2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 interface Event {
   id: string;
@@ -29,6 +31,8 @@ interface Event {
   startDate: string;
   endDate: string;
   location?: string;
+  branchId?: string | null;
+  branch?: { id: string; name: string; city?: string | null } | null;
   _count?: {
     registrations: number;
   };
@@ -36,6 +40,27 @@ interface Event {
 
 export default function EventsPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const roleNames = useMemo(
+    () =>
+      Array.isArray(user?.roles)
+        ? user.roles.map((r: string | { name: string }) =>
+            typeof r === "string" ? r : r.name,
+          )
+        : ([] as string[]),
+    [user],
+  );
+  const isSuper = useMemo(
+    () =>
+      roleNames.includes("ADMINISTRATOR") || roleNames.includes("ADMIN_PUSAT"),
+    [roleNames],
+  );
+  const isProvinceAdmin =
+    roleNames.includes("ADMIN_PROVINCE") && !!user?.managedProvinceId;
+  const isBranchAdmin =
+    roleNames.includes("ADMIN_BRANCH") && !!user?.managedBranchId;
+  const isDojoAdmin = roleNames.includes("ADMIN_DOJO") && !!user?.managedDojoId;
+
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +83,18 @@ export default function EventsPage() {
     endDate: "",
     location: "",
     category: "Kegiatan Umum",
+    branchId: "",
+    eventProvinceId: "",
   });
+
+  /** national = cabang kosong/null (terlihat di semua ranting sesuaturan backend); branch = wilayah tertentu */
+  const [wilayahScope, setWilayahScope] = useState<"national" | "branch">("national");
+  const [provinceOptions, setProvinceOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [branchOptions, setBranchOptions] = useState<
+    { id: string; name: string; city?: string | null }[]
+  >([]);
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -107,6 +143,58 @@ export default function EventsPage() {
     loadData();
   }, [fetchEvents]);
 
+  useEffect(() => {
+    if (!showEventModal) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (isSuper) {
+          const pres = await api.org.getProvinces();
+          if (
+            !cancelled &&
+            pres.status === "success" &&
+            Array.isArray(pres.data)
+          ) {
+            setProvinceOptions((prev) =>
+              prev.length > 0 ? prev : pres.data,
+            );
+          }
+        }
+        if (isProvinceAdmin && user?.managedProvinceId) {
+          const br = await api.org.getBranches(user.managedProvinceId);
+          if (
+            !cancelled &&
+            br.status === "success" &&
+            Array.isArray(br.data)
+          ) {
+            setBranchOptions(br.data);
+          }
+        }
+      } catch {
+        toast.error("Gagal memuat data wilayah");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showEventModal, isSuper, isProvinceAdmin, user?.managedProvinceId]);
+
+  useEffect(() => {
+    if (!showEventModal || !isSuper || wilayahScope !== "branch" || !formData.eventProvinceId) {
+      return;
+    }
+    let cancelled = false;
+    void api.org.getBranches(formData.eventProvinceId).then((br) => {
+      if (cancelled) return;
+      if (br.status === "success" && Array.isArray(br.data)) {
+        setBranchOptions(br.data as typeof branchOptions);
+      }
+    }).catch(() => toast.error("Gagal memuat cabang"));
+    return () => {
+      cancelled = true;
+    };
+  }, [showEventModal, isSuper, wilayahScope, formData.eventProvinceId]);
+
   const isAnyModalOpen = showDetailModal || showEventModal || showDeleteModal;
 
   const portalReady = useSyncExternalStore(
@@ -152,6 +240,8 @@ export default function EventsPage() {
   }, [isAnyModalOpen]);
 
   const resetForm = () => {
+    setWilayahScope("national");
+    setBranchOptions([]);
     setFormData({
       id: "",
       title: "",
@@ -160,6 +250,8 @@ export default function EventsPage() {
       endDate: "",
       location: "",
       category: "Kegiatan Umum",
+      branchId: "",
+      eventProvinceId: "",
     });
   };
 
@@ -192,11 +284,19 @@ export default function EventsPage() {
 
   const openAddModal = () => {
     resetForm();
+    if (isProvinceAdmin && user?.managedProvinceId) {
+      void api.org.getBranches(user.managedProvinceId).then((br) => {
+        if (br.status === "success" && Array.isArray(br.data)) {
+          setBranchOptions(br.data as typeof branchOptions);
+        }
+      });
+    }
     setModalMode("create");
     setShowEventModal(true);
   };
 
-  const openEditModal = (event: Event) => {
+  const openEditModal = async (event: Event) => {
+    setWilayahScope(event.branchId ? "branch" : "national");
     setFormData({
       id: event.id,
       title: event.title.replace("KEJURNAS: ", "").replace("UJIAN: ", ""),
@@ -213,9 +313,52 @@ export default function EventsPage() {
         : event.title.toLowerCase().includes("ujian")
           ? "Ujian Kenaikan"
           : "Kegiatan Umum",
+      branchId: event.branchId ?? "",
+      eventProvinceId: "",
     });
     setModalMode("edit");
     setShowEventModal(true);
+
+    let provincesSnapshot = provinceOptions;
+    if (isSuper && provincesSnapshot.length === 0) {
+      try {
+        const pres = await api.org.getProvinces();
+        if (pres.status === "success" && Array.isArray(pres.data)) {
+          provincesSnapshot = pres.data;
+          setProvinceOptions(pres.data);
+        }
+      } catch {
+        /* cabang bisa dipilih manual */
+      }
+    }
+
+    if (isProvinceAdmin && user?.managedProvinceId) {
+      const br = await api.org.getBranches(user.managedProvinceId);
+      if (br.status === "success" && Array.isArray(br.data)) {
+        setBranchOptions(br.data as typeof branchOptions);
+      }
+    }
+
+    if (isSuper && event.branchId && provincesSnapshot.length > 0) {
+      try {
+        for (const pr of provincesSnapshot) {
+          const br = await api.org.getBranches(pr.id);
+          const list = Array.isArray(br.data) ? br.data : [];
+          const hit = list.find((b: { id: string }) => b.id === event.branchId);
+          if (hit) {
+            setBranchOptions(list as typeof branchOptions);
+            setFormData((f) => ({
+              ...f,
+              eventProvinceId: pr.id,
+              branchId: hit.id as string,
+            }));
+            break;
+          }
+        }
+      } catch {
+        /* */
+      }
+    }
   };
 
   return (
@@ -251,13 +394,15 @@ export default function EventsPage() {
             </div>
 
             <p className="text-[11px] text-gray-500 leading-relaxed">
-              Kelola jadwal turnamen, ujian kenaikan tingkat, dan gashuku
-              nasional. Event dengan tanggal mulai terdekat otomatis tampil di
-              beranda anggota pada bagian{" "}
+              Kelola agenda sesuai wilayah: event untuk satu cabang hanya
+              tampil bagi anggota dojo cabang tersebut; agenda nasional
+              tetap terlihat di semua ranting. Untuk anggota, acara yang
+              sudah lewat tanggal selesai tampil di riwayat. Tiga agenda
+              terdekat juga muncul di beranda sebagai{" "}
               <span className="text-amber-500/90 font-semibold">
                 Event Terdekat
-              </span>{" "}
-              (hingga tiga item, urut mulai tanggal).
+              </span>
+              .
             </p>
 
             <button
@@ -380,6 +525,12 @@ export default function EventsPage() {
                         <span className="flex items-center gap-1.5 text-[10px] text-gray-500 font-bold truncate">
                           <MapPin size={12} className="text-amber-500" />{" "}
                           {event.location || "Indonesia"}
+                        </span>
+                        <span className="text-[9px] text-gray-600 font-bold truncate">
+                          Cabang:{" "}
+                          {event.branch?.name ||
+                            event.branch?.city ||
+                            (event.branchId ? "Cabang tertentu" : "Nasional")}
                         </span>
                       </div>
                     </div>
@@ -527,6 +678,17 @@ export default function EventsPage() {
                         <MapPin size={12} className="text-amber-500 shrink-0" />
                         <span className="uppercase tracking-widest break-words text-center min-[340px]:text-left">
                           {selectedEvent.location || "INDONESIA"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center min-[340px]:justify-start gap-2 px-3 min-[390px]:px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-gray-400 min-w-0">
+                        <Building2
+                          size={12}
+                          className="text-amber-500 shrink-0"
+                        />
+                        <span className="uppercase tracking-widest break-words text-center min-[340px]:text-left">
+                          {selectedEvent.branch
+                            ? `${selectedEvent.branch.name}${selectedEvent.branch.city ? ` — ${selectedEvent.branch.city}` : ""}`
+                            : "Wilayah nasional"}
                         </span>
                       </div>
                     </div>
@@ -681,12 +843,36 @@ export default function EventsPage() {
                         finalTitle = `UJIAN: ${finalTitle}`;
                       }
 
+                      if ((isSuper || isProvinceAdmin) && wilayahScope === "branch") {
+                        if (isSuper && !formData.eventProvinceId) {
+                          toast.error("Pilih provinsi untuk memuat daftar cabang.");
+                          setIsSubmitting(false);
+                          return;
+                        }
+                        if (!formData.branchId?.trim()) {
+                          toast.error("Pilih cabang untuk agenda wilayah.");
+                          setIsSubmitting(false);
+                          return;
+                        }
+                      }
+
+                      const wilayahPart =
+                        isSuper || isProvinceAdmin
+                          ? {
+                              branchId:
+                                wilayahScope === "national"
+                                  ? null
+                                  : formData.branchId || null,
+                            }
+                          : {};
+
                       const eventPayload = {
                         title: finalTitle,
                         description: formData.description,
                         startDate: new Date(formData.startDate).toISOString(),
                         endDate: new Date(formData.endDate).toISOString(),
                         location: formData.location,
+                        ...wilayahPart,
                       };
 
                       if (modalMode === "create") {
@@ -749,6 +935,126 @@ export default function EventsPage() {
                       </div>
                     </div>
 
+                    {/* Wilayah tayang */}
+                    {(isSuper ||
+                      isProvinceAdmin ||
+                      isBranchAdmin ||
+                      isDojoAdmin) && (
+                      <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                        <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-0.5 block">
+                          Wilayah tayang agenda
+                        </label>
+                        {isBranchAdmin && (
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            Agenda akan diikat ke cabang Anda:{" "}
+                            <span className="text-white font-bold">
+                              {user?.managedBranchName || "—"}
+                            </span>
+                          </p>
+                        )}
+                        {isDojoAdmin && (
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            Agenda menggunakan cabang dari dojo Anda:{" "}
+                            <span className="text-white font-bold">
+                              {user?.managedDojoName || "—"}
+                            </span>
+                          </p>
+                        )}
+                        {(isSuper || isProvinceAdmin) && (
+                          <div className="space-y-3">
+                            <label className="flex gap-3 items-start cursor-pointer">
+                              <input
+                                type="radio"
+                                name="wilayahScope"
+                                className="mt-1 shrink-0"
+                                checked={wilayahScope === "national"}
+                                onChange={() => {
+                                  setWilayahScope("national");
+                                  setFormData((f) => ({
+                                    ...f,
+                                    branchId: "",
+                                    eventProvinceId: "",
+                                  }));
+                                }}
+                              />
+                              <span className="text-sm text-gray-300 leading-snug">
+                                Nasional — semua cabang dapat melihat (tidak
+                                dibatasi ke satu kota/cabang).
+                              </span>
+                            </label>
+                            <label className="flex gap-3 items-start cursor-pointer">
+                              <input
+                                type="radio"
+                                name="wilayahScope"
+                                className="mt-1 shrink-0"
+                                checked={wilayahScope === "branch"}
+                                onChange={() =>
+                                  setWilayahScope("branch")
+                                }
+                              />
+                              <span className="text-sm text-gray-300 leading-snug">
+                                Cabang tertentu — misalnya Surabaya tidak
+                                tampil di Sidoarjo.
+                              </span>
+                            </label>
+                            {wilayahScope === "branch" && isSuper && (
+                              <div className="relative">
+                                <select
+                                  value={formData.eventProvinceId}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      eventProvinceId: e.target.value,
+                                      branchId: "",
+                                    })
+                                  }
+                                  className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 appearance-none cursor-pointer text-white shadow-inner"
+                                  style={{ colorScheme: "dark" }}
+                                >
+                                  <option value="">Pilih provinsi…</option>
+                                  {provinceOptions.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronRight
+                                  size={16}
+                                  className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none"
+                                />
+                              </div>
+                            )}
+                            {wilayahScope === "branch" && (
+                              <div className="relative">
+                                <select
+                                  value={formData.branchId}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      branchId: e.target.value,
+                                    })
+                                  }
+                                  className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 appearance-none cursor-pointer text-white shadow-inner"
+                                  style={{ colorScheme: "dark" }}
+                                >
+                                  <option value="">Pilih cabang / ranting…</option>
+                                  {branchOptions.map((b) => (
+                                    <option key={b.id} value={b.id}>
+                                      {b.city ? `${b.name} — ${b.city}` : b.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronRight
+                                  size={16}
+                                  className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Nama Event */}
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">
@@ -802,7 +1108,7 @@ export default function EventsPage() {
                           )}
                           {formData.category === "Kegiatan Umum" && (
                             <>
-                              <option value="LATIHAN BERSAMA (GASHUKU)">
+                              <option value="LATIHAN BERSAMA">
                                 LATIHAN BERSAMA
                               </option>
                               <option value="RAPAT KERJA (RAKER)">

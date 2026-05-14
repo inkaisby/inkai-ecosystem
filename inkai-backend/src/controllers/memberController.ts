@@ -669,6 +669,23 @@ export const uploadDocument = async (req: AuthRequest, res: Response) => {
       updateData.birthCertificateUrl = fileUrl;
     } else if (fieldName === 'bpjs') {
       updateData.bpjsCardUrl = fileUrl;
+
+      const rawNum = req.body?.bpjsCardNumber;
+      if (rawNum != null && String(rawNum).trim() !== '') {
+        updateData.bpjsCardNumber = String(rawNum).replace(/\s+/g, '').trim();
+      }
+
+      const rawOcr = req.body?.bpjsOcrExtracted;
+      if (rawOcr != null && String(rawOcr).trim() !== '') {
+        try {
+          const parsed = typeof rawOcr === 'string' ? JSON.parse(rawOcr) : rawOcr;
+          if (parsed && typeof parsed === 'object') {
+            updateData.bpjsOcrExtracted = parsed;
+          }
+        } catch {
+          console.warn('[Upload] Invalid bpjsOcrExtracted JSON, skipping');
+        }
+      }
     } else {
       return res.status(400).json({ status: 'error', message: 'Invalid field name: ' + fieldName });
     }

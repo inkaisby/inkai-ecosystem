@@ -167,6 +167,28 @@
   font-weight: 600;
 }
 
+.infoValueWarning {
+  color: #f59e0b;
+}
+
+.infoMismatchNote {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f59e0b;
+  line-height: 1.35;
+}
+
+.bpjsNameHint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-top: 8px;
+  text-align: center;
+  max-width: 300px;
+  line-height: 1.45;
+  padding: 0 12px;
+}
+
 .menuSection {
   padding: 0 0 32px;
 }
@@ -289,4 +311,13 @@
 :global(html[data-clock-phase="day"]) .menuItem {
   background-color: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+:global(html[data-clock-phase="day"]) .infoValueWarning {
+  color: #d97706;
+}
+
+:global(html[data-clock-phase="day"]) .infoMismatchNote,
+:global(html[data-clock-phase="day"]) .bpjsNameHint {
+  color: #d97706;
 }

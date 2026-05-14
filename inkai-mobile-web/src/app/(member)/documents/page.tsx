@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { ArrowLeft, Loader2, CheckCircle, Upload, ShieldCheck, FileText, AlertCircle, Info, CheckCircle2, Eye, X, FileSearch } from "lucide-react";
+import { ArrowLeft, Loader2, Upload, ShieldCheck, FileText, Info, CheckCircle2, Eye, X, FileSearch } from "lucide-react";
 import styles from "./Documents.module.css";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import CustomToast from "@/components/CustomToast/CustomToast";
 import api, { getAssetUrl } from "@/lib/api";
 import { compressImage } from "@/lib/imageUtils";
+import { scanBpjsCardImage, type BpjsExtracted } from "@/lib/bpjsOcr";
+
+type BpjsOcrPhase = "idle" | "scanning" | "done" | "failed" | "skipped";
 
 export default function Documents() {
   const router = useRouter();
@@ -20,44 +23,81 @@ export default function Documents() {
   
   const [bcFile, setBcFile] = useState<File | null>(null);
   const [bpjsFile, setBpjsFile] = useState<File | null>(null);
+  const [bpjsOcrPhase, setBpjsOcrPhase] = useState<BpjsOcrPhase>("idle");
+  const [bpjsOcrExtract, setBpjsOcrExtract] = useState<BpjsExtracted | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   
   const [preview, setPreview] = useState<{ url: string, isPdf: boolean } | null>(null);
   
   const bcInputRef = useRef<HTMLInputElement>(null);
   const bpjsInputRef = useRef<HTMLInputElement>(null);
+  const bcDragDepth = useRef(0);
+  const bpjsDragDepth = useRef(0);
+
+  const [dragOverBc, setDragOverBc] = useState(false);
+  const [dragOverBpjs, setDragOverBpjs] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!bpjsFile) {
+      setBpjsOcrPhase("idle");
+      setBpjsOcrExtract(null);
+      return;
+    }
+    if (bpjsFile.type === "application/pdf") {
+      setBpjsOcrExtract(null);
+      setBpjsOcrPhase("skipped");
+      return;
+    }
+    if (!bpjsFile.type.startsWith("image/")) {
+      setBpjsOcrExtract(null);
+      setBpjsOcrPhase("skipped");
+      return;
+    }
+
+    let cancelled = false;
+    setBpjsOcrPhase("scanning");
+    setBpjsOcrExtract(null);
+
+    (async () => {
+      try {
+        const data = await scanBpjsCardImage(bpjsFile);
+        if (!cancelled) {
+          setBpjsOcrExtract(data);
+          setBpjsOcrPhase("done");
+        }
+      } catch (err) {
+        console.error("BPJS OCR failed:", err);
+        if (!cancelled) {
+          setBpjsOcrExtract(null);
+          setBpjsOcrPhase("failed");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bpjsFile]);
+
   // Current document URLs from user object
   const currentBcUrl = user?.birthCertificateUrl || user?.member?.birthCertificateUrl || '';
   const currentBpjsUrl = user?.bpjsCardUrl || user?.member?.bpjsCardUrl || '';
 
-  // Silent Autosave Logic
   useEffect(() => {
-    if (!mounted || isSaving || isCompressing || (!bcFile && !bpjsFile)) return;
+    if (!mounted || isCompressing || !bcFile) return;
 
     const timer = setTimeout(async () => {
       setIsSaving(true);
       try {
-        if (bcFile) {
-          const bcData = new FormData();
-          bcData.append('document', bcFile);
-          bcData.append('fieldName', 'akte_lahir');
-          await api.members.uploadDocument(bcData);
-          setBcFile(null);
-        }
-
-        if (bpjsFile) {
-          const bpjsData = new FormData();
-          bpjsData.append('document', bpjsFile);
-          bpjsData.append('fieldName', 'bpjs');
-          await api.members.uploadDocument(bpjsData);
-          setBpjsFile(null);
-        }
-
+        const bcData = new FormData();
+        bcData.append('document', bcFile);
+        bcData.append('fieldName', 'akte_lahir');
+        await api.members.uploadDocument(bcData);
+        setBcFile(null);
         await fetchProfile();
         setLastSaved(new Date());
       } catch (error) {
@@ -68,7 +108,55 @@ export default function Documents() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [bcFile, bpjsFile, mounted, isCompressing]);
+  }, [bcFile, mounted, isCompressing]);
+
+  useEffect(() => {
+    if (!mounted || isCompressing || !bpjsFile) return;
+    if (bpjsFile.type.startsWith("image/") && bpjsOcrPhase === "scanning") return;
+
+    const timer = setTimeout(async () => {
+      setIsSaving(true);
+      try {
+        const bpjsData = new FormData();
+        bpjsData.append('document', bpjsFile);
+        bpjsData.append('fieldName', 'bpjs');
+        if (bpjsOcrExtract?.cardNumber) {
+          bpjsData.append('bpjsCardNumber', bpjsOcrExtract.cardNumber);
+        }
+        if (
+          bpjsOcrPhase === "done" &&
+          bpjsOcrExtract &&
+          (bpjsOcrExtract.cardNumber ||
+            bpjsOcrExtract.fullName ||
+            bpjsOcrExtract.address ||
+            bpjsOcrExtract.birthDateIso ||
+            bpjsOcrExtract.nik)
+        ) {
+          bpjsData.append(
+            'bpjsOcrExtracted',
+            JSON.stringify({
+              fullName: bpjsOcrExtract.fullName,
+              address: bpjsOcrExtract.address,
+              birthDateRaw: bpjsOcrExtract.birthDateRaw,
+              birthDateIso: bpjsOcrExtract.birthDateIso,
+              nik: bpjsOcrExtract.nik,
+              extractedAt: new Date().toISOString(),
+            }),
+          );
+        }
+        await api.members.uploadDocument(bpjsData);
+        setBpjsFile(null);
+        await fetchProfile();
+        setLastSaved(new Date());
+      } catch (error) {
+        console.error('Autosave failed:', error);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [bpjsFile, bpjsOcrPhase, bpjsOcrExtract, mounted, isCompressing]);
 
   if (!mounted || isAuthLoading || !user) {
     return (
@@ -78,22 +166,90 @@ export default function Documents() {
     );
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'bc' | 'bpjs') => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setIsCompressing(true);
-      try {
-        const compressed = await compressImage(file, 250);
-        if (type === 'bc') setBcFile(compressed);
-        else setBpjsFile(compressed);
-      } catch (err) {
-        console.error('Compression failed', err);
-        if (type === 'bc') setBcFile(file);
-        else setBpjsFile(file);
-      } finally {
-        setIsCompressing(false);
-      }
+  const isAcceptedDocFile = (file: File) =>
+    file.type.startsWith('image/') ||
+    file.type === 'application/pdf' ||
+    /\.pdf$/i.test(file.name);
+
+  const ingestDocumentFile = async (file: File | undefined | null, type: 'bc' | 'bpjs') => {
+    if (!file) return;
+    if (!isAcceptedDocFile(file)) {
+      setToast({
+        show: true,
+        message: 'Format tidak didukung. Gunakan gambar (JPG, PNG, …) atau PDF.',
+        type: 'error',
+      });
+      return;
     }
+    setIsCompressing(true);
+    try {
+      const compressed = await compressImage(file, 250);
+      if (type === 'bc') setBcFile(compressed);
+      else setBpjsFile(compressed);
+    } catch (err) {
+      console.error('Compression failed', err);
+      if (type === 'bc') setBcFile(file);
+      else setBpjsFile(file);
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'bc' | 'bpjs') => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    await ingestDocumentFile(file, type);
+  };
+
+  const handleDragPrevent = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const bcDropHandlers = {
+    onDragEnter: (e: React.DragEvent) => {
+      handleDragPrevent(e);
+      bcDragDepth.current += 1;
+      if (e.dataTransfer.types?.includes('Files')) setDragOverBc(true);
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      handleDragPrevent(e);
+      bcDragDepth.current = Math.max(0, bcDragDepth.current - 1);
+      if (bcDragDepth.current === 0) setDragOverBc(false);
+    },
+    onDragOver: (e: React.DragEvent) => {
+      handleDragPrevent(e);
+      e.dataTransfer.dropEffect = 'copy';
+    },
+    onDrop: async (e: React.DragEvent) => {
+      handleDragPrevent(e);
+      bcDragDepth.current = 0;
+      setDragOverBc(false);
+      await ingestDocumentFile(e.dataTransfer.files?.[0], 'bc');
+    },
+  };
+
+  const bpjsDropHandlers = {
+    onDragEnter: (e: React.DragEvent) => {
+      handleDragPrevent(e);
+      bpjsDragDepth.current += 1;
+      if (e.dataTransfer.types?.includes('Files')) setDragOverBpjs(true);
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      handleDragPrevent(e);
+      bpjsDragDepth.current = Math.max(0, bpjsDragDepth.current - 1);
+      if (bpjsDragDepth.current === 0) setDragOverBpjs(false);
+    },
+    onDragOver: (e: React.DragEvent) => {
+      handleDragPrevent(e);
+      e.dataTransfer.dropEffect = 'copy';
+    },
+    onDrop: async (e: React.DragEvent) => {
+      handleDragPrevent(e);
+      bpjsDragDepth.current = 0;
+      setDragOverBpjs(false);
+      await ingestDocumentFile(e.dataTransfer.files?.[0], 'bpjs');
+    },
   };
 
   const openPreview = (type: 'bc' | 'bpjs') => {
@@ -194,6 +350,10 @@ export default function Documents() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b' }}>
                <Loader2 size={12} className={styles.spinner} /> Kompresi...
             </div>
+          ) : bpjsFile && bpjsFile.type.startsWith('image/') && bpjsOcrPhase === 'scanning' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a78bfa' }}>
+               <Loader2 size={12} className={styles.spinner} /> Memindai kartu BPJS…
+            </div>
           ) : isSaving ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#3b82f6' }}>
                <Loader2 size={12} className={styles.spinner} /> Menyimpan...
@@ -246,8 +406,9 @@ export default function Documents() {
             </div>
 
             <div 
-              className={`${styles.uploadZone} ${(currentBcUrl || bcFile) ? styles.hasPreview : ''}`}
+              className={`${styles.uploadZone} ${(currentBcUrl || bcFile) ? styles.hasPreview : ''} ${dragOverBc ? styles.uploadZoneDrag : ''}`}
               onClick={() => bcInputRef.current?.click()}
+              {...bcDropHandlers}
             >
               {(bcFile || currentBcUrl) ? (
                 <div className={styles.inlinePreview}>
@@ -277,7 +438,8 @@ export default function Documents() {
               ) : (
                 <>
                   <Upload size={24} color="var(--primary-gold)" />
-                  <p>Ketuk untuk memilih file</p>
+                  <p>Ketuk atau letakkan file di sini</p>
+                  <span className={styles.dropHint}>Gambar atau PDF · maks. diproses seperti unggahan biasa</span>
                 </>
               )}
               <input 
@@ -298,7 +460,11 @@ export default function Documents() {
               </div>
               <div style={{ flex: 1 }}>
                 <h4>BPJS / Asuransi</h4>
-                {(currentBpjsUrl || bpjsFile) ? (
+                {bpjsFile && bpjsFile.type.startsWith('image/') && bpjsOcrPhase === 'scanning' ? (
+                  <span className={`${styles.statusBadge} ${styles.statusScanning}`}>
+                    Memindai kartu…
+                  </span>
+                ) : (currentBpjsUrl || bpjsFile) ? (
                   <span className={`${styles.statusBadge} ${styles.statusComplete}`}>
                     {bpjsFile ? 'Menyimpan...' : 'Terunggah'}
                   </span>
@@ -316,8 +482,9 @@ export default function Documents() {
             </div>
 
             <div 
-              className={`${styles.uploadZone} ${(currentBpjsUrl || bpjsFile) ? styles.hasPreview : ''}`}
+              className={`${styles.uploadZone} ${(currentBpjsUrl || bpjsFile) ? styles.hasPreview : ''} ${dragOverBpjs ? styles.uploadZoneDrag : ''}`}
               onClick={() => bpjsInputRef.current?.click()}
+              {...bpjsDropHandlers}
             >
               {(bpjsFile || currentBpjsUrl) ? (
                 <div className={styles.inlinePreview}>
@@ -347,7 +514,8 @@ export default function Documents() {
               ) : (
                 <>
                   <Upload size={24} color="var(--primary-gold)" />
-                  <p>Ketuk untuk memilih file</p>
+                  <p>Ketuk atau letakkan file di sini</p>
+                  <span className={styles.dropHint}>Gambar atau PDF · foto kartu direkomendasikan untuk pemindaian OCR</span>
                 </>
               )}
               <input 
@@ -358,6 +526,52 @@ export default function Documents() {
                 onChange={(e) => handleFileChange(e, 'bpjs')}
               />
             </div>
+
+            {bpjsFile && bpjsOcrPhase === 'done' && bpjsOcrExtract && (
+              <div className={styles.bpjsReadout}>
+                <strong>Data terbaca dari kartu</strong>
+                <dl>
+                  {bpjsOcrExtract.cardNumber && (
+                    <>
+                      <dt>Nomor Kartu</dt>
+                      <dd>{bpjsOcrExtract.cardNumber}</dd>
+                    </>
+                  )}
+                  {bpjsOcrExtract.fullName && (
+                    <>
+                      <dt>Nama</dt>
+                      <dd>{bpjsOcrExtract.fullName}</dd>
+                    </>
+                  )}
+                  {bpjsOcrExtract.address && (
+                    <>
+                      <dt>Alamat</dt>
+                      <dd>{bpjsOcrExtract.address}</dd>
+                    </>
+                  )}
+                  {(bpjsOcrExtract.birthDateRaw || bpjsOcrExtract.birthDateIso) && (
+                    <>
+                      <dt>Tanggal lahir</dt>
+                      <dd>{bpjsOcrExtract.birthDateRaw || bpjsOcrExtract.birthDateIso}</dd>
+                    </>
+                  )}
+                  {bpjsOcrExtract.nik && (
+                    <>
+                      <dt>NIK</dt>
+                      <dd>{bpjsOcrExtract.nik}</dd>
+                    </>
+                  )}
+                </dl>
+                <p className={styles.bpjsOcrHint}>
+                  Data ini disimpan bersama unggahan dan dibandingkan dengan profil Anda.
+                </p>
+              </div>
+            )}
+            {bpjsFile && bpjsFile.type.startsWith('image/') && bpjsOcrPhase === 'failed' && (
+              <p className={styles.bpjsOcrHint}>
+                Pemindaian tidak lengkap — dokumen tetap akan diunggah. Anda dapat memotret ulang dengan pencahayaan lebih terang.
+              </p>
+            )}
           </div>
         </section>
 

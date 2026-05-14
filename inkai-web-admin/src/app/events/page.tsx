@@ -13,11 +13,23 @@ import {
   ChevronRight,
   Trash2,
   Loader2,
-  X
+  X,
+  Building2,
+  Edit2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+
+interface StoredAdminUser {
+  roles?: string[];
+  managedProvinceId?: string | null;
+  managedBranchId?: string | null;
+  managedDojoId?: string | null;
+  managedProvinceName?: string | null;
+  managedBranchName?: string | null;
+  managedDojoName?: string | null;
+}
 
 interface Event {
   id: string;
@@ -26,6 +38,8 @@ interface Event {
   startDate: string;
   endDate: string;
   location?: string;
+  branchId?: string | null;
+  branch?: { id: string; name: string; city?: string | null } | null;
   _count?: {
     registrations: number;
   };
@@ -33,27 +47,58 @@ interface Event {
 
 export default function EventsPage() {
   const router = useRouter();
+  const [user] = useState<StoredAdminUser | null>(() => {
+    try {
+      const raw =
+        typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      return raw ? (JSON.parse(raw) as StoredAdminUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const roleNames = useMemo(
+    () => (Array.isArray(user?.roles) ? user.roles.filter(Boolean) : []) as string[],
+    [user],
+  );
+  const isSuper =
+    roleNames.includes('ADMINISTRATOR') || roleNames.includes('ADMIN_PUSAT');
+  const isProvinceAdmin =
+    roleNames.includes('ADMIN_PROVINCE') && !!user?.managedProvinceId;
+  const isBranchAdmin =
+    roleNames.includes('ADMIN_BRANCH') && !!user?.managedBranchId;
+  const isDojoAdmin = roleNames.includes('ADMIN_DOJO') && !!user?.managedDojoId;
+
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('Semua');
   const [search, setSearch] = useState('');
   
-  // Modal states
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [eventModalMode, setEventModalMode] = useState<'create' | 'edit'>('create');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusCompareMs] = useState(() => Date.now());
   const [formData, setFormData] = useState({
+    id: '',
     title: '',
     description: '',
     startDate: '',
     endDate: '',
     location: '',
-    category: 'Kegiatan Umum'
+    category: 'Kegiatan Umum',
+    branchId: '',
+    eventProvinceId: '',
   });
+  const [wilayahScope, setWilayahScope] = useState<'national' | 'branch'>('national');
+  const [provinceOptions, setProvinceOptions] = useState<{ id: string; name: string }[]>([]);
+  const [branchOptions, setBranchOptions] = useState<
+    { id: string; name: string; city?: string | null }[]
+  >([]);
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -95,17 +140,80 @@ export default function EventsPage() {
   };
 
   useEffect(() => {
-    fetchEvents();
+    void Promise.resolve().then(() => fetchEvents());
   }, [fetchEvents]);
 
+  useEffect(() => {
+    if (!showEventModal) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (isSuper) {
+          const pres = await api.org.getProvinces();
+          if (
+            !cancelled &&
+            pres.status === 'success' &&
+            Array.isArray(pres.data)
+          ) {
+            setProvinceOptions((prev) => (prev.length > 0 ? prev : pres.data));
+          }
+        }
+        if (isProvinceAdmin && user?.managedProvinceId) {
+          const br = await api.org.getBranches(user.managedProvinceId);
+          if (
+            !cancelled &&
+            br.status === 'success' &&
+            Array.isArray(br.data)
+          ) {
+            setBranchOptions(br.data);
+          }
+        }
+      } catch {
+        toast.error('Gagal memuat data wilayah');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showEventModal, isSuper, isProvinceAdmin, user?.managedProvinceId]);
+
+  useEffect(() => {
+    if (
+      !showEventModal ||
+      !isSuper ||
+      wilayahScope !== 'branch' ||
+      !formData.eventProvinceId
+    ) {
+      return;
+    }
+    let cancelled = false;
+    void api.org
+      .getBranches(formData.eventProvinceId)
+      .then((br) => {
+        if (cancelled) return;
+        if (br.status === 'success' && Array.isArray(br.data)) {
+          setBranchOptions(br.data);
+        }
+      })
+      .catch(() => toast.error('Gagal memuat cabang'));
+    return () => {
+      cancelled = true;
+    };
+  }, [showEventModal, isSuper, wilayahScope, formData.eventProvinceId]);
+
   const resetForm = () => {
+    setWilayahScope('national');
+    setBranchOptions([]);
     setFormData({
+      id: '',
       title: '',
       description: '',
       startDate: '',
       endDate: '',
       location: '',
-      category: 'Kegiatan Umum'
+      category: 'Kegiatan Umum',
+      branchId: '',
+      eventProvinceId: '',
     });
   };
 
@@ -127,6 +235,72 @@ export default function EventsPage() {
     });
   }, [events, filter, search]);
 
+  const openEditModal = async (event: Event) => {
+    setEventModalMode('edit');
+    setWilayahScope(event.branchId ? 'branch' : 'national');
+    setFormData({
+      id: event.id,
+      title: event.title.replace('KEJURNAS: ', '').replace('UJIAN: ', ''),
+      description: event.description || '',
+      startDate: event.startDate
+        ? new Date(event.startDate).toISOString().split('T')[0]
+        : '',
+      endDate: event.endDate
+        ? new Date(event.endDate).toISOString().split('T')[0]
+        : '',
+      location: event.location || '',
+      category: event.title.toLowerCase().includes('kejurnas')
+        ? 'Kejuaraan'
+        : event.title.toLowerCase().includes('ujian')
+          ? 'Ujian Kenaikan'
+          : 'Kegiatan Umum',
+      branchId: event.branchId ?? '',
+      eventProvinceId: '',
+    });
+    setShowEventModal(true);
+
+    let provincesSnapshot = provinceOptions;
+    if (isSuper && provincesSnapshot.length === 0) {
+      try {
+        const pres = await api.org.getProvinces();
+        if (pres.status === 'success' && Array.isArray(pres.data)) {
+          provincesSnapshot = pres.data;
+          setProvinceOptions(pres.data);
+        }
+      } catch {
+        /* */
+      }
+    }
+
+    if (isProvinceAdmin && user?.managedProvinceId) {
+      const br = await api.org.getBranches(user.managedProvinceId);
+      if (br.status === 'success' && Array.isArray(br.data)) {
+        setBranchOptions(br.data);
+      }
+    }
+
+    if (isSuper && event.branchId && provincesSnapshot.length > 0) {
+      try {
+        for (const pr of provincesSnapshot) {
+          const br = await api.org.getBranches(pr.id);
+          const list = Array.isArray(br.data) ? br.data : [];
+          const hit = list.find((b: { id: string }) => b.id === event.branchId);
+          if (hit) {
+            setBranchOptions(list);
+            setFormData((f) => ({
+              ...f,
+              eventProvinceId: pr.id,
+              branchId: hit.id as string,
+            }));
+            break;
+          }
+        }
+      } catch {
+        /* */
+      }
+    }
+  };
+
   return (
     <div className="w-full max-w-[480px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
       {/* Header — kolom tetap sempit seperti mobile; tidak memanjang ikut lebar jendela */}
@@ -137,12 +311,24 @@ export default function EventsPage() {
             <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Manajemen Agenda</span>
           </div>
           <h2 className="text-2xl font-black uppercase text-white leading-tight">Event & Kegiatan</h2>
-          <p className="text-[11px] text-gray-500">Kelola jadwal turnamen, ujian kenaikan tingkat, dan gashuku nasional.</p>
+          <p className="text-[11px] text-gray-500">
+            Agenda per cabang: anggota hanya melihat event nasional atau event cabang
+            mereka. Agenda nasional memakai wilayah &quot;Nasional&quot; saat membuat dari
+            admin provinsi atau pusat.
+          </p>
         </div>
         <button 
           onClick={() => {
             resetForm();
-            setShowAddModal(true);
+            setEventModalMode('create');
+            if (isProvinceAdmin && user?.managedProvinceId) {
+              void api.org.getBranches(user.managedProvinceId).then((br) => {
+                if (br.status === 'success' && Array.isArray(br.data)) {
+                  setBranchOptions(br.data);
+                }
+              });
+            }
+            setShowEventModal(true);
           }}
           className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-3"
         >
@@ -202,10 +388,18 @@ export default function EventsPage() {
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="text-base font-black uppercase group-hover:text-amber-500 transition-colors truncate">{event.title}</h3>
-                    <span className="shrink-0 text-[8px] px-2 py-0.5 rounded-full font-black uppercase bg-green-500/10 text-green-500 border border-green-500/20">
-                      Buka
+                    <span
+                      className={`shrink-0 text-[8px] px-2 py-0.5 rounded-full font-black uppercase border ${
+                        new Date(event.endDate).getTime() < statusCompareMs
+                          ? 'bg-gray-500/15 text-gray-400 border-gray-500/25'
+                          : 'bg-green-500/10 text-green-500 border-green-500/20'
+                      }`}
+                    >
+                      {new Date(event.endDate).getTime() < statusCompareMs
+                        ? 'Selesai'
+                        : 'Berlangsung'}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-3 text-[10px] text-gray-500">
@@ -216,6 +410,12 @@ export default function EventsPage() {
                     <span className="flex items-center gap-1.5 font-medium truncate max-w-[150px]">
                       <MapPin size={12} className="text-amber-500" /> 
                       {event.location || 'Indonesia'}
+                    </span>
+                    <span className="flex items-center gap-1.5 font-medium truncate max-w-[160px]">
+                      <Building2 size={12} className="text-amber-500 shrink-0" />
+                      {event.branch?.name ||
+                        event.branch?.city ||
+                        (event.branchId ? 'Cabang' : 'Nasional')}
                     </span>
                     <span className="flex items-center gap-1.5 font-black text-white">
                       <Users size={12} className="text-amber-500" /> 
@@ -232,8 +432,16 @@ export default function EventsPage() {
                   >
                     <Trash2 size={18} />
                   </button>
-                  <button className="flex-1 p-2.5 bg-white/5 rounded-xl hover:bg-amber-500 hover:text-black transition-all border border-white/5">
-                    <ChevronRight size={20} />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void openEditModal(event);
+                    }}
+                    className="flex-1 p-2.5 bg-white/5 rounded-xl hover:bg-amber-500/20 hover:text-amber-500 transition-all border border-white/5"
+                    title="Edit agenda"
+                  >
+                    <Edit2 size={18} className="mx-auto" />
                   </button>
                 </div>
               </div>
@@ -328,6 +536,14 @@ export default function EventsPage() {
                    selectedEvent.title.toLowerCase().includes('ujian') ? 'Ujian Kenaikan' : 'Kegiatan Umum'}
                 </span>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg text-[9px] font-bold text-gray-400">
+                  <Building2 size={10} className="text-amber-500 shrink-0" />
+                  <span className="uppercase tracking-widest truncate max-w-[200px]">
+                    {selectedEvent.branch
+                      ? `${selectedEvent.branch.name}${selectedEvent.branch.city ? ` — ${selectedEvent.branch.city}` : ''}`
+                      : 'Wilayah nasional'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg text-[9px] font-bold text-gray-400">
                   <MapPin size={10} className="text-amber-500" />
                   <span className="uppercase tracking-widest truncate max-w-[180px]">{selectedEvent.location || 'Indonesia'}</span>
                 </div>
@@ -376,12 +592,23 @@ export default function EventsPage() {
               </div>
             </div>
 
-            <div className="p-6 bg-[#0A0A0C] border-t border-white/5 mt-auto pb-[env(safe-area-inset-bottom,24px)] flex gap-3">
+            <div className="p-6 bg-[#0A0A0C] border-t border-white/5 mt-auto pb-[env(safe-area-inset-bottom,24px)] flex flex-col gap-3 sm:flex-row">
               <button 
                 onClick={() => setShowDetailModal(false)}
                 className="flex-1 py-4 rounded-2xl border border-white/10 text-xs font-bold hover:bg-white/5 transition-all text-gray-400 uppercase tracking-widest"
               >
                 Tutup
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  const ev = selectedEvent;
+                  setShowDetailModal(false);
+                  if (ev) void openEditModal(ev);
+                }}
+                className="flex-1 py-4 rounded-2xl border border-amber-500/40 text-xs font-black uppercase tracking-widest text-amber-500 hover:bg-amber-500/10 transition-all"
+              >
+                Edit Agenda
               </button>
               <button 
                 onClick={() => {
@@ -398,18 +625,24 @@ export default function EventsPage() {
         document.body,
       )}
 
-      {/* Add Event Modal */}
-      {showAddModal &&
+      {/* Buat / edit agenda */}
+      {showEventModal &&
         createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 overflow-hidden">
           <div className="flex-1 flex flex-col w-full max-w-[480px] h-full lg:h-auto lg:max-h-[90vh] mx-auto relative bg-[#0A0A0C] lg:rounded-[2.5rem] lg:border lg:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center p-6 border-b border-white/5 pt-[env(safe-area-inset-top,24px)] bg-[#0A0A0C]">
               <div>
-                <h3 className="text-xl font-black uppercase tracking-tight text-white leading-none mb-1">Buat Agenda</h3>
+                <h3 className="text-xl font-black uppercase tracking-tight text-white leading-none mb-1">
+                  {eventModalMode === 'create' ? 'Buat Agenda' : 'Edit Agenda'}
+                </h3>
                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Lengkapi detail informasi</p>
               </div>
               <button 
-                onClick={() => setShowAddModal(false)}
+                type="button"
+                onClick={() => {
+                  setShowEventModal(false);
+                  resetForm();
+                }}
                 className="p-3 bg-white/5 text-gray-400 hover:text-white rounded-2xl border border-white/10 active:scale-90 transition-all"
               >
                 <X size={20} />
@@ -417,7 +650,7 @@ export default function EventsPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
-              <form id="addEventForm" onSubmit={async (e) => {
+              <form id="eventForm" onSubmit={async (e) => {
                 e.preventDefault();
                 setIsSubmitting(true);
                 try {
@@ -428,18 +661,51 @@ export default function EventsPage() {
                     finalTitle = `UJIAN: ${finalTitle}`;
                   }
 
-                  await api.events.create({
-                    ...formData,
+                  if ((isSuper || isProvinceAdmin) && wilayahScope === 'branch') {
+                    if (isSuper && !formData.eventProvinceId) {
+                      toast.error('Pilih provinsi untuk memuat daftar cabang.');
+                      setIsSubmitting(false);
+                      return;
+                    }
+                    if (!formData.branchId?.trim()) {
+                      toast.error('Pilih cabang untuk agenda wilayah.');
+                      setIsSubmitting(false);
+                      return;
+                    }
+                  }
+
+                  const wilayahPart =
+                    isSuper || isProvinceAdmin
+                      ? {
+                          branchId:
+                            wilayahScope === 'national'
+                              ? null
+                              : formData.branchId || null,
+                        }
+                      : {};
+
+                  const payload = {
                     title: finalTitle,
+                    description: formData.description,
                     startDate: new Date(formData.startDate).toISOString(),
                     endDate: new Date(formData.endDate).toISOString(),
-                  });
-                  toast.success('Agenda berhasil dibuat!');
-                  setShowAddModal(false);
+                    location: formData.location,
+                    ...wilayahPart,
+                  };
+
+                  if (eventModalMode === 'create') {
+                    await api.events.create(payload);
+                    toast.success('Agenda berhasil dibuat!');
+                  } else {
+                    await api.events.update(formData.id, payload);
+                    toast.success('Agenda berhasil diperbarui!');
+                  }
+
+                  setShowEventModal(false);
                   resetForm();
                   fetchEvents();
                 } catch (err: unknown) {
-                  const errorMessage = err instanceof Error ? err.message : 'Gagal membuat agenda';
+                  const errorMessage = err instanceof Error ? err.message : 'Gagal menyimpan agenda';
                   toast.error(errorMessage);
                 } finally {
                   setIsSubmitting(false);
@@ -463,6 +729,109 @@ export default function EventsPage() {
                       <ChevronRight size={16} className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none" />
                     </div>
                   </div>
+
+                  {(isSuper || isProvinceAdmin || isBranchAdmin || isDojoAdmin) && (
+                    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                      <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-0.5 block">
+                        Wilayah tayang agenda
+                      </label>
+                      {isBranchAdmin && (
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          Agenda diikat ke cabang Anda:{' '}
+                          <span className="text-white font-bold">
+                            {user?.managedBranchName || '—'}
+                          </span>
+                        </p>
+                      )}
+                      {isDojoAdmin && (
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          Cabang mengikuti dojo Anda:{' '}
+                          <span className="text-white font-bold">
+                            {user?.managedDojoName || '—'}
+                          </span>
+                        </p>
+                      )}
+                      {(isSuper || isProvinceAdmin) && (
+                        <div className="space-y-3">
+                          <label className="flex gap-3 items-start cursor-pointer">
+                            <input
+                              type="radio"
+                              name="wilayahScope"
+                              className="mt-1 shrink-0"
+                              checked={wilayahScope === 'national'}
+                              onChange={() => {
+                                setWilayahScope('national');
+                                setFormData((f) => ({
+                                  ...f,
+                                  branchId: '',
+                                  eventProvinceId: '',
+                                }));
+                              }}
+                            />
+                            <span className="text-sm text-gray-300 leading-snug">
+                              Nasional — semua cabang dapat melihat.
+                            </span>
+                          </label>
+                          <label className="flex gap-3 items-start cursor-pointer">
+                            <input
+                              type="radio"
+                              name="wilayahScope"
+                              className="mt-1 shrink-0"
+                              checked={wilayahScope === 'branch'}
+                              onChange={() => setWilayahScope('branch')}
+                            />
+                            <span className="text-sm text-gray-300 leading-snug">
+                              Cabang tertentu saja (misal beda kota).
+                            </span>
+                          </label>
+                          {wilayahScope === 'branch' && isSuper && (
+                            <div className="relative">
+                              <select
+                                value={formData.eventProvinceId}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    eventProvinceId: e.target.value,
+                                    branchId: '',
+                                  })
+                                }
+                                className="w-full bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 appearance-none cursor-pointer text-white shadow-inner"
+                                style={{ colorScheme: 'dark' }}
+                              >
+                                <option value="">Pilih provinsi…</option>
+                                {provinceOptions.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronRight size={16} className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none" />
+                            </div>
+                          )}
+                          {wilayahScope === 'branch' && (
+                            <div className="relative">
+                              <select
+                                value={formData.branchId}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, branchId: e.target.value })
+                                }
+                                className="w-full bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 appearance-none cursor-pointer text-white shadow-inner"
+                                style={{ colorScheme: 'dark' }}
+                              >
+                                <option value="">Pilih cabang…</option>
+                                {branchOptions.map((b) => (
+                                  <option key={b.id} value={b.id}>
+                                    {b.city ? `${b.name} — ${b.city}` : b.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronRight size={16} className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">Nama Event / Agenda</label>
@@ -493,7 +862,7 @@ export default function EventsPage() {
                         )}
                         {formData.category === 'Kegiatan Umum' && (
                           <>
-                            <option value="LATIHAN BERSAMA (GASHUKU)">LATIHAN BERSAMA (GASHUKU)</option>
+                            <option value="LATIHAN BERSAMA">LATIHAN BERSAMA</option>
                             <option value="RAPAT KERJA (RAKER)">RAPAT KERJA (RAKER)</option>
                             <option value="PELATIHAN PELATIH / WASIT">PELATIHAN PELATIH / WASIT</option>
                             <option value="KEGIATAN SOSIAL">KEGIATAN SOSIAL</option>
@@ -561,13 +930,16 @@ export default function EventsPage() {
             <div className="p-6 bg-[#0A0A0C] border-t border-white/5 mt-auto pb-[env(safe-area-inset-bottom,24px)] flex gap-3">
               <button 
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowEventModal(false);
+                  resetForm();
+                }}
                 className="flex-1 py-4 rounded-2xl border border-white/10 text-xs font-bold hover:bg-white/5 transition-all text-gray-400 uppercase tracking-widest"
               >
                 Batal
               </button>
               <button 
-                form="addEventForm"
+                form="eventForm"
                 type="submit"
                 disabled={isSubmitting}
                 className="flex-[2] py-4 rounded-2xl bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -578,7 +950,7 @@ export default function EventsPage() {
                     Memproses...
                   </>
                 ) : (
-                  'Simpan Agenda'
+                  eventModalMode === 'create' ? 'Simpan Agenda' : 'Perbarui Agenda'
                 )}
               </button>
             </div>

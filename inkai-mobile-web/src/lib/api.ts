@@ -111,6 +111,8 @@ export interface Member {
   role?: string;
   nia?: string;
   nik?: string;
+  bpjsCardNumber?: string | null;
+  bpjsOcrExtracted?: Record<string, unknown> | null;
   status?: string;
   currentRank?: string;
   dojo?: {
@@ -126,7 +128,9 @@ export interface Event {
   startDate: string;
   endDate: string;
   location?: string;
-  categories?: any[];
+  branchId?: string | null;
+  branch?: { id: string; name: string; city?: string | null } | null;
+  categories?: unknown[];
 }
 
 // Create the combined api object

@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowLeft, UserRoundPen, KeyRound, BellRing, LogOut, ChevronRight, User, Loader2, Plus } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { ArrowLeft, UserRoundPen, KeyRound, BellRing, LogOut, ChevronRight, Loader2, Plus } from "lucide-react";
 import styles from "./Profile.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { getAssetUrl } from "@/lib/api";
+import { computeBpjsProfileMismatches, type BpjsOcrStored } from "@/lib/bpjsProfileCompare";
 
 export default function Profile() {
   const router = useRouter();
@@ -18,6 +18,15 @@ export default function Profile() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const bpjsOcr = user?.bpjsOcrExtracted as BpjsOcrStored | undefined;
+  const bpjsMismatch = useMemo(
+    () =>
+      user
+        ? computeBpjsProfileMismatches(user, bpjsOcr)
+        : { fullName: false, nik: false, birthDate: false, address: false },
+    [user, bpjsOcr],
+  );
 
   if (!mounted || isAuthLoading || !user) {
     return (
@@ -64,6 +73,11 @@ export default function Profile() {
           )}
         </div>
         <h2 className={styles.name}>{user?.fullName}</h2>
+        {bpjsMismatch.fullName && bpjsOcr?.fullName && (
+          <p className={styles.bpjsNameHint}>
+            Nama di kartu BPJS berbeda: {bpjsOcr.fullName}
+          </p>
+        )}
         <p className={styles.nia}>NIA: {user?.nia || (isAdmin ? "ADMINISTRATOR" : "-")}</p>
         <div className={styles.statusBadge}>{isAdmin ? 'Administrator' : 'Anggota Aktif'}</div>
       </section>
@@ -71,14 +85,31 @@ export default function Profile() {
       <section className={styles.infoSection}>
         <div className={styles.infoCard}>
           <div className={styles.infoItem}>
+            <span className={styles.infoLabel}>Nomor Kartu BPJS</span>
+            <span className={styles.infoValue}>{user.bpjsCardNumber || "—"}</span>
+            {!user.bpjsCardNumber && (user.bpjsCardUrl || user.member?.bpjsCardUrl) && (
+              <span className={styles.infoMismatchNote}>Unggah foto kartu di menu Dokumen untuk membaca nomor otomatis.</span>
+            )}
+          </div>
+          <div className={styles.infoItem}>
             <span className={styles.infoLabel}>NIK (Nomor Induk Kependudukan)</span>
-            <span className={styles.infoValue}>{user.nik || "-"}</span>
+            <span className={`${styles.infoValue} ${bpjsMismatch.nik ? styles.infoValueWarning : ""}`}>
+              {user.nik || "-"}
+            </span>
+            {bpjsMismatch.nik && bpjsOcr?.nik && (
+              <span className={styles.infoMismatchNote}>Pada kartu BPJS: {bpjsOcr.nik}</span>
+            )}
           </div>
           <div className={styles.infoItem}>
             <span className={styles.infoLabel}>Tempat, Tanggal Lahir</span>
-            <span className={styles.infoValue}>
+            <span className={`${styles.infoValue} ${bpjsMismatch.birthDate ? styles.infoValueWarning : ""}`}>
               {user.birthPlace || "-"}, {user.birthDate ? new Date(user.birthDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
             </span>
+            {bpjsMismatch.birthDate && (bpjsOcr?.birthDateRaw || bpjsOcr?.birthDateIso) && (
+              <span className={styles.infoMismatchNote}>
+                Pada kartu BPJS: {bpjsOcr.birthDateRaw || bpjsOcr.birthDateIso}
+              </span>
+            )}
           </div>
           <div className={styles.infoItem}>
             <span className={styles.infoLabel}>Jenis Kelamin</span>
@@ -88,7 +119,12 @@ export default function Profile() {
           </div>
           <div className={styles.infoItem}>
             <span className={styles.infoLabel}>Alamat Lengkap</span>
-            <span className={styles.infoValue}>{user.address || "-"}</span>
+            <span className={`${styles.infoValue} ${bpjsMismatch.address ? styles.infoValueWarning : ""}`}>
+              {user.address || "-"}
+            </span>
+            {bpjsMismatch.address && bpjsOcr?.address && (
+              <span className={styles.infoMismatchNote}>Pada kartu BPJS: {bpjsOcr.address}</span>
+            )}
           </div>
           <div className={styles.infoItem}>
             <span className={styles.infoLabel}>Dojo / Ranting</span>
