@@ -23,7 +23,7 @@
   --gradient-card: linear-gradient(155deg, #1e222a 0%, #252a33 45%, #1a1d24 100%);
 }
 
-/* AM (00–11): cerah. PM = gelap — anggota & admin sama. */
+/* Siang tematik 06:00–17:59 (jam lokal). Malam 18:00–05:59 — anggota & admin. */
 html[data-clock-phase="day"] {
   color-scheme: light;
   --background-dark: #eef2f6;

@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 
-/** Jam 12:00–23:59:59 → malam (gelap). 00:00–11:59 → siang — berlaku untuk semua rute termasuk admin. */
+/** Tema siang: 06:00–17:59 (jam lokal perangkat). Malam: 18:00–05:59 — anggota & admin. */
 export function computeClockPhase(): "day" | "night" {
   const h = new Date().getHours();
-  return h >= 12 ? "night" : "day";
+  return h >= 6 && h < 18 ? "day" : "night";
 }
 
 export function applyClockPhaseToDocument() {
@@ -26,11 +26,13 @@ export function applyClockPhaseToDocument() {
 export function msUntilNextClockBoundary(now: Date = new Date()): number {
   const h = now.getHours();
   const boundary = new Date(now.getTime());
-  if (h < 12) {
-    boundary.setHours(12, 0, 0, 0);
+  if (h < 6) {
+    boundary.setHours(6, 0, 0, 0);
+  } else if (h < 18) {
+    boundary.setHours(18, 0, 0, 0);
   } else {
     boundary.setDate(boundary.getDate() + 1);
-    boundary.setHours(0, 0, 0, 0);
+    boundary.setHours(6, 0, 0, 0);
   }
   return Math.max(boundary.getTime() - now.getTime(), 1000);
 }

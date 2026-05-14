@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "react-hot-toast";
 import PWARegistration from "@/components/PWARegistration";
 import AutomaticClockTheme from "@/components/AutomaticClockTheme/AutomaticClockTheme";
+import MemberWelcomeGuide from "@/components/MemberWelcomeGuide/MemberWelcomeGuide";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -30,13 +31,14 @@ export default function RootLayout({
     <html lang="id">
       <body>
         <Script id="inkai-clock-phase-boot" strategy="beforeInteractive">
-          {`(function(){try{var phase=new Date().getHours()<12?'day':'night';document.documentElement.setAttribute('data-clock-phase',phase);document.documentElement.style.colorScheme=phase==='day'?'light':'dark';}catch(e){}})();`}
+          {`(function(){try{var h=new Date().getHours();var phase=h>=6&&h<18?'day':'night';document.documentElement.setAttribute('data-clock-phase',phase);document.documentElement.style.colorScheme=phase==='day'?'light':'dark';}catch(e){}})();`}
         </Script>
         <AutomaticClockTheme />
         <div className="mobile-wrapper">
           <main className="mobile-content">
             <AuthProvider>
               <PWARegistration />
+              <MemberWelcomeGuide />
               {children}
             </AuthProvider>
             <Toaster 
