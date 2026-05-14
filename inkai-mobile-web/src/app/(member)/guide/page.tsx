@@ -5,19 +5,31 @@ import { ArrowLeft, Loader2, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import BottomNav from "@/components/BottomNav/BottomNav";
-import guideData from "@guide/member-welcome.json";
-import type { MemberWelcomeGuideJson } from "@/components/MemberWelcomeGuide/MemberWelcomeGuide";
+import {
+  fetchMemberGuideResolved,
+  guideIsActive,
+  type MemberWelcomeGuideJson,
+} from "@/lib/memberGuide";
 import styles from "./Guide.module.css";
-
-const guide = guideData as MemberWelcomeGuideJson;
 
 export default function GuidePage() {
   const router = useRouter();
   const { user, isLoading: isAuthLoading, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [guide, setGuide] = useState<MemberWelcomeGuideJson | null>(null);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchMemberGuideResolved().then((g) => {
+      if (!cancelled) setGuide(g);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -34,7 +46,15 @@ export default function GuidePage() {
     );
   }
 
-  if (guide.enabled === false) {
+  if (!guide) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Loader2 className={styles.spinner} size={40} />
+      </div>
+    );
+  }
+
+  if (!guideIsActive(guide)) {
     return (
       <div className={styles.container}>
         <div className={styles.inner}>
@@ -72,9 +92,22 @@ export default function GuidePage() {
         </header>
 
         <div className={styles.content}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 8,
+            }}
+          >
             <BookOpen size={22} color="var(--primary-gold)" aria-hidden />
-            <span style={{ fontWeight: 800, fontSize: "1.125rem", color: "var(--text-light)" }}>
+            <span
+              style={{
+                fontWeight: 800,
+                fontSize: "1.125rem",
+                color: "var(--text-light)",
+              }}
+            >
               {guide.title}
             </span>
           </div>

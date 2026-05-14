@@ -19,6 +19,7 @@ import {
   Trophy,
   Loader2,
   Lock,
+  ScrollText,
 } from "lucide-react";
 import styles from "./Dashboard.module.css";
 import MemberCard from "@/components/MemberCard/MemberCard";
@@ -228,6 +229,14 @@ export default function Dashboard() {
           </div>
         </div>
         <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            onClick={() => router.push("/guide")}
+            aria-label="Panduan"
+          >
+            <ScrollText size={20} />
+          </button>
           <button
             className={styles.iconBtn}
             onClick={() => router.push("/messages")}

@@ -4,26 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import guideData from "@guide/member-welcome.json";
+import {
+  fetchMemberGuideResolved,
+  guideIsActive,
+  type MemberWelcomeGuideJson,
+} from "@/lib/memberGuide";
 import styles from "./MemberWelcomeGuide.module.css";
 
 const STORAGE_KEY = "inkai_member_welcome_seen_version";
-
-export type MemberWelcomeGuideJson = {
-  version: string;
-  enabled?: boolean;
-  title: string;
-  subtitle?: string;
-  items: { heading: string; text: string }[];
-  footer?: string;
-  primaryCtaLabel?: string;
-  fullGuideLinkLabel?: string;
-  fullGuidePath?: string;
-};
-
-const guide = guideData as MemberWelcomeGuideJson;
-
-const guideActive = guide.enabled !== false;
 
 function isMemberAppPath(pathname: string): boolean {
   if (pathname === "/" || pathname.startsWith("/register")) return false;
@@ -32,11 +20,14 @@ function isMemberAppPath(pathname: string): boolean {
   return true;
 }
 
+export type { MemberWelcomeGuideJson };
+
 export default function MemberWelcomeGuide() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [guide, setGuide] = useState<MemberWelcomeGuideJson | null>(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -44,7 +35,19 @@ export default function MemberWelcomeGuide() {
   }, []);
 
   useEffect(() => {
-    if (!mounted || isLoading || !guideActive) return;
+    let cancelled = false;
+    fetchMemberGuideResolved().then((g) => {
+      if (!cancelled) setGuide(g);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const guideActive = guide ? guideIsActive(guide) : false;
+
+  useEffect(() => {
+    if (!mounted || isLoading || !guide || !guideActive) return;
     if (!isAuthenticated || isAdmin) return;
     if (!isMemberAppPath(pathname)) return;
 
@@ -56,24 +59,26 @@ export default function MemberWelcomeGuide() {
     }
 
     setOpen(true);
-  }, [mounted, isLoading, isAuthenticated, isAdmin, pathname]);
+  }, [mounted, isLoading, isAuthenticated, isAdmin, pathname, guide, guideActive]);
 
   const dismiss = useCallback(() => {
+    if (!guide) return;
     try {
       localStorage.setItem(STORAGE_KEY, guide.version);
     } catch {
       /* ignore */
     }
     setOpen(false);
-  }, []);
+  }, [guide]);
 
   const goFullGuide = useCallback(() => {
+    if (!guide) return;
     const path = guide.fullGuidePath || "/guide";
     dismiss();
     router.push(path);
-  }, [dismiss, router]);
+  }, [dismiss, router, guide]);
 
-  if (!mounted || !guideActive) return null;
+  if (!mounted || !guide || !guideActive) return null;
 
   const primaryLabel = guide.primaryCtaLabel ?? "Mengerti";
   const secondaryLabel = guide.fullGuideLinkLabel ?? "Buka halaman panduan";

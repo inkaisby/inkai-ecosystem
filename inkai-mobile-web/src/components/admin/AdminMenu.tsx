@@ -19,7 +19,8 @@ import {
   ShoppingBag,
   Award,
   FileText,
-  Home
+  Home,
+  ScrollText
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -32,6 +33,7 @@ const adminItems = [
   { icon: ShieldCheck, label: 'Antrean Kerja', path: '/admin/verification' },
   { icon: Calendar, label: 'Event', path: '/admin/events' },
   { icon: MessageSquare, label: 'Broadcast', path: '/admin/broadcast' },
+  { icon: ScrollText, label: 'Panduan Anggota', path: '/admin/guide' },
   { icon: Settings, label: 'Settings', path: '/admin/settings' },
 ];
 

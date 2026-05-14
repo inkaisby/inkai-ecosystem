@@ -224,7 +224,12 @@ export const api = Object.assign(apiInstance, {
     getMessages: (conversationId: string) => apiInstance.get(`/chat/messages/${conversationId}`).then(res => res.data),
     createConversation: (participantId: string) => apiInstance.post('/chat/conversations', { participantId }).then(res => res.data),
     sendMessage: (data: { conversationId: string; content: string }) => apiInstance.post('/chat/messages', data).then(res => res.data),
-  }
+  },
+  memberGuide: {
+    getPublic: () => apiInstance.get('/member-mobile-welcome').then(res => res.data),
+    save: (data: Record<string, unknown>) =>
+      apiInstance.put('/member-mobile-welcome', data).then((res) => res.data),
+  },
 });
 
 export default api;

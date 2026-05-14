@@ -17,6 +17,7 @@ import verificationRoutes from './routes/verificationRoutes';
 import syncRoutes from './routes/syncRoutes';
 import roleRoutes from './routes/roleRoutes';
 import chatRoutes from './routes/chatRoutes';
+import memberGuideRoutes from './routes/memberGuideRoutes';
 import { createServer } from 'http';
 import prisma from './utils/prisma';
 
@@ -56,6 +57,7 @@ app.use('/v1/verifications', verificationRoutes);
 app.use('/v1/sync', syncRoutes);
 app.use('/v1/roles', roleRoutes);
 app.use('/v1/chat', chatRoutes);
+app.use('/v1', memberGuideRoutes);
 
 // Health Check
 app.get('/', (req: Request, res: Response) => {
