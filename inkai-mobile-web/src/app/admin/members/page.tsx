@@ -27,6 +27,7 @@ import { api } from '@/lib/api';
 import { Suspense, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { MemberItemSkeleton } from '@/components/admin/Skeleton';
+import AdminModalPortal from '@/components/admin/AdminModalPortal';
 
 function MembersContent() {
   const router = useRouter();
@@ -321,7 +322,8 @@ function MembersContent() {
     <div suppressHydrationWarning className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Premium Confirm Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black-80 backdrop-blur-md">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="glass-card-opaque w-full max-w-sm p-8 text-center border border-white/10 shadow-2xl">
             <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Trash2 size={32} />
@@ -346,6 +348,7 @@ function MembersContent() {
             </div>
           </div>
         </div>
+        </AdminModalPortal>
       )}
       {/* Header Area */}
       <div className="space-y-6">
@@ -551,7 +554,8 @@ function MembersContent() {
 
       {/* Form Modal (Add / Edit) */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">
@@ -838,11 +842,13 @@ function MembersContent() {
             </form>
           </div>
         </div>
+        </AdminModalPortal>
       )}
 
       {/* Member Detail Modal */}
       {showDetailModal && selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-8 bg-dark-modal animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="glass-card-opaque w-full max-w-2xl p-0 overflow-hidden animate-in">
             {/* Modal Header/Banner */}
             <div className="h-32 bg-amber-500 relative">
@@ -1041,7 +1047,8 @@ function MembersContent() {
           
           {/* Premium Input Modal (Reset Password) */}
           {showResetModal && (
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black-90 backdrop-blur-xl animate-in fade-in">
+            <AdminModalPortal>
+            <div className="admin-modal-overlay admin-modal-overlay--dialog admin-modal-overlay--stack animate-in fade-in">
               <div className="glass-card-opaque w-full max-w-sm p-8 border border-white/10 shadow-2xl animate-in zoom-in-95">
                 <div className="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
                   <UserCheck size={32} />
@@ -1081,10 +1088,12 @@ function MembersContent() {
                 </div>
               </div>
             </div>
+            </AdminModalPortal>
           )}
 
           {showRankEditModal && editingRank && selectedMember && (
-            <div className="fixed inset-0 z-[1050] flex items-center justify-center mobile-safe-modal-gutter py-8 bg-black-90 backdrop-blur-xl animate-in fade-in">
+            <AdminModalPortal>
+            <div className="admin-modal-overlay admin-modal-overlay--dialog admin-modal-overlay--stack animate-in fade-in">
               <div className="glass-card-opaque w-full max-w-md p-6 border border-white/15 shadow-2xl animate-in zoom-in-95">
                 <h3 className="text-lg font-black uppercase tracking-tight text-white mb-1">
                   Edit riwayat tingkat
@@ -1175,14 +1184,17 @@ function MembersContent() {
                 </div>
               </div>
             </div>
+            </AdminModalPortal>
           )}
         </div>
       </div>
+        </AdminModalPortal>
     )}
 
       {/* Bulk Import Modal */}
       {showBulkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="modal-gradient w-full max-w-2xl p-6 rounded-2xl shadow-2xl border border-white/10 max-h-[90vh] flex flex-col animate-in">
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -1309,6 +1321,7 @@ function MembersContent() {
             </div>
           </div>
         </div>
+        </AdminModalPortal>
       )}
     </div>
   );

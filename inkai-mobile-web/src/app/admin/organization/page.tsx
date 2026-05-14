@@ -21,6 +21,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
+import AdminModalPortal from '@/components/admin/AdminModalPortal';
 
 function OrganizationContent() {
   const router = useRouter();
@@ -789,7 +790,8 @@ function OrganizationContent() {
 
       {/* Edit Dojo Modal */}
       {showEditDojoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Edit Dojo / Ranting</h3>
@@ -927,11 +929,13 @@ function OrganizationContent() {
             </form>
           </div>
         </div>
+        </AdminModalPortal>
       )}
 
       {/* Add Dojo Modal */}
       {showAddDojoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Tambah Dojo Baru</h3>
@@ -1047,11 +1051,13 @@ function OrganizationContent() {
             </form>
           </div>
         </div>
+        </AdminModalPortal>
       )}
 
       {/* Add Province Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Tambah Wilayah Baru</h3>
@@ -1136,11 +1142,13 @@ function OrganizationContent() {
             </form>
           </div>
         </div>
+        </AdminModalPortal>
       )}
 
       {/* Edit Branch Modal */}
       {showEditBranchModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Edit Cabang</h3>
@@ -1223,11 +1231,13 @@ function OrganizationContent() {
             </form>
           </div>
         </div>
+        </AdminModalPortal>
       )}
 
       {/* Edit Province Modal */}
       {showEditProvinceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Edit Wilayah (PENGPROV)</h3>
@@ -1310,11 +1320,13 @@ function OrganizationContent() {
             </form>
           </div>
         </div>
+        </AdminModalPortal>
       )}
 
       {/* Add Branch Modal */}
       {showAddBranchModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center mobile-safe-modal-gutter py-6 adm-bg animate-in fade-in">
+        <AdminModalPortal>
+        <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
           <div className="modal-gradient w-full max-w-lg p-5 rounded-2xl shadow-2xl border border-white-10 max-h-[95vh] overflow-y-auto animate-in">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-widest text-white">Tambah Cabang Baru</h3>
@@ -1399,6 +1411,7 @@ function OrganizationContent() {
             </form>
           </div>
         </div>
+        </AdminModalPortal>
       )}
 
       {/* Modals Container */}
