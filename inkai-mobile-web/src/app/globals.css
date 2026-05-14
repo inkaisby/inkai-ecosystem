@@ -173,6 +173,9 @@ html[data-clock-phase="day"] .mobile-content {
 .relative { position: relative; }
 .absolute { position: absolute; }
 .fixed { position: fixed; }
+.isolate {
+  isolation: isolate;
+}
 .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
 .inset-x-5 { left: 1.25rem; right: 1.25rem; }
 .top-20 { top: 5rem; }

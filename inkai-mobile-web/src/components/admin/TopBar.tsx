@@ -15,10 +15,13 @@ export default function TopBar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Tutup panel saat klik di luar (touch + mouse)
+  // Tutup sheet hanya selama salah satu terbuka (hindari listener mengganggu tap di header)
   useEffect(() => {
-    const handleClickOutside = (event: Event) => {
-      const target = event.target as HTMLElement;
+    if (!showNotifications && !showUserMenu) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
       if (showNotifications && !target.closest('.notifications-container')) {
         setShowNotifications(false);
       }
@@ -27,8 +30,8 @@ export default function TopBar() {
       }
     };
 
-    document.addEventListener('pointerdown', handleClickOutside);
-    return () => document.removeEventListener('pointerdown', handleClickOutside);
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [showNotifications, showUserMenu]);
 
   // Kunci scroll di mobile saat sheet terbuka
@@ -114,15 +117,15 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-16 border-b border-white/5 adm-chrome-soft backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between mobile-hpad">
-      <div className="flex items-center gap-2.5">
+    <header className="h-16 border-b border-white/5 adm-chrome-soft backdrop-blur-xl sticky top-0 z-10 isolate flex items-center justify-between mobile-hpad gap-3">
+      <div className="flex items-center gap-2.5 shrink-0">
         <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
           <Shield size={16} className="text-black" strokeWidth={3} />
         </div>
         <h1 className="text-xs font-black tracking-tighter text-white uppercase truncate">INKAI <span className="text-amber-500">ADMIN</span></h1>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 ml-auto shrink-0 pointer-events-auto">
         {/* Notifications */}
         <div className="relative notifications-container">
           <button 
