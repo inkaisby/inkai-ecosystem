@@ -3,11 +3,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '@/lib/api';
 
+export type LoginResult = { ok: true } | { ok: false; message: string };
+
 interface AuthContextType {
   user: any;
   token: string | null;
   isLoading: boolean;
-  login: (identifier: string, password: string) => Promise<boolean>;
+  login: (identifier: string, password: string) => Promise<LoginResult>;
   logout: () => void;
   fetchProfile: () => Promise<void>;
   updateUser: (data: any) => void;
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (identifier: string, password: string) => {
+  const login = async (identifier: string, password: string): Promise<LoginResult> => {
     setIsLoading(true);
     try {
       const response = await authApi.login(identifier, password);
@@ -79,14 +81,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           await loadSessionBootstrap();
         }
-        return true;
+        return { ok: true };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
+      const axiosErr = error as { response?: { data?: { message?: string }; status?: number } };
+      let message =
+        typeof axiosErr.response?.data?.message === 'string'
+          ? axiosErr.response.data.message
+          : 'Login gagal. Periksa email/NIA dan kata sandi.';
+      if (axiosErr.response?.status === 429) {
+        message =
+          typeof axiosErr.response?.data?.message === 'string'
+            ? axiosErr.response.data.message
+            : 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.';
+      }
+      return { ok: false, message };
     } finally {
       setIsLoading(false);
     }
-    return false;
+    return { ok: false, message: 'Login gagal. Silakan coba lagi.' };
   };
 
   const logout = () => {

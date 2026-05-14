@@ -8,7 +8,8 @@ import TopBar from './TopBar';
 export default function SidebarWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const isLoginPage = pathname === '/login';
+  const isLoginPage =
+    pathname === '/admin/login' || pathname?.endsWith('/admin/login');
 
   useEffect(() => {
     const token = localStorage.getItem('inkai_token') || localStorage.getItem('token');

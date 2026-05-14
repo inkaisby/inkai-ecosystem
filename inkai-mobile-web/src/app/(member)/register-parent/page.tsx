@@ -38,9 +38,9 @@ export default function ParentRegister() {
         isParent: true,
       });
       
-      const loginSuccess = await login(formData.email, formData.password);
+      const loginResult = await login(formData.email, formData.password);
       
-      if (loginSuccess) {
+      if (loginResult.ok) {
         setToast({ show: true, message: 'Pendaftaran Orang Tua berhasil!', type: 'success' });
         setTimeout(() => {
           router.push('/profile/edit?new_user=true');

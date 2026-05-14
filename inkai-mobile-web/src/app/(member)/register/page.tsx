@@ -119,9 +119,9 @@ export default function Register() {
         dojoId,
       });
       
-      const loginSuccess = await login(formData.email, formData.password);
+      const loginResult = await login(formData.email, formData.password);
       
-      if (loginSuccess) {
+      if (loginResult.ok) {
         setToast({ show: true, message: 'Pendaftaran berhasil! Mengarahkan ke profil...', type: 'success' });
         setTimeout(() => {
           router.push('/profile/edit?new_user=true');

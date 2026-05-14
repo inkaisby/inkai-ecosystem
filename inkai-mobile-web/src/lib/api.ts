@@ -28,22 +28,23 @@ apiInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor for response (handle 401 globally)
+// Interceptor for response (handle 401 globally — bukan untuk percobaan login gagal)
 apiInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('inkai_token');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        // Only redirect if not already on login page
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = window.location.pathname.includes('/admin') 
-            ? '/admin/login' 
-            : '/login';
-        }
-      }
+    const status = error.response?.status;
+    const cfg = error.config as { url?: string; baseURL?: string } | undefined;
+    const reqUrl = `${cfg?.baseURL ?? ''}${cfg?.url ?? ''}`;
+    /** 401 dari salah password tidak boleh dipaksa redirect (halaman login member = `/`) */
+    const isCredentialLoginAttempt =
+      reqUrl.includes('/auth/login') || reqUrl.includes('/auth/admin-login');
+
+    if (status === 401 && typeof window !== 'undefined' && !isCredentialLoginAttempt) {
+      localStorage.removeItem('inkai_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      const admin = window.location.pathname.includes('/admin');
+      window.location.href = admin ? '/admin/login' : '/';
     }
     return Promise.reject(error);
   }

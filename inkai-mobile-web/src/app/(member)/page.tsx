@@ -34,11 +34,15 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(identifier, password);
-    if (success) {
+    const result = await login(identifier, password);
+    if (result.ok) {
       router.push("/dashboard");
     } else {
-      setToast({ show: true, message: "Login Gagal. Cek kembali data Anda.", type: 'error' });
+      setToast({
+        show: true,
+        message: result.message,
+        type: "error",
+      });
     }
   };
 
