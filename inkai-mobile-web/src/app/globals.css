@@ -285,6 +285,38 @@ html[data-clock-phase="day"] .mobile-content {
   background-color: color-mix(in srgb, var(--background-dark) 88%, transparent);
 }
 
+/**
+ * Input/select/textarea di permukaan gelap sengaja (modal admin, dll).
+ * Mode siang memaksa color-scheme: light pada select global — tanpa ini teks hampir tak terbaca di #1e1e24.
+ */
+.adm-dark-field input,
+.adm-dark-field textarea,
+.adm-dark-field select {
+  color: #f4f4f5 !important;
+  -webkit-text-fill-color: #f4f4f5;
+  color-scheme: dark !important;
+}
+
+.adm-dark-field input::placeholder,
+.adm-dark-field textarea::placeholder {
+  color: rgba(244, 244, 245, 0.55) !important;
+}
+
+.adm-dark-field input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.adm-dark-field input[type='date']::-webkit-datetime-edit-text,
+.adm-dark-field input[type='date']::-webkit-datetime-edit-month-field,
+.adm-dark-field input[type='date']::-webkit-datetime-edit-day-field,
+.adm-dark-field input[type='date']::-webkit-datetime-edit-year-field {
+  color: #f4f4f5;
+  -webkit-text-fill-color: #f4f4f5;
+}
+
+html[data-clock-phase='day'] .adm-dark-field select option,
+html[data-clock-phase='day'] .adm-dark-field select optgroup {
+  background-color: #1e1e24 !important;
+  color: #f4f4f5 !important;
+}
+
 .animate-in {
   animation-duration: 0.3s;
   animation-fill-mode: both;

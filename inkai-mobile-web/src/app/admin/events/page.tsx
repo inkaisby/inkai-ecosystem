@@ -697,7 +697,7 @@ export default function EventsPage() {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="space-y-8 pb-32"
+                  className="space-y-8 pb-32 adm-dark-field"
                 >
                   <div className="space-y-6">
                     {/* Kategori */}

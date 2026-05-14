@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Calendar, 
   Plus, 
@@ -127,36 +128,36 @@ export default function EventsPage() {
   }, [events, filter, search]);
 
   return (
-    <div className="space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 lg:pb-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+    <div className="w-full max-w-[480px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
+      {/* Header — kolom tetap sempit seperti mobile; tidak memanjang ikut lebar jendela */}
+      <div className="flex flex-col gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-amber-500 mb-1">
-            <Calendar size={16} className="lg:w-5 lg:h-5" />
-            <span className="text-[10px] lg:text-sm font-bold uppercase tracking-[0.2em] lg:tracking-widest">Manajemen Agenda</span>
+            <Calendar size={16} />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Manajemen Agenda</span>
           </div>
-          <h2 className="text-2xl lg:text-3xl font-black uppercase text-white leading-tight">Event & Kegiatan</h2>
-          <p className="text-[11px] lg:text-sm text-gray-500 max-w-md">Kelola jadwal turnamen, ujian kenaikan tingkat, dan gashuku nasional.</p>
+          <h2 className="text-2xl font-black uppercase text-white leading-tight">Event & Kegiatan</h2>
+          <p className="text-[11px] text-gray-500">Kelola jadwal turnamen, ujian kenaikan tingkat, dan gashuku nasional.</p>
         </div>
         <button 
           onClick={() => {
             resetForm();
             setShowAddModal(true);
           }}
-          className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 text-xs lg:text-sm py-3 lg:py-2"
+          className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-3"
         >
           <Plus size={18} />
           Buat Event Baru
         </button>
       </div>
 
-      {/* Categories Toggle - Scrollable on Mobile */}
-      <div className="flex gap-2 lg:gap-4 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide no-scrollbar">
+      {/* Categories Toggle */}
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide no-scrollbar">
         {['Semua Event', 'Kejuaraan', 'Ujian Kenaikan', 'Lain-lain'].map((cat) => (
           <button 
             key={cat}
             onClick={() => setFilter(cat === 'Semua Event' ? 'Semua' : cat)}
-            className={`whitespace-nowrap px-5 lg:px-6 py-2.5 lg:py-2 text-[10px] lg:text-xs font-black uppercase tracking-widest rounded-full transition-all active:scale-95 ${
+            className={`whitespace-nowrap px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all active:scale-95 ${
               (filter === 'Semua' && cat === 'Semua Event') || filter === cat 
                 ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
                 : 'bg-white/5 text-gray-500 border border-white/5 hover:text-white'
@@ -177,8 +178,8 @@ export default function EventsPage() {
           <p className="font-bold">Error: {error}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
+        <div className="grid grid-cols-1 gap-6">
+          <div className="space-y-4">
             {filteredEvents.map((event) => (
               <div 
                 key={event.id} 
@@ -186,15 +187,15 @@ export default function EventsPage() {
                   setSelectedEvent(event);
                   setShowDetailModal(true);
                 }}
-                className="glass-card flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-6 group cursor-pointer hover:border-amber-500/30 transition-all p-4 lg:p-6"
+                className="glass-card flex flex-col gap-4 group cursor-pointer hover:border-amber-500/30 transition-all p-4"
               >
-                <div className={`w-14 h-14 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl flex flex-col items-center justify-center border border-white/5 shrink-0 ${
+                <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center border border-white/5 shrink-0 ${
                   event.title.toLowerCase().includes('kejurnas') ? 'bg-blue-500/10 text-blue-500' : 
                   event.title.toLowerCase().includes('ujian') ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
                 }`}>
-                  {event.title.toLowerCase().includes('kejurnas') ? <Trophy size={24} className="lg:w-7 lg:h-7" /> : 
-                   event.title.toLowerCase().includes('ujian') ? <GraduationCap size={24} className="lg:w-7 lg:h-7" /> : <Users size={24} className="lg:w-7 lg:h-7" />}
-                  <span className="text-[7px] lg:text-[8px] font-black uppercase mt-1 lg:mt-2">
+                  {event.title.toLowerCase().includes('kejurnas') ? <Trophy size={24} /> : 
+                   event.title.toLowerCase().includes('ujian') ? <GraduationCap size={24} /> : <Users size={24} />}
+                  <span className="text-[7px] font-black uppercase mt-1">
                     {event.title.toLowerCase().includes('kejurnas') ? 'Turnamen' : 
                      event.title.toLowerCase().includes('ujian') ? 'Ujian' : 'Kegiatan'}
                   </span>
@@ -202,12 +203,12 @@ export default function EventsPage() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-base lg:text-lg font-black uppercase group-hover:text-amber-500 transition-colors truncate">{event.title}</h3>
+                    <h3 className="text-base font-black uppercase group-hover:text-amber-500 transition-colors truncate">{event.title}</h3>
                     <span className="shrink-0 text-[8px] px-2 py-0.5 rounded-full font-black uppercase bg-green-500/10 text-green-500 border border-green-500/20">
                       Buka
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-3 lg:gap-4 text-[10px] lg:text-xs text-gray-500">
+                  <div className="flex flex-wrap gap-3 text-[10px] text-gray-500">
                     <span className="flex items-center gap-1.5 font-medium">
                       <Calendar size={12} className="text-amber-500" /> 
                       {new Date(event.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -223,15 +224,15 @@ export default function EventsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-white/5">
+                <div className="flex items-center gap-2 w-full mt-2 pt-3 border-t border-white/5">
                   <button 
                     onClick={(e) => handleDeleteEvent(event.id, e)}
-                    className="flex-1 sm:flex-none p-2.5 bg-white/5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all border border-white/5"
+                    className="flex-1 p-2.5 bg-white/5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all border border-white/5"
                     title="Hapus Agenda"
                   >
                     <Trash2 size={18} />
                   </button>
-                  <button className="flex-1 sm:flex-none p-2.5 bg-white/5 rounded-xl hover:bg-amber-500 hover:text-black transition-all border border-white/5">
+                  <button className="flex-1 p-2.5 bg-white/5 rounded-xl hover:bg-amber-500 hover:text-black transition-all border border-white/5">
                     <ChevronRight size={20} />
                   </button>
                 </div>
@@ -286,8 +287,9 @@ export default function EventsPage() {
         </div>
       )}
 
-      {/* Event Detail Modal */}
-      {showDetailModal && selectedEvent && (
+      {/* Event Detail Modal — portal: avoid stacking under sticky TopBar (flex sibling z-40) */}
+      {showDetailModal && selectedEvent &&
+        createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 overflow-hidden">
           <div className="flex-1 flex flex-col w-full max-w-[480px] h-full lg:h-auto lg:max-h-[90vh] mx-auto relative bg-[#0A0A0C] lg:rounded-[2.5rem] lg:border lg:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="h-48 lg:h-64 bg-gradient-to-br from-amber-400/20 via-amber-600/20 to-[#0A0A0C] relative flex items-center justify-center overflow-hidden border-b border-white/5">
@@ -392,11 +394,13 @@ export default function EventsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Add Event Modal */}
-      {showAddModal && (
+      {showAddModal &&
+        createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300 overflow-hidden">
           <div className="flex-1 flex flex-col w-full max-w-[480px] h-full lg:h-auto lg:max-h-[90vh] mx-auto relative bg-[#0A0A0C] lg:rounded-[2.5rem] lg:border lg:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center p-6 border-b border-white/5 pt-[env(safe-area-inset-top,24px)] bg-[#0A0A0C]">
@@ -579,11 +583,13 @@ export default function EventsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Elegant Delete Confirmation Modal */}
-      {showDeleteModal && (
+      {showDeleteModal &&
+        createPortal(
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-[360px] p-8 text-center rounded-[2.5rem] border border-white/10 shadow-2xl bg-[#1e1e24] relative overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-red-500/5 rounded-full blur-3xl" />
@@ -614,7 +620,8 @@ export default function EventsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
