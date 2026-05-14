@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { isAxiosError } from 'axios';
 import {
   verificationTypeLabel,
   verificationDataSummary,
@@ -56,13 +55,8 @@ export default function VerificationPage() {
       setAdminNotes('');
       fetchClaims();
     } catch (err) {
-      let msg = 'Gagal memproses pengajuan';
-      if (isAxiosError(err)) {
-        const d = err.response?.data;
-        if (d && typeof d === 'object' && 'message' in d && typeof (d as { message: unknown }).message === 'string') {
-          msg = (d as { message: string }).message;
-        }
-      }
+      const msg =
+        err instanceof Error ? err.message : 'Gagal memproses pengajuan';
       toast.error(msg);
     } finally {
       setProcessingAction(null);
