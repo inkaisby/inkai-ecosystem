@@ -28,16 +28,38 @@ function rejectSupabaseDirectPortOnVercel(databaseUrl: string): void {
 }
 
 /**
+ * Perketat timeout & pooler kecil di edge/serverless supaya handshake ke Supabase tidak putus terlalu cepat.
+ */
+function normalizeDatabaseUrlForVercel(databaseUrl: string): string {
+  if (!process.env.VERCEL) return databaseUrl;
+  try {
+    const u = new URL(databaseUrl);
+    const host = u.hostname.toLowerCase();
+    if (!host.endsWith('.supabase.co')) return databaseUrl;
+    if (!u.searchParams.has('connect_timeout')) {
+      u.searchParams.set('connect_timeout', '30');
+    }
+    if (!u.searchParams.has('connection_limit')) {
+      u.searchParams.set('connection_limit', '1');
+    }
+    return u.toString();
+  } catch {
+    return databaseUrl;
+  }
+}
+
+/**
  * Singleton global agar Lambda/Vercel memakai satu klien pada instance yang sama.
  * Runtime memakai `DATABASE_URL` (Supabase: transaction pooler `db.<ref>:6543` + ?pgbouncer=true).
  * Migrasi: `npm run migrate:deploy` memakai `DIRECT_URL` di skrip, bukan field schema.
  */
 const prismaClientSingleton = (): PrismaClient => {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) {
     throw new Error('DATABASE_URL belum diset');
   }
-  rejectSupabaseDirectPortOnVercel(url);
+  rejectSupabaseDirectPortOnVercel(raw);
+  const url = normalizeDatabaseUrlForVercel(raw);
   return new PrismaClient({
     datasources: { db: { url } },
     log:
