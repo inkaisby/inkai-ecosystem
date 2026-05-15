@@ -71,13 +71,10 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthLoading && !user) {
-      router.push("/");
-    } else if (user) {
-      fetchEvents();
-      fetchUnreadCount();
-    }
-  }, [user, isAuthLoading, router]);
+    if (!user || isAuthLoading) return;
+    fetchEvents();
+    fetchUnreadCount();
+  }, [user, isAuthLoading]);
 
   const fetchUnreadCount = async () => {
     if (!user) return;

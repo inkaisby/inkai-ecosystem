@@ -32,11 +32,6 @@ export default function GuidePage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!mounted || isAuthLoading) return;
-    if (!user) router.replace("/");
-  }, [mounted, isAuthLoading, user, router]);
-
   const displayName =
     user?.fullName ||
     (user?.email ? String(user.email).split("@")[0] : null) ||

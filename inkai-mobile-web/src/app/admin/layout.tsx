@@ -1,30 +1,87 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { usePathname } from 'next/navigation';
-import AdminMenu from '@/components/admin/AdminMenu';
-import TopBar from '@/components/admin/TopBar';
-import BottomNav from '@/components/BottomNav/BottomNav';
+import React, { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import TopBar from "@/components/admin/TopBar";
+import BottomNav from "@/components/BottomNav/BottomNav";
+import { useAuth } from "@/context/AuthContext";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+const ADMIN_LOGIN = "/admin/login";
+
+function normalizePathname(path: string): string {
+  if (path.length > 1 && path.endsWith("/")) {
+    return path.slice(0, -1);
+  }
+  return path;
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
-  const isLoginPage = pathname?.includes('/login');
+  const router = useRouter();
+  const { user, isAdmin, isLoading: isAuthLoading } = useAuth();
+
+  const normalized = normalizePathname(pathname ?? "/admin");
+  const isLoginRoute = normalized === ADMIN_LOGIN;
+
+  useEffect(() => {
+    if (isLoginRoute) {
+      if (!isAuthLoading && user && isAdmin) {
+        router.replace("/admin");
+      }
+      return;
+    }
+    if (!isAuthLoading && !user) {
+      router.replace(ADMIN_LOGIN);
+      return;
+    }
+    if (!isAuthLoading && user && !isAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [isLoginRoute, isAuthLoading, user, isAdmin, router]);
+
+  const shellClass =
+    "min-h-screen bg-[var(--background-dark)] text-[var(--text-light)] flex flex-col min-w-0";
+
+  if (isLoginRoute) {
+    return (
+      <div data-admin-shell className={shellClass}>
+        <main className="relative min-w-0 flex-1 flex flex-col p-0">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  if (isAuthLoading || !user || !isAdmin) {
+    return (
+      <div
+        data-admin-shell
+        className={`${shellClass} items-center justify-center`}
+      >
+        <Loader2
+          className="animate-spin text-amber-500"
+          size={40}
+          aria-label="Memuat…"
+        />
+      </div>
+    );
+  }
 
   return (
-    <div
-      data-admin-shell
-      className="min-h-screen bg-[var(--background-dark)] text-[var(--text-light)] flex flex-col min-w-0"
-    >
-      {!isLoginPage && (
-        <>
-          <div className="admin-topbar-spacer" aria-hidden />
-          <TopBar />
-        </>
-      )}
-      <main className={`relative min-w-0 flex-1 flex flex-col ${isLoginPage ? 'p-0' : 'px-0 pt-4 pb-32'}`}>
+    <div data-admin-shell className={shellClass}>
+      <>
+        <div className="admin-topbar-spacer" aria-hidden />
+        <TopBar />
+      </>
+      <main className="relative min-w-0 flex-1 flex flex-col px-0 pt-4 pb-32">
         {children}
       </main>
-      {!isLoginPage && <BottomNav />}
+      <BottomNav />
     </div>
   );
 }

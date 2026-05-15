@@ -66,13 +66,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const token =
-        localStorage.getItem("inkai_token") || localStorage.getItem("token");
-      if (!token) {
-        router.push("/admin/login");
-        return;
-      }
-
       try {
         setError(null);
         const [statsRes, membersRes, pendingMembersRes, pendingClaimsRes, announcementsRes] =
