@@ -5,10 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  /// Koneksi langsung (bukan pooler :6543) — dipakai Prisma untuk `migrate deploy`.
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Province {
