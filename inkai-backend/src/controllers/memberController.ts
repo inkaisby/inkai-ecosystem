@@ -524,18 +524,18 @@ export const updateMember = async (req: Request, res: Response) => {
       status
     } = req.body;
 
-    // Convert empty NIA to null for uniqueness
-    const finalNia = nia && nia.trim() !== '' ? nia.trim() : null;
-
-    if (finalNia) {
-      const existingMember = await prisma.member.findFirst({ 
-        where: { 
-          nia: finalNia,
-          NOT: { id }
-        } 
-      });
-      if (existingMember) {
-        return res.status(400).json({ message: 'NIA sudah digunakan oleh anggota lain' });
+    if (nia !== undefined) {
+      const finalNia = nia && String(nia).trim() !== '' ? String(nia).trim() : null;
+      if (finalNia) {
+        const existingMember = await prisma.member.findFirst({ 
+          where: { 
+            nia: finalNia,
+            NOT: { id } 
+          } 
+        });
+        if (existingMember) {
+          return res.status(400).json({ message: 'NIA sudah digunakan oleh anggota lain' });
+        }
       }
     }
 
@@ -590,27 +590,29 @@ export const updateMember = async (req: Request, res: Response) => {
         }
       }
 
-      // Handle birthDate carefully
-      let finalBirthDate = undefined;
-      if (birthDate) {
-        const d = new Date(birthDate);
-        if (!isNaN(d.getTime())) {
-          finalBirthDate = d;
+      const memberUpdateData: Record<string, unknown> = {};
+      if (fullName !== undefined) memberUpdateData.fullName = fullName;
+      if (dojoId !== undefined) memberUpdateData.dojoId = dojoId;
+      if (gender !== undefined) memberUpdateData.gender = gender;
+      if (birthDate !== undefined) {
+        if (birthDate) {
+          const d = new Date(birthDate);
+          memberUpdateData.birthDate = !isNaN(d.getTime()) ? d : null;
+        } else {
+          memberUpdateData.birthDate = null;
         }
       }
+      if (currentRank !== undefined) memberUpdateData.currentRank = currentRank;
+      if (status !== undefined) memberUpdateData.status = status;
+      if (nia !== undefined) {
+        memberUpdateData.nia =
+          nia && String(nia).trim() !== '' ? String(nia).trim() : null;
+      }
+      if (userId !== currentMember.userId) memberUpdateData.userId = userId;
 
       return await tx.member.update({
         where: { id },
-        data: {
-          fullName,
-          dojoId,
-          gender,
-          birthDate: finalBirthDate,
-          currentRank,
-          nia: finalNia,
-          status,
-          userId
-        },
+        data: memberUpdateData,
         include: {
           dojo: {
             include: {

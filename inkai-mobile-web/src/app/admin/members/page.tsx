@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { 
   Users, 
   Search, 
@@ -24,10 +24,220 @@ import {
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Suspense, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { MemberItemSkeleton } from '@/components/admin/Skeleton';
 import AdminModalPortal from '@/components/admin/AdminModalPortal';
+
+const ADMIN_BELT_RANK_OPTIONS: readonly string[] = [
+  'Putih (Kyu 10)',
+  'Putih (Kyu 9)',
+  'Kuning (Kyu 8)',
+  'Kuning (Kyu 7)',
+  'Hijau (Kyu 6)',
+  'Biru (Kyu 5)',
+  'Biru (Kyu 4)',
+  'Coklat (Kyu 3)',
+  'Coklat (Kyu 2)',
+  'Coklat (Kyu 1)',
+  ...Array.from({ length: 10 }, (_, i) => `Hitam (DAN ${i + 1})`),
+];
+
+function AdminMemberRankSelect({
+  value,
+  disabled,
+  onChange,
+  className,
+}: {
+  value: string;
+  disabled?: boolean;
+  onChange: (v: string) => void;
+  className?: string;
+}) {
+  const needsLegacy = Boolean(value && !ADMIN_BELT_RANK_OPTIONS.includes(value));
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className={className}
+        style={{ colorScheme: 'dark' }}
+      >
+        {needsLegacy ? (
+          <option value={value}>{`${value} (nilai saat ini)`}</option>
+        ) : null}
+        <optgroup label="Sabuk Putih">
+          <option value="Putih (Kyu 10)">Putih (Kyu 10)</option>
+          <option value="Putih (Kyu 9)">Putih (Kyu 9)</option>
+        </optgroup>
+        <optgroup label="Sabuk Kuning">
+          <option value="Kuning (Kyu 8)">Kuning (Kyu 8)</option>
+          <option value="Kuning (Kyu 7)">Kuning (Kyu 7)</option>
+        </optgroup>
+        <optgroup label="Sabuk Hijau">
+          <option value="Hijau (Kyu 6)">Hijau (Kyu 6)</option>
+        </optgroup>
+        <optgroup label="Sabuk Biru">
+          <option value="Biru (Kyu 5)">Biru (Kyu 5)</option>
+          <option value="Biru (Kyu 4)">Biru (Kyu 4)</option>
+        </optgroup>
+        <optgroup label="Sabuk Coklat">
+          <option value="Coklat (Kyu 3)">Coklat (Kyu 3)</option>
+          <option value="Coklat (Kyu 2)">Coklat (Kyu 2)</option>
+          <option value="Coklat (Kyu 1)">Coklat (Kyu 1)</option>
+        </optgroup>
+        <optgroup label="Sabuk Hitam (DAN)">
+          {[...Array(10)].map((_, i) => (
+            <option key={i} value={`Hitam (DAN ${i + 1})`}>
+              Hitam (DAN {i + 1})
+            </option>
+          ))}
+        </optgroup>
+      </select>
+      <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+    </div>
+  );
+}
+
+function AdminMemberListCard({
+  member,
+  saving,
+  onOpenDetail,
+  patchMemberInline,
+  onToggleStatus,
+  onDelete,
+}: {
+  member: any;
+  saving: boolean;
+  onOpenDetail: (m: any) => void;
+  patchMemberInline: (
+    id: string,
+    body: Partial<{ nia: string; currentRank: string }>
+  ) => Promise<boolean>;
+  onToggleStatus: (m: any) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [niaLocal, setNiaLocal] = useState(() => member.nia ?? '');
+
+  useEffect(() => {
+    setNiaLocal(member.nia ?? '');
+  }, [member.id, member.nia]);
+
+  const rankValue = member.currentRank || 'Putih (Kyu 10)';
+
+  return (
+    <div
+      className={`glass-card p-4 border-white/5 relative ${saving ? 'opacity-70 pointer-events-none' : ''}`}
+    >
+      {saving ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[inherit] bg-black/20">
+          <Loader2 size={22} className="animate-spin text-amber-500" />
+        </div>
+      ) : null}
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => onOpenDetail(member)}
+          className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10"
+          title="Detail anggota"
+        >
+          <span className="text-amber-500 font-bold text-xs">
+            {member.fullName?.charAt(0)}
+          </span>
+        </button>
+        <div className="min-w-0 flex-1 space-y-2">
+          <button
+            type="button"
+            onClick={() => onOpenDetail(member)}
+            className="text-left w-full touch-manipulation"
+            title="Buka detail"
+          >
+            <h4 className="text-xs font-bold text-white truncate">{member.fullName}</h4>
+          </button>
+
+          <div className="space-y-2">
+            <div>
+              <label className="text-[9px] font-black uppercase text-gray-500 tracking-wider block mb-1">
+                NIA
+              </label>
+              <input
+                type="text"
+                value={niaLocal}
+                disabled={saving}
+                onChange={(e) => setNiaLocal(e.target.value)}
+                onBlur={async () => {
+                  const t = niaLocal.trim();
+                  const cur = (member.nia ?? '').trim();
+                  if (t === cur) return;
+                  const ok = await patchMemberInline(member.id, { nia: niaLocal });
+                  if (!ok) setNiaLocal(member.nia ?? '');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                placeholder="Nomor induk"
+                className="glass-input w-full px-3 py-2 text-[11px] font-mono focus-outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[9px] font-black uppercase text-gray-500 tracking-wider block mb-1">
+                Sabuk & Kyu
+              </label>
+              <AdminMemberRankSelect
+                value={rankValue}
+                disabled={saving}
+                onChange={(next) => {
+                  if (next === rankValue) return;
+                  void patchMemberInline(member.id, { currentRank: next });
+                }}
+                className="glass-input w-full px-3 py-2 text-[11px] appearance-none cursor-pointer font-bold focus-outline-none"
+              />
+            </div>
+          </div>
+
+          <p className="text-[9px] text-gray-500 leading-snug pt-0.5">
+            Ranting:{' '}
+            <span className="text-gray-400 font-medium">
+              {member.dojo?.name || 'Umum'}
+            </span>
+            . Perubahan ranting tetap melalui pengajuan dari anggota.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1 shrink-0 pt-1">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleStatus(member);
+            }}
+            className={`p-1.5 rounded-lg border transition-all ${
+              member.status === 'Active'
+                ? 'border-green-500/20 text-green-500 hover:bg-green-500/10'
+                : 'border-red-500/20 text-red-500 hover:bg-red-500/10'
+            }`}
+            title={member.status === 'Active' ? 'Non-Aktifkan' : 'Aktifkan'}
+          >
+            {member.status === 'Active' ? <UserCheck size={14} /> : <UserMinus size={14} />}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(member.id);
+            }}
+            className="p-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all"
+            title="Hapus"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function MembersContent() {
   const router = useRouter();
@@ -65,6 +275,7 @@ function MembersContent() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [listSavingId, setListSavingId] = useState<string | null>(null);
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [bulkText, setBulkText] = useState('');
@@ -85,6 +296,51 @@ function MembersContent() {
   
   const [selectedProvinceId, setSelectedProvinceId] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState('');
+
+  const patchMemberInline = useCallback(
+    async (
+      memberId: string,
+      body: Partial<{ nia: string; currentRank: string }>
+    ): Promise<boolean> => {
+      setListSavingId(memberId);
+      try {
+        const resPayload: any = await api.members.update(memberId, body as any);
+        const updated = resPayload?.data ?? resPayload;
+        setMembers((prev) =>
+          prev.map((m) => (m.id === memberId ? { ...m, ...updated } : m))
+        );
+        setSelectedMember((sm: any) =>
+          sm && sm.id === memberId ? { ...sm, ...updated } : sm
+        );
+        toast.success('Perubahan disimpan');
+        return true;
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          'Gagal menyimpan';
+        toast.error(msg);
+        return false;
+      } finally {
+        setListSavingId(null);
+      }
+    },
+    []
+  );
+
+  const openMemberDetail = useCallback(async (member: any) => {
+    setSelectedMember(member);
+    setShowDetailModal(true);
+    setMemberDetailLoading(true);
+    try {
+      const res = await api.members.getDetail(member.id);
+      setSelectedMember(res.data);
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal memuat detail anggota');
+    } finally {
+      setMemberDetailLoading(false);
+    }
+  }, []);
 
   const fetchMembers = async (page = 1, searchQuery = '') => {
     setLoading(true);
@@ -461,64 +717,19 @@ function MembersContent() {
                 <MemberItemSkeleton key={i} />
               ))}
             </div>
-          ) : members.length > 0 ? members.map((member) => (
-            <div 
-              key={member.id} 
-              onClick={async () => {
-                setSelectedMember(member);
-                setShowDetailModal(true);
-                setMemberDetailLoading(true);
-                try {
-                  const res = await api.members.getDetail(member.id);
-                  setSelectedMember(res.data);
-                } catch (err: any) {
-                  toast.error(err?.message || 'Gagal memuat detail anggota');
-                } finally {
-                  setMemberDetailLoading(false);
-                }
-              }}
-              className="glass-card p-4 flex items-center justify-between border-white/5"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10">
-                  <span className="text-amber-500 font-bold text-xs">
-                    {member.fullName?.charAt(0)}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-white truncate">{member.fullName}</h4>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-gray-500 font-mono">{member.nia || 'N/A'}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-700" />
-                    <span className="text-[10px] text-amber-500 font-bold truncate">{member.currentRank}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[9px] text-gray-600 mt-1 truncate max-w-[80px]">{member.dojo?.name || 'Umum'}</p>
-              </div>
-              <div className="flex gap-1 ml-4" onClick={(e) => e.stopPropagation()}>
-                <button 
-                  onClick={() => handleToggleStatus(member)}
-                  className={`p-1.5 rounded-lg border transition-all ${
-                    member.status === 'Active' 
-                    ? 'border-green-500/20 text-green-500 hover:bg-green-500/10' 
-                    : 'border-red-500/20 text-red-500 hover:bg-red-500/10'
-                  }`}
-                  title={member.status === 'Active' ? 'Non-Aktifkan' : 'Aktifkan'}
-                >
-                  {member.status === 'Active' ? <UserCheck size={14} /> : <UserMinus size={14} />}
-                </button>
-                <button 
-                  onClick={() => handleDelete(member.id)}
-                  className="p-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all"
-                  title="Hapus"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          )) : !loading && (
+          ) : members.length > 0 ? (
+            members.map((member) => (
+              <AdminMemberListCard
+                key={member.id}
+                member={member}
+                saving={listSavingId === member.id}
+                onOpenDetail={openMemberDetail}
+                patchMemberInline={patchMemberInline}
+                onToggleStatus={handleToggleStatus}
+                onDelete={handleDelete}
+              />
+            ))
+          ) : !loading && (
             <div className="glass-card p-12 text-center text-gray-500 text-xs italic border-dashed border-white/5">
               Tidak ada data anggota ditemukan.
             </div>
@@ -650,41 +861,11 @@ function MembersContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Sabuk</label>
-                    <div className="relative">
-                        <select 
-                          value={formData.currentRank}
-                          onChange={(e) => setFormData({ ...formData, currentRank: e.target.value })}
-                          className="glass-input w-full px-4 py-3 text-sm appearance-none cursor-pointer font-bold focus-outline-none"
-                          style={{ colorScheme: 'dark' }}
-                        >
-                          <optgroup label="Sabuk Putih">
-                            <option value="Putih (Kyu 10)">Putih (Kyu 10)</option>
-                            <option value="Putih (Kyu 9)">Putih (Kyu 9)</option>
-                          </optgroup>
-                          <optgroup label="Sabuk Kuning">
-                            <option value="Kuning (Kyu 8)">Kuning (Kyu 8)</option>
-                            <option value="Kuning (Kyu 7)">Kuning (Kyu 7)</option>
-                          </optgroup>
-                          <optgroup label="Sabuk Hijau">
-                            <option value="Hijau (Kyu 6)">Hijau (Kyu 6)</option>
-                          </optgroup>
-                          <optgroup label="Sabuk Biru">
-                            <option value="Biru (Kyu 5)">Biru (Kyu 5)</option>
-                            <option value="Biru (Kyu 4)">Biru (Kyu 4)</option>
-                          </optgroup>
-                          <optgroup label="Sabuk Coklat">
-                            <option value="Coklat (Kyu 3)">Coklat (Kyu 3)</option>
-                            <option value="Coklat (Kyu 2)">Coklat (Kyu 2)</option>
-                            <option value="Coklat (Kyu 1)">Coklat (Kyu 1)</option>
-                          </optgroup>
-                          <optgroup label="Sabuk Hitam (DAN)">
-                            {[...Array(10)].map((_, i) => (
-                              <option key={i} value={`Hitam (DAN ${i + 1})`}>Hitam (DAN {i + 1})</option>
-                            ))}
-                          </optgroup>
-                        </select>
-                      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-                    </div>
+                    <AdminMemberRankSelect
+                      value={formData.currentRank}
+                      onChange={(currentRank) => setFormData({ ...formData, currentRank })}
+                      className="glass-input w-full px-4 py-3 text-sm appearance-none cursor-pointer font-bold focus-outline-none"
+                    />
                   </div>
                   <div>
                     <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">NIA (Opsional)</label>
