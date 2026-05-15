@@ -182,6 +182,10 @@ export const api = Object.assign(apiInstance, {
     update: (id: string, data: Partial<Event>) => apiInstance.patch(`/events/${id}`, data).then(res => res.data),
     bulkRegister: (data: { eventId: string; memberIds: string[]; categoryId?: string }) =>
       apiInstance.post('/events/register/bulk', data).then((res) => res.data),
+    updateRegistration: (registrationId: string, data: { categoryId?: string | null; status?: string }) =>
+      apiInstance.put(`/events/register/${registrationId}`, data).then((res) => res.data),
+    deleteRegistration: (registrationId: string) =>
+      apiInstance.delete(`/events/register/${registrationId}`).then((res) => res.data),
   },
   attendance: {
     getLogs: () => apiInstance.get('/attendance/logs').then(res => res.data),

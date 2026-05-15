@@ -105,11 +105,13 @@ export const getEventById = async (req: Request, res: Response) => {
           include: {
             member: {
               include: {
+                user: { select: { photoUrl: true, phoneNumber: true } },
                 dojo: {
                   include: { branch: true },
                 },
                 billings: {
                   where: { type: 'EVENT_FEE' },
+                  include: { payment: true },
                 },
               },
             },
@@ -255,6 +257,7 @@ export const registerForEvent = async (req: Request, res: Response) => {
       data: {
         eventId,
         memberId,
+        registeredByUserId: jwtUser?.userId ?? null,
         categoryId,
         status: 'PENDING',
       },
@@ -427,6 +430,7 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
           data: {
             eventId,
             memberId: mid,
+            registeredByUserId: jwtUser?.userId ?? null,
             categoryId: resolvedCategoryId,
             status: 'PENDING',
           },
@@ -510,11 +514,18 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
 export const updateRegistration = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { categoryId } = req.body;
+    const { categoryId, status } = req.body as { categoryId?: unknown; status?: unknown };
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user as JwtEventUser | undefined;
 
-    const registration = await prisma.eventRegistration.update({
+    if (!userCanBulkRegisterMembersForEvents(jwtUser)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Hanya pengurus yang dapat mengubah pendaftaran agenda.',
+      });
+    }
+
+    const existing = await prisma.eventRegistration.findUnique({
       where: { id },
-      data: { categoryId },
       include: {
         member: {
           include: {
@@ -528,7 +539,67 @@ export const updateRegistration = async (req: Request, res: Response) => {
       },
     });
 
-    if (registration.category && registration.category.fee > 0) {
+    if (!existing) {
+      return res.status(404).json({ status: 'error', message: 'Pendaftaran tidak ditemukan' });
+    }
+
+    if (!staffCanRegisterMemberForEvent(jwtUser, existing.member, existing.event.branchId)) {
+      return res.status(403).json({ status: 'error', message: 'Akses wilayah ditolak' });
+    }
+
+    const patch: { categoryId?: string | null; status?: string } = {};
+    if (categoryId !== undefined) {
+      patch.categoryId =
+        categoryId === null || categoryId === '' ? null : String(categoryId);
+    }
+    const allowedStatus = new Set(['PENDING', 'APPROVED', 'REJECTED']);
+    if (status !== undefined) {
+      if (typeof status !== 'string' || !allowedStatus.has(status)) {
+        return res.status(400).json({ status: 'error', message: 'Status tidak valid' });
+      }
+      patch.status = status;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ status: 'error', message: 'Tidak ada perubahan' });
+    }
+
+    if (patch.status === 'REJECTED') {
+      await prisma.$transaction(async (tx) => {
+        const pending = await tx.billing.findMany({
+          where: { registrationId: id, type: 'EVENT_FEE', status: 'PENDING' },
+        });
+        for (const b of pending) {
+          const pay = await tx.payment.findUnique({ where: { billingId: b.id } });
+          if (!pay) {
+            await tx.billing.delete({ where: { id: b.id } });
+          }
+        }
+      });
+    }
+
+    const registration = await prisma.eventRegistration.update({
+      where: { id },
+      data: patch,
+      include: {
+        member: {
+          include: {
+            user: { select: { photoUrl: true, phoneNumber: true } },
+            dojo: {
+              include: { branch: true },
+            },
+            billings: {
+              where: { type: 'EVENT_FEE' },
+              include: { payment: true },
+            },
+          },
+        },
+        event: true,
+        category: true,
+      },
+    });
+
+    if (categoryId !== undefined && registration.category && registration.category.fee > 0) {
       const existingBilling = await prisma.billing.findFirst({
         where: {
           memberId: registration.memberId,
@@ -571,7 +642,7 @@ export const updateRegistration = async (req: Request, res: Response) => {
       }
     }
 
-    if (registration.member.dojo.branchId) {
+    if (registration.member.dojo.branchId && categoryId !== undefined) {
       await notifyAdmins({
         title: 'Pendaftaran Event Diperbarui',
         content: `Anggota ${registration.member.fullName} memperbarui pendaftaran ke ${registration.event.title}${registration.category ? ` (Kategori Baru: ${registration.category.name})` : ''}`,
@@ -584,6 +655,70 @@ export const updateRegistration = async (req: Request, res: Response) => {
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
+    res.status(500).json({ status: 'error', message: errMessage });
+  }
+};
+
+export const deleteRegistration = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user as JwtEventUser | undefined;
+
+    if (!userCanBulkRegisterMembersForEvents(jwtUser)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Hanya pengurus yang dapat menghapus pendaftaran.',
+      });
+    }
+
+    const existing = await prisma.eventRegistration.findUnique({
+      where: { id },
+      include: {
+        member: {
+          include: {
+            dojo: {
+              include: { branch: true },
+            },
+          },
+        },
+        event: true,
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ status: 'error', message: 'Pendaftaran tidak ditemukan' });
+    }
+
+    if (!staffCanRegisterMemberForEvent(jwtUser, existing.member, existing.event.branchId)) {
+      return res.status(403).json({ status: 'error', message: 'Akses wilayah ditolak' });
+    }
+
+    const billings = await prisma.billing.findMany({
+      where: { registrationId: id, type: 'EVENT_FEE' },
+    });
+
+    if (billings.some((b) => b.status === 'PAID')) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Tidak dapat menghapus pendaftaran yang tagihannya sudah lunas.',
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const b of billings) {
+        const pay = await tx.payment.findUnique({ where: { billingId: b.id } });
+        if (pay) {
+          await tx.payment.delete({ where: { billingId: b.id } });
+        }
+        await tx.billing.delete({ where: { id: b.id } });
+      }
+      await tx.eventRegistration.delete({ where: { id } });
+    });
+
+    res.json({ status: 'success', message: 'Pendaftaran dihapus' });
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    console.error('[EventController] deleteRegistration:', error);
     res.status(500).json({ status: 'error', message: errMessage });
   }
 };

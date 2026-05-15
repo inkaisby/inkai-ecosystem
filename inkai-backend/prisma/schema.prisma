@@ -229,6 +229,8 @@ model EventRegistration {
   id         String        @id @default(uuid())
   eventId    String
   memberId   String
+  /// User akun yang mencatat pendaftaran: anggota sendiri saat mandiri, atau pengurus saat bulk.
+  registeredByUserId String?
   categoryId String?
   status     String        @default("PENDING")
   createdAt  DateTime      @default(now())

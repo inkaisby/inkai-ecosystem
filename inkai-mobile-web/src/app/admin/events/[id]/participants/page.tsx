@@ -20,9 +20,12 @@ import {
   UserPlus,
   Square,
   CheckSquare,
+  Trash2,
+  Receipt,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '@/lib/api';
+import { api, getAssetUrl } from '@/lib/api';
+import { beltRingVisual } from '@/lib/beltRing';
 import toast from 'react-hot-toast';
 import AdminModalPortal from '@/components/admin/AdminModalPortal';
 import { useAuth } from '@/context/AuthContext';
@@ -34,6 +37,53 @@ const REGISTRAR_ROLES = new Set([
   'ADMIN_BRANCH',
   'ADMIN_DOJO',
 ]);
+
+function MemberAvatarRing({
+  fullName,
+  currentRank,
+  photoUrl,
+  sizeClass,
+  initialClassName,
+  ringClassName,
+}: {
+  fullName?: string;
+  currentRank?: string | null;
+  photoUrl?: string | null;
+  /** Mis. `w-14 h-14` atau `w-20 h-20` — lingkaran luar mengikuti kelas ini */
+  sizeClass: string;
+  initialClassName?: string;
+  ringClassName?: string;
+}) {
+  const ring = beltRingVisual(currentRank);
+  const src = photoUrl ? getAssetUrl(photoUrl) : '';
+  const initial = fullName?.charAt(0) || '?';
+
+  return (
+    <div
+      className={`rounded-full shrink-0 box-border p-[3px] flex items-center justify-center ${sizeClass} ${ringClassName ?? ''}`}
+      style={{
+        backgroundColor: ring.bg,
+        boxShadow: ring.shadow,
+      }}
+    >
+      <div className="w-full h-full min-w-0 rounded-full overflow-hidden bg-neutral-900/95 flex items-center justify-center">
+        {src ? (
+          <img
+            src={src}
+            alt={fullName ? `Foto ${fullName}` : 'Foto peserta'}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span
+            className={`text-amber-500 font-black uppercase ${initialClassName ?? 'text-xl'}`}
+          >
+            {initial}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function EventParticipantsPage() {
   const { id } = useParams();
@@ -54,12 +104,20 @@ export default function EventParticipantsPage() {
   const [bulkCategoryId, setBulkCategoryId] = useState('');
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Record<string, boolean>>({});
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [registrationUpdatingId, setRegistrationUpdatingId] = useState<string | null>(null);
+  const [registrationDeletingId, setRegistrationDeletingId] = useState<string | null>(null);
 
   const canBulkRegister = useMemo(() => {
     const roles = user?.roles;
     if (!Array.isArray(roles)) return false;
     return roles.some((r: string) => REGISTRAR_ROLES.has(r));
   }, [user]);
+
+  const showInlineRegistrationActions = useMemo(() => {
+    if (event?.registrationsScopedToManagedDojo !== true) return false;
+    const roles = user?.roles;
+    return Array.isArray(roles) && roles.includes('ADMIN_DOJO');
+  }, [event?.registrationsScopedToManagedDojo, user?.roles]);
 
   const registeredMemberIds = useMemo(
     () => new Set(participants.map((p) => p.memberId).filter(Boolean)),
@@ -237,29 +295,82 @@ export default function EventParticipantsPage() {
     }
   };
 
-  const handleWhatsApp = () => {
-    if (!selectedParticipant?.member?.phoneNumber) {
+  const handleWhatsAppParticipant = (p: { member?: { user?: { phoneNumber?: string | null } } }) => {
+    const phone = p.member?.user?.phoneNumber;
+    if (!phone) {
       toast.error('Nomor WhatsApp tidak tersedia');
       return;
     }
-    let phone = selectedParticipant.member.phoneNumber;
-    if (phone.startsWith('0')) phone = '62' + phone.slice(1);
-    window.open(`https://wa.me/${phone}`, '_blank');
+    let n = String(phone);
+    if (n.startsWith('0')) n = '62' + n.slice(1);
+    window.open(`https://wa.me/${n}`, '_blank');
   };
 
-  const handleChat = async () => {
-    if (!selectedParticipant?.member?.userId) {
+  const handleWhatsApp = () => {
+    if (!selectedParticipant) return;
+    handleWhatsAppParticipant(selectedParticipant);
+  };
+
+  const handleChatParticipant = async (p: { member?: { userId?: string | null } }) => {
+    const uid = p.member?.userId;
+    if (!uid) {
       toast.error('Pengguna tidak memiliki akun untuk chat');
       return;
     }
 
     try {
-      const res = await api.chat.createConversation(selectedParticipant.member.userId);
+      const res = await api.chat.createConversation(uid);
       if (res.status === 'success') {
         router.push(`/admin/messages/${res.data.id}`);
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Gagal memulai chat');
+    }
+  };
+
+  const handleChat = async () => {
+    if (!selectedParticipant) return;
+    await handleChatParticipant(selectedParticipant);
+  };
+
+  const handleRegistrationStatusChange = async (
+    regId: string,
+    currentStatus: string,
+    next: string,
+  ) => {
+    if (next === currentStatus) return;
+    setRegistrationUpdatingId(regId);
+    try {
+      const res = await api.events.updateRegistration(regId, { status: next });
+      if (res.status === 'success') {
+        toast.success('Status peserta diperbarui');
+        await fetchData();
+      }
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } };
+      toast.error(ax.response?.data?.message || 'Gagal mengubah status');
+    } finally {
+      setRegistrationUpdatingId(null);
+    }
+  };
+
+  const handleDeleteRegistration = async (regId: string, memberName: string) => {
+    if (!window.confirm(`Hapus pendaftaran ${memberName || 'peserta ini'} dari agenda?`)) return;
+    setRegistrationDeletingId(regId);
+    try {
+      const res = await api.events.deleteRegistration(regId);
+      if (res.status === 'success') {
+        toast.success(typeof res.message === 'string' ? res.message : 'Pendaftaran dihapus');
+        setSelectedParticipant((prev: { id: string } | null) =>
+          prev?.id === regId ? null : prev,
+        );
+        await fetchData();
+      }
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } };
+      toast.error(ax.response?.data?.message || 'Gagal menghapus');
+    } finally {
+      setRegistrationDeletingId(null);
     }
   };
 
@@ -270,7 +381,7 @@ export default function EventParticipantsPage() {
         p.member?.nia?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = filterStatus === 'Semua' || 
-        (filterStatus === 'Terverifikasi' && (p.status === 'APPROVED' || p.status === 'SUCCESS')) ||
+        (filterStatus === 'Terverifikasi' && (p.status === 'APPROVED' || p.status === 'SUCCESS' || p.status === 'PAID')) ||
         (filterStatus === 'Pending' && p.status === 'PENDING') ||
         (filterStatus === 'Ditolak' && p.status === 'REJECTED');
 
@@ -278,8 +389,32 @@ export default function EventParticipantsPage() {
     });
   }, [participants, searchTerm, filterStatus]);
 
+  const scopedDojoLabel =
+    participants.find((p) => p.member?.dojo?.name)?.member?.dojo?.name ||
+    user?.managedDojoName ||
+    'dojo Anda';
+
+  const selfRegisteredParticipants = useMemo(() => {
+    const rows = participants.filter(
+      (p) =>
+        p.registeredByUserId &&
+        p.member?.userId &&
+        p.registeredByUserId === p.member.userId,
+    );
+    return [...rows].sort((a, b) =>
+      String(a.member?.fullName || '').localeCompare(String(b.member?.fullName || ''), 'id'),
+    );
+  }, [participants]);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'PAID':
+        return (
+          <div className="flex items-center gap-1 text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/25 text-[9px] font-black uppercase">
+            <CheckCircle2 size={10} />
+            Lunas
+          </div>
+        );
       case 'APPROVED':
       case 'SUCCESS':
         return (
@@ -365,30 +500,22 @@ export default function EventParticipantsPage() {
         </div>
 
         <div className="space-y-8">
-          {canBulkRegister && (
-            <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3">
-              <p className="text-[9px] font-black uppercase tracking-widest text-amber-600/90 mb-1">
-                Pendaftaran atas nama pengurus
-              </p>
-              <p className="text-[11px] font-bold text-[var(--text-light)] tracking-tight leading-snug opacity-95">
-                {registeredMemberIds.size} anggota sudah terdaftar pada agenda ini. Gunakan tombol{' '}
-                <span className="text-amber-500 font-black"> + </span>
-                untuk mendaftar banyak anggota sekaligus; tagihan memakai nominal kategori dari cabang.
-              </p>
-            </div>
-          )}
-
           {event?.registrationsScopedToManagedDojo === true && (
             <div className="rounded-2xl border border-sky-500/25 bg-sky-500/[0.07] px-4 py-3">
-              <p className="text-[9px] font-black uppercase tracking-widest text-sky-400/95 mb-1">
-                Peserta dari dojo Anda saja
-              </p>
-              <p className="text-[11px] font-bold text-[var(--text-light)] tracking-tight leading-snug opacity-95">
-                Daftar ini mencakup anggota dari {user?.managedDojoName || 'dojo yang Anda kelola'} yang terdaftar di agenda ini,{' '}
-                <span className="text-sky-300 font-black">
-                  termasuk yang mendaftar mandiri dari aplikasi
-                </span>
-                . Pengurus cabang lain melihat seluruh cabang.
+              <p className="text-[11px] font-bold text-[var(--text-light)] leading-snug tracking-tight">
+                <span className="font-black text-sky-300">{scopedDojoLabel}</span>
+                {selfRegisteredParticipants.length > 0 ? (
+                  <>
+                    , {selfRegisteredParticipants.length} peserta yang mendaftar mandiri, yaitu:
+                    <ol className="mt-2 ml-4 list-decimal space-y-1 font-semibold opacity-95">
+                      {selfRegisteredParticipants.map((p) => (
+                        <li key={p.id}>{p.member?.fullName ?? '—'}</li>
+                      ))}
+                    </ol>
+                  </>
+                ) : (
+                  <> — belum ada peserta mandiri dari aplikasi yang tercatat.</>
+                )}
               </p>
             </div>
           )}
@@ -416,15 +543,16 @@ export default function EventParticipantsPage() {
           </div>
 
           {/* Status Filter Tabs */}
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex flex-wrap gap-1 justify-start overflow-x-auto no-scrollbar pb-1">
             {['Semua', 'Pending', 'Terverifikasi', 'Ditolak'].map((s) => (
               <button
                 key={s}
+                type="button"
                 onClick={() => setFilterStatus(s)}
-                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`whitespace-nowrap px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-wide transition-all ${
                   filterStatus === s 
                     ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
-                    : 'bg-white/5 text-gray-500 border border-white/5'
+                    : 'bg-white/5 text-gray-500 border border-white/10'
                 }`}
               >
                 {s}
@@ -440,43 +568,191 @@ export default function EventParticipantsPage() {
                 <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Memuat data...</p>
               </div>
             ) : filteredParticipants.length > 0 ? (
-              filteredParticipants.map((p) => (
+              filteredParticipants.map((p) => {
+                const statusLocked = p.status === 'PAID' || p.status === 'SUCCESS';
+                const selectValue = ['PENDING', 'APPROVED', 'REJECTED'].includes(p.status)
+                  ? p.status
+                  : 'PENDING';
+                const rowBusy =
+                  registrationUpdatingId === p.id || registrationDeletingId === p.id;
+
+                const eventFee = Number(p.category?.fee ?? 0);
+                const billing = p.member?.billings?.find(
+                  (b: { registrationId?: string | null }) => b.registrationId === p.id,
+                );
+                const showPaymentIcon = eventFee > 0 || !!billing;
+                let payHighlight: 'waiting' | 'paid' | 'pending' | null = null;
+                if (billing?.status === 'WAITING_VERIFICATION') payHighlight = 'waiting';
+                else if (
+                  billing?.status === 'PAID' ||
+                  p.status === 'PAID' ||
+                  p.status === 'SUCCESS'
+                )
+                  payHighlight = 'paid';
+                else if (billing?.status === 'PENDING' || (showPaymentIcon && eventFee > 0))
+                  payHighlight = 'pending';
+
+                const paymentTitle =
+                  payHighlight === 'waiting'
+                    ? 'Menunggu verifikasi pembayaran (tunai di ranting / dari aplikasi)'
+                    : payHighlight === 'paid'
+                      ? 'Pembayaran lunas'
+                      : payHighlight === 'pending'
+                        ? 'Belum ada pengajuan pembayaran atau masih menunggu dari anggota'
+                        : 'Status pembayaran';
+
+                const receiptBtnClass =
+                  payHighlight === 'waiting'
+                    ? 'text-amber-400 border-amber-500/40 bg-amber-500/[0.12]'
+                    : payHighlight === 'paid'
+                      ? 'text-emerald-400 border-emerald-500/35 bg-emerald-500/[0.1]'
+                      : 'text-slate-400 border-white/12 bg-white/[0.06]';
+
+                return (
                 <motion.div 
                   layoutId={`participant-${p.id}`}
                   key={p.id}
                   onClick={() => setSelectedParticipant(p)}
-                  className="bg-white/[0.03] border border-white/5 p-4 rounded-[2rem] flex items-center gap-4 active:scale-[0.98] transition-all shadow-xl relative overflow-hidden group"
+                  className="bg-white/[0.03] border border-white/5 p-4 rounded-[2rem] flex items-center gap-3 active:scale-[0.98] transition-all shadow-xl relative overflow-hidden group"
                 >
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10 shrink-0 group-active:scale-90 transition-transform">
-                    <span className="text-amber-500 font-black text-xl uppercase">
-                      {p.member?.fullName?.charAt(0) || '?'}
-                    </span>
-                  </div>
+                  <MemberAvatarRing
+                    fullName={p.member?.fullName}
+                    currentRank={p.member?.currentRank}
+                    photoUrl={p.member?.user?.photoUrl}
+                    sizeClass="w-14 h-14"
+                    ringClassName="group-active:scale-90 transition-transform"
+                  />
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1.5">
-                      <h4 className="text-[13px] font-black text-white uppercase truncate tracking-tight pr-2">
+                    <div className="flex justify-between items-start mb-1.5 gap-2">
+                      <h4 className="text-[13px] font-black text-white uppercase truncate tracking-tight">
                         {p.member?.fullName || 'Anonim'}
                       </h4>
-                      {getStatusBadge(p.status)}
+                      {!showInlineRegistrationActions ? getStatusBadge(p.status) : null}
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] text-gray-500 font-bold uppercase tracking-tighter">
+                    <div className="flex items-center gap-2 flex-wrap text-[10px] text-gray-500 font-bold uppercase tracking-tighter">
                       <span className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md">
-                        <MapPin size={10} className="text-amber-500/50" />
+                        <MapPin size={10} className="text-amber-500/50 shrink-0" />
                         {p.member?.dojo?.name || 'Pusat'}
                       </span>
+                      {showInlineRegistrationActions ? (
+                        <div
+                          className="flex items-center gap-0.5 shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                          role="presentation"
+                        >
+                          {showPaymentIcon ? (
+                            <button
+                              type="button"
+                              title={paymentTitle}
+                              aria-label={paymentTitle}
+                              onClick={() => setSelectedParticipant(p)}
+                              className={`p-1.5 rounded-lg border transition-colors active:scale-95 disabled:opacity-40 ${receiptBtnClass}`}
+                            >
+                              <Receipt size={13} strokeWidth={2.25} aria-hidden />
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            disabled={!p.member?.user?.phoneNumber}
+                            title={
+                              p.member?.user?.phoneNumber
+                                ? 'WhatsApp'
+                                : 'Tanpa nomor WhatsApp'
+                            }
+                            aria-label="WhatsApp peserta"
+                            onClick={() => handleWhatsAppParticipant(p)}
+                            className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-green-500 hover:bg-white/10 transition-colors active:scale-95 disabled:opacity-35 disabled:pointer-events-none"
+                          >
+                            <Phone size={13} aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!p.member?.userId}
+                            title={
+                              p.member?.userId
+                                ? 'Chat di aplikasi'
+                                : 'Anggota tanpa akun aplikasi'
+                            }
+                            aria-label="Chat peserta"
+                            onClick={() => void handleChatParticipant(p)}
+                            className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-amber-500 hover:bg-white/10 transition-colors active:scale-95 disabled:opacity-35 disabled:pointer-events-none"
+                          >
+                            <MessageSquare size={13} aria-hidden />
+                          </button>
+                        </div>
+                      ) : null}
                       <span className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md">
-                        <Users size={10} className="text-amber-500/50" />
+                        <Users size={10} className="text-amber-500/50 shrink-0" />
                         {p.category?.name || '-'}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5 text-gray-600">
-                    <MoreVertical size={14} />
-                  </div>
+                  {showInlineRegistrationActions ? (
+                    <div
+                      className="flex flex-col gap-1.5 shrink-0 items-stretch min-w-[104px]"
+                      onClick={(e) => e.stopPropagation()}
+                      role="presentation"
+                    >
+                      {rowBusy ? (
+                        <Loader2 className="animate-spin text-amber-500 mx-auto py-2" size={18} />
+                      ) : (
+                        <>
+                          {statusLocked ? (
+                            <div className="flex justify-end">{getStatusBadge(p.status)}</div>
+                          ) : (
+                            <select
+                              aria-label={`Status untuk ${p.member?.fullName || 'peserta'}`}
+                              value={selectValue}
+                              disabled={
+                                registrationUpdatingId !== null ||
+                                registrationDeletingId !== null
+                              }
+                              onChange={(e) => {
+                                void handleRegistrationStatusChange(
+                                  p.id,
+                                  p.status,
+                                  e.target.value,
+                                );
+                              }}
+                              className="w-full bg-white/10 border border-white/15 rounded-lg px-2 py-1.5 text-[9px] font-black uppercase text-[var(--text-light)] focus:outline-none focus:border-amber-500/40 cursor-pointer disabled:opacity-50"
+                              style={{ colorScheme: 'dark' }}
+                            >
+                              <option value="PENDING">Pending</option>
+                              <option value="APPROVED">Setujui</option>
+                              <option value="REJECTED">Tolak</option>
+                            </select>
+                          )}
+                          <button
+                            type="button"
+                            disabled={
+                              statusLocked ||
+                              registrationDeletingId !== null ||
+                              registrationUpdatingId !== null
+                            }
+                            onClick={() =>
+                              void handleDeleteRegistration(
+                                p.id,
+                                p.member?.fullName || '',
+                              )
+                            }
+                            className="flex items-center justify-center gap-1 rounded-lg border border-red-500/25 bg-red-500/10 py-1.5 text-[9px] font-black uppercase text-red-400 disabled:opacity-30 disabled:pointer-events-none active:scale-[0.97]"
+                          >
+                            <Trash2 size={12} aria-hidden />
+                            Hapus
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5 text-gray-600 shrink-0">
+                      <MoreVertical size={14} />
+                    </div>
+                  )}
                 </motion.div>
-              ))
+                );
+              })
             ) : (
               <div className="py-20 text-center bg-white/[0.02] rounded-[2.5rem] border border-dashed border-white/10">
                 <Users className="mx-auto text-gray-800 mb-3" size={40} />
@@ -510,9 +786,14 @@ export default function EventParticipantsPage() {
               <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-8 opacity-50" />
               
               <div className="flex flex-col items-center text-center mb-8">
-                <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl font-black text-amber-500 mb-4 uppercase shadow-2xl">
-                  {selectedParticipant.member?.fullName?.charAt(0)}
-                </div>
+                <MemberAvatarRing
+                  fullName={selectedParticipant.member?.fullName}
+                  currentRank={selectedParticipant.member?.currentRank}
+                  photoUrl={selectedParticipant.member?.user?.photoUrl}
+                  sizeClass="w-20 h-20"
+                  initialClassName="text-3xl"
+                  ringClassName="mb-4 shadow-2xl"
+                />
                 <h3 className="text-xl font-black uppercase text-white tracking-tight leading-none mb-2">
                   {selectedParticipant.member?.fullName}
                 </h3>
