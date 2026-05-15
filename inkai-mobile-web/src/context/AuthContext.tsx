@@ -85,16 +85,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: unknown) {
       console.error('Login error:', error);
-      const axiosErr = error as { response?: { data?: { message?: string }; status?: number } };
+      const axiosErr = error as {
+        response?: {
+          data?: { message?: string; debug?: string };
+          status?: number;
+        };
+      };
+      const data = axiosErr.response?.data;
       let message =
-        typeof axiosErr.response?.data?.message === 'string'
-          ? axiosErr.response.data.message
+        typeof data?.message === 'string'
+          ? data.message
           : 'Login gagal. Periksa email/NIA dan kata sandi.';
       if (axiosErr.response?.status === 429) {
         message =
-          typeof axiosErr.response?.data?.message === 'string'
-            ? axiosErr.response.data.message
+          typeof data?.message === 'string'
+            ? data.message
             : 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.';
+      }
+      if (typeof data?.debug === 'string' && data.debug.trim()) {
+        message = `${message} — ${data.debug}`;
       }
       return { ok: false, message };
     } finally {
