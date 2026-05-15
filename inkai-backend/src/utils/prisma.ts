@@ -1,6 +1,33 @@
 import { PrismaClient } from '@prisma/client';
 
 /**
+ * Di Vercel, endpoint direct `db.*.supabase.co:5432` sering tidak terjangkau (IPv6).
+ * DATABASE_URL harus transaction pooler: host `db.*.supabase.co` port **6543**, user `postgres`, `?pgbouncer=true`.
+ */
+function rejectSupabaseDirectPortOnVercel(databaseUrl: string): void {
+  if (!process.env.VERCEL) return;
+  try {
+    const u = new URL(databaseUrl);
+    const host = u.hostname.toLowerCase();
+    if (!host.endsWith('.supabase.co') || !host.startsWith('db.')) return;
+    const port = u.port === '' ? '5432' : u.port;
+    if (port === '5432') {
+      throw new Error(
+        '[INKAI] DATABASE_URL memakai direct Postgres Supabase (port 5432). Di Vercel ini biasanya gagal. ' +
+          'Ganti ke transaction pooler: port 6543, contoh ' +
+          '`postgresql://postgres:***@db.<ref>.supabase.co:6543/postgres?sslmode=require&pgbouncer=true`. ' +
+          'Salin dari Supabase → Connect → Transaction. ' +
+          'Pastikan env ini di scope Production dan Preview (jika dipakai).',
+      );
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith('[INKAI]')) {
+      throw e;
+    }
+  }
+}
+
+/**
  * Singleton global agar Lambda/Vercel memakai satu klien pada instance yang sama.
  * Runtime memakai `DATABASE_URL` (Supabase: transaction pooler `db.<ref>:6543` + ?pgbouncer=true).
  * Migrasi: `npm run migrate:deploy` memakai `DIRECT_URL` di skrip, bukan field schema.
@@ -10,6 +37,7 @@ const prismaClientSingleton = (): PrismaClient => {
   if (!url) {
     throw new Error('DATABASE_URL belum diset');
   }
+  rejectSupabaseDirectPortOnVercel(url);
   return new PrismaClient({
     datasources: { db: { url } },
     log:
