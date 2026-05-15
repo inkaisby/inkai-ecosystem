@@ -65,18 +65,22 @@ function MemberAvatarRing({
 
   return (
     <div
-      className={`rounded-full shrink-0 box-border ${padClass} flex items-center justify-center ${sizeClass} ${ringClassName ?? ''}`}
+      className={`rounded-full shrink-0 flex-none box-border ${padClass} flex items-center justify-center overflow-hidden ${sizeClass} ${ringClassName ?? ''}`}
       style={{
         backgroundColor: ring.bg,
         boxShadow: ring.shadow,
+        width: compact ? '2rem' : undefined,
+        height: compact ? '2rem' : undefined,
+        maxWidth: compact ? '2rem' : undefined,
+        maxHeight: compact ? '2rem' : undefined,
       }}
     >
-      <div className="w-full h-full min-w-0 rounded-full overflow-hidden bg-neutral-900/95 flex items-center justify-center">
+      <div className="w-full h-full max-h-full max-w-full min-w-0 min-h-0 rounded-full overflow-hidden bg-neutral-900/95 flex items-center justify-center">
         {src ? (
           <img
             src={src}
             alt={fullName ? `Foto ${fullName}` : 'Foto peserta'}
-            className="w-full h-full object-cover"
+            className="h-full w-full max-h-full max-w-full min-w-0 object-cover"
           />
         ) : (
           <span
@@ -615,10 +619,9 @@ export default function EventParticipantsPage() {
 
                 return (
                 <motion.div 
-                  layoutId={`participant-${p.id}`}
                   key={p.id}
                   onClick={() => setSelectedParticipant(p)}
-                  className="bg-white/[0.03] border border-white/5 p-4 rounded-[2rem] flex items-center gap-2.5 active:scale-[0.98] transition-all shadow-xl relative overflow-hidden group"
+                  className="bg-white/[0.03] border border-white/5 p-4 rounded-[2rem] flex flex-row items-start gap-2.5 active:scale-[0.98] transition-all shadow-xl relative overflow-hidden group"
                 >
                   <MemberAvatarRing
                     fullName={p.member?.fullName}
@@ -629,9 +632,9 @@ export default function EventParticipantsPage() {
                     ringClassName="group-active:scale-90 transition-transform"
                   />
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1.5 gap-2">
-                      <h4 className="text-[13px] font-black text-white uppercase truncate tracking-tight">
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <div className="flex justify-between items-start gap-2">
+                      <h4 className="text-[13px] font-black text-white uppercase leading-snug tracking-tight break-words">
                         {p.member?.fullName || 'Anonim'}
                       </h4>
                       {!showInlineRegistrationActions ? getStatusBadge(p.status) : null}
@@ -697,7 +700,7 @@ export default function EventParticipantsPage() {
                   
                   {showInlineRegistrationActions ? (
                     <div
-                      className="flex flex-col gap-1.5 shrink-0 items-stretch min-w-[104px]"
+                      className="flex flex-col gap-1.5 shrink-0 items-stretch min-w-[104px] self-start pt-0.5"
                       onClick={(e) => e.stopPropagation()}
                       role="presentation"
                     >
@@ -752,7 +755,7 @@ export default function EventParticipantsPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5 text-gray-600 shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5 text-gray-600 shrink-0 self-start mt-0.5">
                       <MoreVertical size={14} />
                     </div>
                   )}
