@@ -5,8 +5,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  /// Koneksi langsung (Supabase :5432) untuk migrasi; DATABASE_URL boleh pooler :6543 + pgbouncer.
+  directUrl = env("DIRECT_URL")
 }
 
 model Province {
