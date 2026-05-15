@@ -1,8 +1,28 @@
 import { PrismaClient } from '@prisma/client';
 
+/** Hilangkan spasi / newline dari paste Vercel & tanda kutip luar ("...") yang ikut ke nilai env. */
+export function sanitizeDatabaseUrlFromEnv(raw: string | undefined): string {
+  let s = (raw ?? '').trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
+function isSupabaseRelatedHost(host: string): boolean {
+  const h = host.toLowerCase();
+  return (
+    h.endsWith('.supabase.co') || h.includes('.pooler.supabase.com')
+  );
+}
+
 /**
  * Di Vercel, endpoint direct `db.*.supabase.co:5432` sering tidak terjangkau (IPv6).
- * DATABASE_URL harus transaction pooler: host `db.*.supabase.co` port **6543**, user `postgres`, `?pgbouncer=true`.
+ * Transaction pooler umum: host `db.*.supabase.co` port **6543**, user `postgres`, `?pgbouncer=true`.
+ * Session/shared pooler IPv4: host `aws-*-….pooler.supabase.com` port **5432**, user **`postgres.<ref>`**.
  */
 function rejectSupabaseDirectPortOnVercel(databaseUrl: string): void {
   if (!process.env.VERCEL) return;
@@ -35,7 +55,7 @@ function normalizeDatabaseUrlForVercel(databaseUrl: string): string {
   try {
     const u = new URL(databaseUrl);
     const host = u.hostname.toLowerCase();
-    if (!host.endsWith('.supabase.co')) return databaseUrl;
+    if (!isSupabaseRelatedHost(host)) return databaseUrl;
     if (!u.searchParams.has('connect_timeout')) {
       u.searchParams.set('connect_timeout', '30');
     }
@@ -54,11 +74,24 @@ function normalizeDatabaseUrlForVercel(databaseUrl: string): string {
  * Migrasi: `npm run migrate:deploy` memakai `DIRECT_URL` di skrip, bukan field schema.
  */
 const prismaClientSingleton = (): PrismaClient => {
-  const raw = process.env.DATABASE_URL;
+  const raw = sanitizeDatabaseUrlFromEnv(process.env.DATABASE_URL);
   if (!raw) {
     throw new Error('DATABASE_URL belum diset');
   }
   rejectSupabaseDirectPortOnVercel(raw);
+  if (process.env.INKAI_DEBUG_DB_URL === '1') {
+    try {
+      const u = new URL(raw);
+      console.log(
+        '[INKAI_DEBUG_DB_URL] host=%s username_parsed=%s port=%s',
+        u.hostname,
+        u.username || '(empty)',
+        u.port || 'default',
+      );
+    } catch {
+      console.log('[INKAI_DEBUG_DB_URL] URL parse failed');
+    }
+  }
   const url = normalizeDatabaseUrlForVercel(raw);
   return new PrismaClient({
     datasources: { db: { url } },

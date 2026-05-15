@@ -80,6 +80,23 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
+/** Uji Prisma ↔ Postgres (pakai sama seperti endpoint login). */
+app.get('/health/db', async (_req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    await prisma.user.findFirst({
+      select: { id: true },
+    });
+    res.json({ ok: true, timestamp: new Date().toISOString() });
+  } catch {
+    res.status(503).json({
+      ok: false,
+      message: 'Database unreachable or misconfigured. Check DATABASE_URL and Supabase status.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // Error handling middleware (hanya jalan bila controller memanggil `next(error)`).
 app.use((err: unknown, req: Request, res: Response, _next: any) => {
   console.error(err);

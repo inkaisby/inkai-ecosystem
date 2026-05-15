@@ -1,59 +1,66 @@
+/// <reference types="node" />
+
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 
-async function checkLocal() {
-  console.log('--- Checking Local Database (SQLite) ---');
-  const prismaLocal = new PrismaClient({
-    datasources: {
-      db: {
-        url: "file:./prisma/dev.db"
-      }
-    }
-  });
-
+/** Ringkas URL untuk log — tanpa password. */
+function describeDatabaseUrl(raw: string | undefined): string {
+  if (!raw?.trim()) return '(DATABASE_URL kosong)';
   try {
-    const userCount = await prismaLocal.user.count();
-    const provinceCount = await prismaLocal.province.count();
-    console.log(`Local User Count: ${userCount}`);
-    console.log(`Local Province Count: ${provinceCount}`);
-    
-    const users = await prismaLocal.user.findMany({ take: 3 });
-    console.log('Local Users:', users.map(u => u.email));
-  } catch (error) {
-    console.error('Error checking local DB:', error);
-  } finally {
-    await prismaLocal.$disconnect();
-  }
-}
-
-async function checkSupabase() {
-  console.log('\n--- Checking Supabase Database (PostgreSQL) ---');
-  const supabaseUrl = "postgresql://postgres:BThMKtEinCGIqcCBs@db.mzmdhkwleufeiyaspmns.supabase.co:5432/postgres";
-  const prismaSupabase = new PrismaClient({
-    datasources: {
-      db: {
-        url: supabaseUrl
-      }
-    }
-  });
-
-  try {
-    const userCount = await prismaSupabase.user.count();
-    const provinceCount = await prismaSupabase.province.count();
-    console.log(`Supabase User Count: ${userCount}`);
-    console.log(`Supabase Province Count: ${provinceCount}`);
-
-    const users = await prismaSupabase.user.findMany({ take: 3 });
-    console.log('Supabase Users:', users.map(u => u.email));
-  } catch (error) {
-    console.error('Error checking Supabase DB:', error);
-  } finally {
-    await prismaSupabase.$disconnect();
+    const u = new URL(raw);
+    const hints: string[] = [];
+    const port = u.port || '(default)';
+    hints.push(`host=${u.hostname}`);
+    hints.push(`port=${port}`);
+    if (raw.startsWith('file:')) return `SQLite file URL (panjang ${raw.length} char)`;
+    if (u.searchParams.has('pgbouncer'))
+      hints.push(`pgbouncer=${u.searchParams.get('pgbouncer')}`);
+    if (u.searchParams.has('sslmode'))
+      hints.push(`sslmode=${u.searchParams.get('sslmode')}`);
+    return hints.join(' ');
+  } catch {
+    return '(DATABASE_URL tidak valid sebagai URL)';
   }
 }
 
 async function main() {
-  await checkLocal();
-  await checkSupabase();
+  const raw = process.env.DATABASE_URL;
+  console.log('--- INKAI DB smoke test ---');
+  console.log(describeDatabaseUrl(raw));
+  console.log(`VERCEL=${process.env.VERCEL ?? '(empty)'}`);
+  console.log(`NODE_ENV=${process.env.NODE_ENV ?? '(empty)'}`);
+
+  if (!raw?.trim()) {
+    console.error('DATABASE_URL tidak diset. Isi di .env lokal atau Vercel → Environment Variables.');
+    process.exitCode = 1;
+    return;
+  }
+
+  const prisma = new PrismaClient({
+    datasources: { db: { url: raw } },
+    log: ['error'],
+  });
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const n = await prisma.user.count();
+    console.log(`OK — koneksi DB jalan. Jumlah user (tabel user): ${n}`);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('GAGAL:', msg);
+    if (/Can't reach database server/i.test(msg)) {
+      console.error(`
+Kemungkinan:
+• Project Supabase yang host-nya Anda pakai dalam keadaan pause (cek kartu project di dashboard).
+• Reference ID salah: host harus sesuai project yang benar (Settings → General).
+• Salah salin Transaction pooler di Supabase Connect (port 6543, user postgres, ?pgbouncer=true).
+• Deploy Vercel belum pakai env terbaru — redeploy Production setelah ubah DATABASE_URL.
+`);
+    }
+    process.exitCode = 1;
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
-main();
+void main();
