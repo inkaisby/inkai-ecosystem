@@ -246,8 +246,11 @@ html[data-clock-phase="day"] .mobile-content {
   position: fixed;
   z-index: 110;
   top: var(--admin-topbar-top);
-  left: 50%;
-  transform: translateX(-50%);
+  /* Tanpa transform: descendant position:fixed mengacu ke viewport (bukan header). */
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
   width: 100%;
   max-width: 480px;
   box-sizing: border-box;

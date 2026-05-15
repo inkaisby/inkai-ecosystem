@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { 
   Users, 
   Search, 
@@ -27,6 +27,7 @@ import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { MemberItemSkeleton } from '@/components/admin/Skeleton';
 import AdminModalPortal from '@/components/admin/AdminModalPortal';
+import { useAuth } from '@/context/AuthContext';
 
 const ADMIN_BELT_RANK_OPTIONS: readonly string[] = [
   'Putih (Kyu 10)',
@@ -41,6 +42,26 @@ const ADMIN_BELT_RANK_OPTIONS: readonly string[] = [
   'Coklat (Kyu 1)',
   ...Array.from({ length: 10 }, (_, i) => `Hitam (DAN ${i + 1})`),
 ];
+
+/** Selaras kebijakan backend: ADMIN_DOJO tidak mengatur NIA/sabuk; cabang ↑ & pusat boleh. */
+function adminMayEditMemberNiaAndSabuk(user: unknown): boolean {
+  if (!user || typeof user !== 'object') return false;
+  const roles = (user as { roles?: unknown }).roles;
+  if (!Array.isArray(roles)) return false;
+  const names = roles
+    .map((r: unknown) =>
+      typeof r === 'string' ? r : ((r as { name?: string })?.name ?? '')
+    )
+    .filter(Boolean);
+  const elevated = new Set([
+    'ADMINISTRATOR',
+    'ADMIN_PUSAT',
+    'ADMIN_PROVINCE',
+    'ADMIN_BRANCH',
+    'ADMIN'
+  ]);
+  return names.some((n) => elevated.has(String(n)));
+}
 
 function AdminMemberRankSelect({
   value,
@@ -106,6 +127,7 @@ function AdminMemberListCard({
   patchMemberInline,
   onToggleStatus,
   onDelete,
+  canEditNiaSabuk,
 }: {
   member: any;
   saving: boolean;
@@ -116,6 +138,7 @@ function AdminMemberListCard({
   ) => Promise<boolean>;
   onToggleStatus: (m: any) => void;
   onDelete: (id: string) => void;
+  canEditNiaSabuk: boolean;
 }) {
   const [niaLocal, setNiaLocal] = useState(() => member.nia ?? '');
 
@@ -160,41 +183,58 @@ function AdminMemberListCard({
               <label className="text-[9px] font-black uppercase text-gray-500 tracking-wider block mb-1">
                 NIA
               </label>
-              <input
-                type="text"
-                value={niaLocal}
-                disabled={saving}
-                onChange={(e) => setNiaLocal(e.target.value)}
-                onBlur={async () => {
-                  const t = niaLocal.trim();
-                  const cur = (member.nia ?? '').trim();
-                  if (t === cur) return;
-                  const ok = await patchMemberInline(member.id, { nia: niaLocal });
-                  if (!ok) setNiaLocal(member.nia ?? '');
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    (e.target as HTMLInputElement).blur();
-                  }
-                }}
-                placeholder="Nomor induk"
-                className="glass-input w-full px-3 py-2 text-[11px] font-mono focus-outline-none"
-              />
+              {canEditNiaSabuk ? (
+                <input
+                  type="text"
+                  value={niaLocal}
+                  disabled={saving}
+                  onChange={(e) => setNiaLocal(e.target.value)}
+                  onBlur={async () => {
+                    const t = niaLocal.trim();
+                    const cur = (member.nia ?? '').trim();
+                    if (t === cur) return;
+                    const ok = await patchMemberInline(member.id, { nia: niaLocal });
+                    if (!ok) setNiaLocal(member.nia ?? '');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  placeholder="Nomor induk"
+                  className="glass-input w-full px-3 py-2 text-[11px] font-mono focus-outline-none"
+                />
+              ) : (
+                <div className="glass-input w-full px-3 py-2 text-[11px] font-mono text-gray-300 border-white/10 opacity-80">
+                  {(member.nia ?? '').trim() !== '' ? member.nia : '—'}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-[9px] font-black uppercase text-gray-500 tracking-wider block mb-1">
                 Sabuk & Kyu
               </label>
-              <AdminMemberRankSelect
-                value={rankValue}
-                disabled={saving}
-                onChange={(next) => {
-                  if (next === rankValue) return;
-                  void patchMemberInline(member.id, { currentRank: next });
-                }}
-                className="glass-input w-full px-3 py-2 text-[11px] appearance-none cursor-pointer font-bold focus-outline-none"
-              />
+              {canEditNiaSabuk ? (
+                <AdminMemberRankSelect
+                  value={rankValue}
+                  disabled={saving}
+                  onChange={(next) => {
+                    if (next === rankValue) return;
+                    void patchMemberInline(member.id, { currentRank: next });
+                  }}
+                  className="glass-input w-full px-3 py-2 text-[11px] appearance-none cursor-pointer font-bold focus-outline-none"
+                />
+              ) : (
+                <div className="glass-input w-full px-3 py-2 text-[11px] font-bold text-amber-500/95 border-white/10 opacity-90">
+                  {rankValue}
+                </div>
+              )}
             </div>
+            {!canEditNiaSabuk ? (
+              <p className="text-[9px] text-gray-500 leading-snug">
+                NIA dan sabuk/Kyu diatur pengurus cabang atau pusat.
+              </p>
+            ) : null}
           </div>
 
           <p className="text-[9px] text-gray-500 leading-snug pt-0.5">
@@ -247,6 +287,9 @@ function MembersContent() {
   const branchId = searchParams.get('branchId');
   const provinceId = searchParams.get('provinceId');
   const memberId = searchParams.get('memberId');
+
+  const { user } = useAuth();
+  const canEditNiaSabuk = useMemo(() => adminMayEditMemberNiaAndSabuk(user), [user]);
 
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -727,6 +770,7 @@ function MembersContent() {
                 patchMemberInline={patchMemberInline}
                 onToggleStatus={handleToggleStatus}
                 onDelete={handleDelete}
+                canEditNiaSabuk={canEditNiaSabuk}
               />
             ))
           ) : !loading && (
@@ -785,9 +829,19 @@ function MembersContent() {
               setIsSubmitting(true);
               try {
                 if (isEdit && editId) {
-                  await api.members.update(editId, formData as any); 
+                  let payload = { ...(formData as any) };
+                  if (!canEditNiaSabuk) {
+                    delete payload.nia;
+                    delete payload.currentRank;
+                  }
+                  await api.members.update(editId, payload);
                 } else {
-                  await api.members.create(formData);
+                  let payload = { ...(formData as any) };
+                  if (!canEditNiaSabuk) {
+                    delete payload.nia;
+                    delete payload.currentRank;
+                  }
+                  await api.members.create(payload);
                 }
                 setShowAddModal(false);
                 resetForm();
@@ -859,25 +913,37 @@ function MembersContent() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Sabuk</label>
+                  <div className={!canEditNiaSabuk ? 'pointer-events-none opacity-80' : ''}>
+                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">
+                      Sabuk
+                    </label>
                     <AdminMemberRankSelect
                       value={formData.currentRank}
+                      disabled={!canEditNiaSabuk}
                       onChange={(currentRank) => setFormData({ ...formData, currentRank })}
                       className="glass-input w-full px-4 py-3 text-sm appearance-none cursor-pointer font-bold focus-outline-none"
                     />
                   </div>
-                  <div>
-                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">NIA (Opsional)</label>
+                  <div className={!canEditNiaSabuk ? 'pointer-events-none opacity-80' : ''}>
+                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">
+                      NIA (Opsional)
+                    </label>
                     <input 
                       type="text" 
                       value={formData.nia}
+                      readOnly={!canEditNiaSabuk}
+                      disabled={!canEditNiaSabuk}
                       onChange={(e) => setFormData({ ...formData, nia: e.target.value })}
                       placeholder="Nomor Induk"
                       className="glass-input w-full px-4 py-3 text-sm font-bold focus-outline-none"
                     />
                   </div>
                 </div>
+                {!canEditNiaSabuk ? (
+                  <p className="text-[10px] text-gray-500 leading-relaxed px-1 -mt-2">
+                    Sebagai pengurus dojo/ranting Anda tidak dapat mengubah NIA atau sabuk di sini. Hubungi pengurus cabang atau pusat.
+                  </p>
+                ) : null}
 
                 <div className="pt-5 border-t border-white-5 space-y-4">
                   <div className="flex items-center gap-2">
@@ -1148,23 +1214,31 @@ function MembersContent() {
                               {r.isVerified ? 'Terverifikasi' : 'Belum terverifikasi'}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openRankEditModal(r);
-                            }}
-                            className="shrink-0 p-2.5 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/25 hover:bg-amber-500/25 transition-all"
-                            title="Perbaiki data tingkat"
-                            aria-label="Edit riwayat tingkat"
-                          >
-                            <Pencil size={16} />
-                          </button>
+                          {canEditNiaSabuk ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openRankEditModal(r);
+                              }}
+                              className="shrink-0 p-2.5 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/25 hover:bg-amber-500/25 transition-all"
+                              title="Perbaiki data tingkat"
+                              aria-label="Edit riwayat tingkat"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                          ) : (
+                            <span className="shrink-0 text-[9px] text-gray-600 font-black uppercase tracking-wider self-center max-w-[72px] text-right leading-tight">
+                              Hanya pusat/cabang
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>
                     <p className="text-[10px] text-gray-600 mt-3 italic">
-                      Admin dapat memperbaiki lokasi, tanggal, atau nama tingkat bila ada kesalahan dari pengajuan anggota.
+                      {canEditNiaSabuk
+                        ? 'Admin dapat memperbaiki lokasi, tanggal, atau nama tingkat bila ada kesalahan dari pengajuan anggota.'
+                        : 'Riwayat sabuk bersifat laporan; penyuntingan hanya oleh pengurus cabang atau pusat.'}
                     </p>
                   </>
                 ) : (
@@ -1398,6 +1472,11 @@ function MembersContent() {
                   <br />
                   Contoh: <code className="text-gray-500">26.37619 [tab] Beatrix Sharon [tab] Surabaya, 28 Februari 2011 [tab] P [tab] Alamat...</code>
                 </p>
+                {!canEditNiaSabuk ? (
+                  <p className="text-[10px] text-gray-500 leading-relaxed border-t border-amber-500/10 pt-2 mt-2">
+                    Akun Anda (pengurus dojo/ranting): kolom NIA pada impor akan diabaikan sistem; tingkat sabuk baru anggota diset Putih Kyu awal sampai dicatat pusat/cabang.
+                  </p>
+                ) : null}
               </div>
 
               <textarea 

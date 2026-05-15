@@ -1,12 +1,29 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
-import { notifyAdmins } from '../utils/notification';
+import { notifyAdmins, createNotification } from '../utils/notification';
 import { supabase } from '../utils/supabase';
 import path from 'path';
 
 interface AuthRequest extends Request {
   user?: any;
+}
+
+function jwtRoleNames(user: AuthRequest['user']): string[] {
+  if (!user?.roles || !Array.isArray(user.roles)) return [];
+  return user.roles.filter((x: unknown): x is string => typeof x === 'string');
+}
+
+/** NIA dan sabuk/Kyu aktif hanya boleh diisi/diubah pengurus tingkat cabang ke atas (+ admin pusat/super). */
+function canSetMemberNiaAndRank(roleNames: string[]): boolean {
+  const allowed = new Set([
+    'ADMINISTRATOR',
+    'ADMIN_PUSAT',
+    'ADMIN_PROVINCE',
+    'ADMIN_BRANCH',
+    'ADMIN'
+  ]);
+  return roleNames.some((r) => allowed.has(r));
 }
 
 export const getMyProfile = async (req: AuthRequest, res: Response) => {
@@ -406,7 +423,7 @@ export const addChildMember = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createMember = async (req: Request, res: Response) => {
+export const createMember = async (req: AuthRequest, res: Response) => {
   try {
     const { 
       fullName, 
@@ -420,13 +437,22 @@ export const createMember = async (req: Request, res: Response) => {
       status = 'Active'
     } = req.body;
 
+    const adminRoles = jwtRoleNames(req.user);
+
     // Check if required fields are present
     if (!fullName || !dojoId) {
       return res.status(400).json({ message: 'Full Name and Dojo are required' });
     }
 
+    let effectiveRank = currentRank || 'Putih';
+
     // Convert empty NIA to null for uniqueness
-    const finalNia = nia && nia.trim() !== '' ? nia.trim() : null;
+    let finalNia = nia && nia.trim() !== '' ? nia.trim() : null;
+
+    if (!canSetMemberNiaAndRank(adminRoles)) {
+      finalNia = null;
+      effectiveRank = 'Putih (Kyu 10)';
+    }
 
     // Check if NIA already exists if provided
     if (finalNia) {
@@ -469,7 +495,7 @@ export const createMember = async (req: Request, res: Response) => {
           dojoId,
           gender,
           birthDate: birthDate ? new Date(birthDate) : undefined,
-          currentRank: currentRank || 'Putih',
+          currentRank: effectiveRank,
           nia: finalNia,
           status,
           userId
@@ -509,7 +535,7 @@ export const createMember = async (req: Request, res: Response) => {
   }
 };
 
-export const updateMember = async (req: Request, res: Response) => {
+export const updateMember = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { 
@@ -523,6 +549,17 @@ export const updateMember = async (req: Request, res: Response) => {
       password,
       status
     } = req.body;
+
+    const adminRoles = jwtRoleNames(req.user);
+    if (!canSetMemberNiaAndRank(adminRoles)) {
+      if (Object.prototype.hasOwnProperty.call(req.body, 'nia') ||
+          Object.prototype.hasOwnProperty.call(req.body, 'currentRank')) {
+        return res.status(403).json({
+          message:
+            'Hanya pengurus cabang ke atas atau pusat yang dapat mengubah NIA atau sabuk/Kyu.'
+        });
+      }
+    }
 
     if (nia !== undefined) {
       const finalNia = nia && String(nia).trim() !== '' ? String(nia).trim() : null;
@@ -539,6 +576,11 @@ export const updateMember = async (req: Request, res: Response) => {
       }
     }
 
+    let priorForNotify: {
+      nia: string | null;
+      currentRank: string | null;
+    } | null = null;
+
     const updatedMember = await prisma.$transaction(async (tx) => {
       const currentMember = await tx.member.findUnique({ 
         where: { id },
@@ -546,6 +588,11 @@ export const updateMember = async (req: Request, res: Response) => {
       });
 
       if (!currentMember) throw new Error('Member not found');
+
+      priorForNotify = {
+        nia: currentMember.nia ?? null,
+        currentRank: currentMember.currentRank ?? null,
+      };
 
       let userId = currentMember.userId;
 
@@ -631,6 +678,55 @@ export const updateMember = async (req: Request, res: Response) => {
         }
       });
     });
+
+    type UpdatedMemberLite = {
+      nia?: string | null;
+      currentRank?: string | null;
+      userId?: string | null;
+    };
+    const out = updatedMember as UpdatedMemberLite;
+    const priorSnap = priorForNotify as {
+      nia: string | null;
+      currentRank: string | null;
+    } | null;
+
+    if (priorSnap && out.userId) {
+      const normalizeNia = (v: unknown) =>
+        typeof v === 'string' && v.trim() !== '' ? v.trim() : null;
+      const normalizeRankLabel = (v: unknown) =>
+        typeof v === 'string' && v.trim() !== '' ? v.trim() : '';
+
+      const prevN = normalizeNia(priorSnap.nia);
+      const nextN = normalizeNia(out.nia);
+      const prevR = normalizeRankLabel(priorSnap.currentRank);
+      const nextR = normalizeRankLabel(out.currentRank ?? '');
+
+      const niaChanged = prevN !== nextN;
+      const rankChanged = prevR !== nextR;
+
+      if (niaChanged || rankChanged) {
+        const parts: string[] = [];
+        if (niaChanged) {
+          parts.push(
+            out.nia && String(out.nia).trim() !== ''
+              ? `NIA Anda diperbarui menjadi ${String(out.nia).trim()}.`
+              : 'NIA Anda telah dihapus/dikosongkan oleh pengurus.'
+          );
+        }
+        if (rankChanged) {
+          parts.push(
+            `Sabuk/Kyu Anda diperbarui menjadi ${normalizeRankLabel(out.currentRank) || '—'}.`
+          );
+        }
+
+        await createNotification({
+          userId: out.userId,
+          title: 'Data keanggotaan diperbarui',
+          content: parts.join(' '),
+          type: 'SUCCESS',
+        });
+      }
+    }
 
     res.json({ status: 'success', data: updatedMember });
   } catch (error: any) {
@@ -747,13 +843,16 @@ export const uploadDocument = async (req: AuthRequest, res: Response) => {
 };
 
 
-export const bulkCreateMembers = async (req: Request, res: Response) => {
+export const bulkCreateMembers = async (req: AuthRequest, res: Response) => {
   try {
     const { members } = req.body;
 
     if (!Array.isArray(members)) {
       return res.status(400).json({ status: 'error', message: 'Data members harus berupa array' });
     }
+
+    const adminRoles = jwtRoleNames(req.user);
+    const canSetRankNia = canSetMemberNiaAndRank(adminRoles);
 
     const results = {
       success: 0,
@@ -780,7 +879,17 @@ export const bulkCreateMembers = async (req: Request, res: Response) => {
           throw new Error('Nama Lengkap dan Dojo wajib diisi');
         }
 
-        const finalNia = nia && String(nia).trim() !== '' ? String(nia).trim() : null;
+        let finalNia = nia && String(nia).trim() !== '' ? String(nia).trim() : null;
+
+        let currentRankStored: string =
+          typeof currentRank === 'string' && currentRank.trim() !== ''
+            ? currentRank.trim()
+            : 'Putih';
+
+        if (!canSetRankNia) {
+          finalNia = null;
+          currentRankStored = 'Putih (Kyu 10)';
+        }
 
         if (finalNia) {
           const existingMember = await prisma.member.findUnique({ where: { nia: finalNia } });
@@ -821,7 +930,9 @@ export const bulkCreateMembers = async (req: Request, res: Response) => {
               dojoId,
               gender,
               birthDate: birthDate ? new Date(birthDate) : undefined,
-              currentRank: (currentRank || 'Putih').toUpperCase(),
+              currentRank: canSetRankNia
+                ? currentRankStored.toUpperCase()
+                : currentRankStored,
               nia: finalNia,
               status,
               userId
@@ -857,6 +968,15 @@ export const updateMemberRank = async (req: AuthRequest, res: Response) => {
   try {
     const { memberId, rankId } = req.params;
     const { rank, date, location, isVerified } = req.body ?? {};
+
+    const adminRoles = jwtRoleNames(req.user);
+    if (!canSetMemberNiaAndRank(adminRoles)) {
+      return res.status(403).json({
+        status: 'error',
+        message:
+          'Hanya pengurus cabang ke atas atau pusat yang dapat menyunting riwayat sabuk/Kyu.',
+      });
+    }
 
     const row = await prisma.memberRank.findFirst({
       where: { id: rankId, memberId },

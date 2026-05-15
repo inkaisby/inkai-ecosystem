@@ -117,8 +117,14 @@ export default function TopBar() {
   };
 
   return (
-    <header className="admin-topbar-fixed border-b border-white/5 adm-chrome-soft backdrop-blur-xl flex items-center justify-between gap-3 touch-manipulation">
-      <div className="flex items-center gap-2.5 shrink-0">
+    <header className="admin-topbar-fixed relative flex items-center overflow-visible touch-manipulation">
+      {/* Blur hanya di lapisan ini agar backdrop sheet (fixed) tidak terikat ke kotak header. */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 border-b border-white/5 adm-chrome-soft backdrop-blur-xl"
+        aria-hidden
+      />
+      <div className="relative z-10 flex w-full min-w-0 items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 shrink-0">
         <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
           <Shield size={16} className="text-black" strokeWidth={3} />
         </div>
@@ -327,6 +333,7 @@ export default function TopBar() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </header>
   );
