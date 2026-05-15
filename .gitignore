@@ -19,6 +19,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.vercel*.local
 dist/
 build/
 .next/
@@ -52,3 +53,5 @@ android/app/release/
 
 # Project specific
 /flutter/
+
+.vercel
