@@ -42,24 +42,53 @@ function MemberAvatarRing({
   fullName,
   currentRank,
   photoUrl,
-  sizeClass,
+  sizeClass = 'w-20 h-20',
   initialClassName,
   ringClassName,
   compact,
+  listStripe,
 }: {
   fullName?: string;
   currentRank?: string | null;
   photoUrl?: string | null;
-  /** Mis. `w-8 h-8` (daftar), `w-20 h-20` (drawer) */
-  sizeClass: string;
+  /** Lingkaran (drawer / fallback); tidak dipakai jika listStripe */
+  sizeClass?: string;
   initialClassName?: string;
   ringClassName?: string;
-  /** Ukuran sangat kecil seperti inisial di baris daftar */
   compact?: boolean;
+  /** Strip foto kiri setinggi kartu daftar */
+  listStripe?: boolean;
 }) {
   const ring = beltRingVisual(currentRank);
   const src = photoUrl ? getAssetUrl(photoUrl) : '';
   const initial = fullName?.charAt(0) || '?';
+
+  if (listStripe) {
+    return (
+      <div
+        className="relative h-full min-h-0 w-full overflow-hidden rounded-l-[2rem] bg-neutral-900/95 transition-opacity group-active:opacity-95"
+        style={{
+          borderLeftWidth: 4,
+          borderLeftStyle: 'solid',
+          borderLeftColor: ring.bg,
+          boxShadow: ring.shadow,
+        }}
+      >
+        {src ? (
+          <img
+            src={src}
+            alt={fullName ? `Foto ${fullName}` : 'Foto peserta'}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <span className="relative flex h-full min-h-[4rem] items-center justify-center text-2xl font-black uppercase text-amber-500">
+            {initial}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   const padClass = compact ? 'p-[2px]' : 'p-[3px]';
   const initialFallback = compact ? 'text-[10px] leading-none' : 'text-xl';
 
@@ -621,18 +650,18 @@ export default function EventParticipantsPage() {
                 <motion.div 
                   key={p.id}
                   onClick={() => setSelectedParticipant(p)}
-                  className="bg-white/[0.03] border border-white/5 p-4 rounded-[2rem] flex flex-row items-start gap-2.5 active:scale-[0.98] transition-all shadow-xl relative overflow-hidden group"
+                  className="bg-white/[0.03] border border-white/5 rounded-[2rem] flex min-h-[4.75rem] flex-row items-stretch overflow-hidden active:scale-[0.98] transition-all shadow-xl group"
                 >
-                  <MemberAvatarRing
-                    fullName={p.member?.fullName}
-                    currentRank={p.member?.currentRank}
-                    photoUrl={p.member?.user?.photoUrl}
-                    sizeClass="w-8 h-8"
-                    compact
-                    ringClassName="group-active:scale-90 transition-transform"
-                  />
+                  <div className="w-[4.25rem] shrink-0 self-stretch">
+                    <MemberAvatarRing
+                      fullName={p.member?.fullName}
+                      currentRank={p.member?.currentRank}
+                      photoUrl={p.member?.user?.photoUrl}
+                      listStripe
+                    />
+                  </div>
 
-                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1 py-3.5 pl-3 pr-2">
                     <div className="flex justify-between items-start gap-2">
                       <h4 className="text-[13px] font-black text-white uppercase leading-snug tracking-tight break-words">
                         {p.member?.fullName || 'Anonim'}
@@ -700,7 +729,7 @@ export default function EventParticipantsPage() {
                   
                   {showInlineRegistrationActions ? (
                     <div
-                      className="flex flex-col gap-1.5 shrink-0 items-stretch min-w-[104px] self-start pt-0.5"
+                      className="flex shrink-0 flex-col items-stretch justify-center gap-1.5 self-stretch min-w-[104px] border-l border-white/[0.06] py-3.5 pr-3.5 pl-2"
                       onClick={(e) => e.stopPropagation()}
                       role="presentation"
                     >
@@ -755,7 +784,7 @@ export default function EventParticipantsPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5 text-gray-600 shrink-0 self-start mt-0.5">
+                    <div className="flex w-11 shrink-0 items-center justify-center self-stretch border-l border-white/[0.06] py-3.5 pr-3.5 pl-2 text-gray-600">
                       <MoreVertical size={14} />
                     </div>
                   )}
@@ -792,16 +821,16 @@ export default function EventParticipantsPage() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="admin-modal-drawer-sheet mobile-hpad pt-8 pb-[calc(env(safe-area-inset-bottom,24px)+24px)]"
             >
-              <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-8 opacity-50" />
+              <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6 opacity-50" />
               
-              <div className="flex flex-col items-center text-center mb-8">
+              <div className="flex flex-col items-center text-center mb-6">
                 <MemberAvatarRing
                   fullName={selectedParticipant.member?.fullName}
                   currentRank={selectedParticipant.member?.currentRank}
                   photoUrl={selectedParticipant.member?.user?.photoUrl}
-                  sizeClass="w-20 h-20"
-                  initialClassName="text-3xl"
-                  ringClassName="mb-4 shadow-2xl"
+                  sizeClass="w-14 h-14 max-w-[3.5rem] max-h-[3.5rem]"
+                  initialClassName="text-lg"
+                  ringClassName="mb-3 shadow-lg mx-auto"
                 />
                 <h3 className="text-xl font-black uppercase text-white tracking-tight leading-none mb-2">
                   {selectedParticipant.member?.fullName}
