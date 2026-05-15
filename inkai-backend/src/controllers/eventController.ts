@@ -8,6 +8,9 @@ import {
   resolveBranchIdForCreate,
   viewerCanMutateEvent,
   provinceOwnsBranch,
+  userCanBulkRegisterMembersForEvents,
+  staffCanRegisterMemberForEvent,
+  shouldRestrictEventRegistrationsToManagedDojo,
 } from '../utils/eventScope';
 
 export const getAllEvents = async (req: Request, res: Response) => {
@@ -15,13 +18,27 @@ export const getAllEvents = async (req: Request, res: Response) => {
     const jwtUser = (req as Request & { user?: JwtEventUser }).user as JwtEventUser | undefined;
     const vis = await buildEventVisibilityWhere(jwtUser ?? null);
 
+    const countRegistrationsByDojoOnly =
+      jwtUser &&
+      shouldRestrictEventRegistrationsToManagedDojo(jwtUser);
+
     const events = await prisma.event.findMany({
       where: { isDeleted: false, ...vis },
       include: {
         categories: true,
         branch: { select: { id: true, name: true, city: true } },
         _count: {
-          select: { registrations: true },
+          select: {
+            registrations: countRegistrationsByDojoOnly
+              ? {
+                  where: {
+                    member: {
+                      dojoId: jwtUser.managedDojoId,
+                    },
+                  },
+                }
+              : true,
+          },
         },
       },
       orderBy: { startDate: 'desc' },
@@ -102,6 +119,21 @@ export const getEventById = async (req: Request, res: Response) => {
       },
     });
     if (!event) return res.status(404).json({ message: 'Event not found' });
+
+    if (jwtUser && shouldRestrictEventRegistrationsToManagedDojo(jwtUser)) {
+      const dojoOnly = jwtUser.managedDojoId;
+      return res.json({
+        status: 'success',
+        data: {
+          ...event,
+          registrations: event.registrations.filter((r) => r.member.dojoId === dojoOnly),
+          /** Membantu klien: roster ini dibatasi ke dojo yang dikelola ketua */
+          registrationsScopedToManagedDojo: true,
+          managedDojoId: jwtUser.managedDojoId,
+        },
+      });
+    }
+
     res.json({ status: 'success', data: event });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
@@ -165,7 +197,31 @@ export const createEvent = async (req: Request, res: Response) => {
 
 export const registerForEvent = async (req: Request, res: Response) => {
   try {
-    const { eventId, memberId, categoryId } = req.body;
+    const { eventId, memberId: bodyMemberId, categoryId } = req.body;
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user;
+
+    let memberId =
+      typeof bodyMemberId === 'string' && bodyMemberId.trim() !== ''
+        ? bodyMemberId.trim()
+        : typeof jwtUser?.memberId === 'string' && jwtUser.memberId.trim() !== ''
+          ? jwtUser.memberId.trim()
+          : '';
+
+    if (!memberId && jwtUser?.userId) {
+      const linked = await prisma.member.findUnique({
+        where: { userId: jwtUser.userId },
+        select: { id: true },
+      });
+      memberId = linked?.id ?? '';
+    }
+
+    if (!memberId) {
+      return res.status(400).json({
+        status: 'error',
+        message:
+          'Profil anggota tidak ditemukan. Pastikan Anda login sebagai anggota yang sudah terdaftar di dojo.',
+      });
+    }
 
     const eventRecord = await prisma.event.findUnique({
       where: { id: eventId },
@@ -247,10 +303,206 @@ export const registerForEvent = async (req: Request, res: Response) => {
       });
     }
 
+    /** Pendaftaran mandiri selalu mencatat pemahaman ketua dojo/ranting atas anggota asal mereka. */
+    await notifyAdmins({
+      title: 'Anggota mendaftar kegiatan mandiri',
+      content: `${registration.member.fullName} (${registration.member.dojo.name}) mendaftar sendiri untuk "${registration.event.title}"${registration.category ? ` — ${registration.category.name}` : ''}.`,
+      type: 'INFO',
+      dojoId: registration.member.dojoId,
+    });
+
     res.status(201).json({ status: 'success', data: registration });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     console.error('[EventController] Error:', error);
+    res.status(500).json({ status: 'error', message: errMessage });
+  }
+};
+
+export const bulkRegisterForEvent = async (req: Request, res: Response) => {
+  try {
+    const jwtUser = (req as Request & { user?: JwtEventUser }).user as JwtEventUser | undefined;
+
+    if (!userCanBulkRegisterMembersForEvents(jwtUser)) {
+      return res.status(403).json({
+        status: 'error',
+        message:
+          'Hanya pengurus (admin pusat/provinsi/cabang/dojo) yang dapat mendaftar anggota secara massal.',
+      });
+    }
+
+    const { eventId, memberIds, categoryId: bodyCategoryId } = req.body;
+
+    if (!eventId || typeof eventId !== 'string') {
+      return res.status(400).json({ status: 'error', message: 'eventId wajib diisi.' });
+    }
+
+    const vis = await buildEventVisibilityWhere(jwtUser ?? null);
+    const eventRecord = await prisma.event.findFirst({
+      where: { id: eventId, isDeleted: false, ...vis },
+      include: { categories: true },
+    });
+
+    if (!eventRecord) {
+      return res.status(404).json({ status: 'error', message: 'Event tidak ditemukan atau tidak dapat diakses.' });
+    }
+
+    const hasCategories = Array.isArray(eventRecord.categories) && eventRecord.categories.length > 0;
+    let resolvedCategoryId: string | null = null;
+
+    if (hasCategories) {
+      if (!bodyCategoryId || typeof bodyCategoryId !== 'string') {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Pilih satu kategori. Nominal tagihan mengikuti biaya yang ditetapkan cabang untuk agenda ini.',
+        });
+      }
+      const cat = eventRecord.categories.find((c) => c.id === bodyCategoryId);
+      if (!cat) {
+        return res.status(400).json({ status: 'error', message: 'Kategori tidak berlaku untuk agenda ini.' });
+      }
+      resolvedCategoryId = cat.id;
+    }
+
+    const rawIds = Array.isArray(memberIds) ? memberIds : [];
+    const uniqueMemberIds = Array.from(
+      new Set(
+        rawIds.filter((id): id is string => typeof id === 'string' && String(id).trim() !== '').map((id) => id.trim()),
+      ),
+    );
+
+    if (uniqueMemberIds.length === 0) {
+      return res.status(400).json({ status: 'error', message: 'Pilih minimal satu anggota.' });
+    }
+
+    const MAX_BATCH = 200;
+    if (uniqueMemberIds.length > MAX_BATCH) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Maksimal ${MAX_BATCH} anggota per permintaan. Kurangi seleksi Anda.`,
+      });
+    }
+
+    const membersFetched = await prisma.member.findMany({
+      where: { id: { in: uniqueMemberIds } },
+      select: {
+        id: true,
+        isDeleted: true,
+        dojoId: true,
+        userId: true,
+        fullName: true,
+        dojo: { select: { branchId: true, branch: { select: { provinceId: true } } } },
+      },
+    });
+
+    const memberById = new Map(membersFetched.map((m) => [m.id, m]));
+
+    const skippedNotFound: string[] = [];
+    const skippedForbidden: string[] = [];
+    const skippedAlreadyRegistered: string[] = [];
+    const succeeded: { memberId: string; registrationId: string; fullName: string }[] = [];
+
+    for (const mid of uniqueMemberIds) {
+      const memberRow = memberById.get(mid);
+      if (!memberRow) {
+        skippedNotFound.push(mid);
+        continue;
+      }
+
+      if (!staffCanRegisterMemberForEvent(jwtUser, memberRow, eventRecord.branchId)) {
+        skippedForbidden.push(mid);
+        continue;
+      }
+
+      const dup = await prisma.eventRegistration.findFirst({
+        where: { eventId, memberId: mid },
+      });
+      if (dup) {
+        skippedAlreadyRegistered.push(mid);
+        continue;
+      }
+
+      const registration = await prisma.$transaction(async (tx) => {
+        const reg = await tx.eventRegistration.create({
+          data: {
+            eventId,
+            memberId: mid,
+            categoryId: resolvedCategoryId,
+            status: 'PENDING',
+          },
+          include: {
+            member: {
+              include: {
+                dojo: {
+                  include: { branch: true },
+                },
+              },
+            },
+            event: true,
+            category: true,
+          },
+        });
+
+        if (reg.category && reg.category.fee > 0) {
+          await tx.billing.create({
+            data: {
+              memberId: reg.memberId,
+              registrationId: reg.id,
+              type: 'EVENT_FEE',
+              amount: reg.category.fee,
+              description: `Biaya pendaftaran ${reg.event.title} - ${reg.category.name}`,
+              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              status: 'PENDING',
+            },
+          });
+        }
+
+        return reg;
+      });
+
+      succeeded.push({
+        memberId: mid,
+        registrationId: registration.id,
+        fullName: registration.member.fullName,
+      });
+
+      if (registration.category && registration.category.fee > 0 && registration.member.userId) {
+        await createNotification({
+          userId: registration.member.userId,
+          title: 'Tagihan Pendaftaran Event',
+          content: `Anda didaftarkan ke ${registration.event.title} (kategori ${registration.category.name}) sebesar Rp ${registration.category.fee.toLocaleString(
+            'id-ID',
+          )}. Silakan cek menu tagihan.`,
+          type: 'INFO',
+        });
+      }
+
+      if (registration.member.dojo.branchId) {
+        await notifyAdmins({
+          title: 'Pendaftaran Event (oleh pengurus)',
+          content: `${registration.member.fullName} didaftarkan ke ${registration.event.title}${registration.category ? ` (${registration.category.name})` : ''}`,
+          branchId: registration.member.dojo.branchId,
+          type: 'SUCCESS',
+        });
+      }
+    }
+
+    res.status(201).json({
+      status: 'success',
+      data: {
+        succeeded,
+        skippedNotFound,
+        skippedForbidden,
+        skippedAlreadyRegistered,
+      },
+      message:
+        succeeded.length === 0
+          ? 'Tidak ada pendaftaran baru. Periksa akses wilayah atau status peserta.'
+          : `Berhasil mendaftar ${succeeded.length} anggota.`,
+    });
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    console.error('[EventController] bulkRegisterForEvent:', error);
     res.status(500).json({ status: 'error', message: errMessage });
   }
 };

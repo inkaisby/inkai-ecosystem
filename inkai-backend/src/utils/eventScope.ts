@@ -13,6 +13,72 @@ export type JwtEventUser = {
 
 const SUPER_ROLES = ["ADMINISTRATOR", "ADMIN_PUSAT"] as const;
 
+const EVENT_REGISTRAR_ROLES = [
+  "ADMINISTRATOR",
+  "ADMIN_PUSAT",
+  "ADMIN_PROVINCE",
+  "ADMIN_BRANCH",
+  "ADMIN_DOJO",
+] as const;
+
+export function userCanBulkRegisterMembersForEvents(jwtUser: JwtEventUser | null | undefined): boolean {
+  const roles = jwtUser?.roles || [];
+  return EVENT_REGISTRAR_ROLES.some((r) => roles.includes(r));
+}
+
+/** Hak mendaftarkan anggota ke event atas nama mereka (wilayah sesuai jabatan). */
+export function staffCanRegisterMemberForEvent(
+  jwtUser: JwtEventUser | null | undefined,
+  member: {
+    isDeleted: boolean;
+    dojoId: string;
+    dojo: {
+      branchId: string;
+      branch?: { provinceId: string } | null;
+    } | null;
+  },
+  eventBranchId: string | null,
+): boolean {
+  if (!jwtUser || !userCanBulkRegisterMembersForEvents(jwtUser)) return false;
+  if (member.isDeleted || !member.dojo) return false;
+  const roles = jwtUser.roles || [];
+  const isSuper = roles.some((r) => SUPER_ROLES.includes(r as (typeof SUPER_ROLES)[number]));
+
+  if (eventBranchId) {
+    if (member.dojo.branchId !== eventBranchId) return false;
+  }
+
+  if (isSuper) return true;
+
+  if (roles.includes("ADMIN_DOJO") && jwtUser.managedDojoId) {
+    return member.dojoId === jwtUser.managedDojoId;
+  }
+
+  if (roles.includes("ADMIN_BRANCH") && jwtUser.managedBranchId) {
+    return member.dojo.branchId === jwtUser.managedBranchId;
+  }
+
+  if (roles.includes("ADMIN_PROVINCE") && jwtUser.managedProvinceId) {
+    return member.dojo.branch?.provinceId === jwtUser.managedProvinceId;
+  }
+
+  return false;
+}
+
+/**
+ * Ketua ranting (ADMIN_DOJO tanpa jenjang provinsi/cabang di akun JWT) membaca roster event
+ * hanya untuk anggota dari dojo yang dikelolanya — termasuk yang mendaftar mandiri.
+ */
+export function shouldRestrictEventRegistrationsToManagedDojo(
+  jwtUser: JwtEventUser | null | undefined,
+): jwtUser is JwtEventUser & { managedDojoId: string } {
+  if (!jwtUser?.managedDojoId || !jwtUser.roles?.length) return false;
+  const roles = jwtUser.roles;
+  if (roles.some((r) => SUPER_ROLES.includes(r as (typeof SUPER_ROLES)[number]))) return false;
+  if (roles.includes("ADMIN_BRANCH") || roles.includes("ADMIN_PROVINCE")) return false;
+  return roles.includes("ADMIN_DOJO");
+}
+
 export async function resolveMemberBranchId(
   jwtUser: JwtEventUser | null | undefined,
 ): Promise<string | null | undefined> {

@@ -190,7 +190,13 @@ export const getMemberDetail = async (req: AuthRequest, res: Response) => {
 export const getAllMembers = async (req: AuthRequest, res: Response) => {
   try {
     const { page = 1, limit = 10, search = '', dojoId, status } = req.query;
-    const skip = (Number(page) - 1) * Number(limit);
+    const pageNum = Number(page);
+    const pageSafe =
+      typeof pageNum === 'number' && Number.isFinite(pageNum) && pageNum > 0
+        ? Math.floor(pageNum)
+        : 1;
+    const take = Math.min(Math.max(Number(limit) || 10, 1), 500);
+    const skip = (pageSafe - 1) * take;
 
     const where: any = {
       isDeleted: false,
@@ -210,17 +216,19 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
       where.status = String(status);
     }
 
-    // Regional Scoping
+    // Regional Scoping — dojo lebih spesifik dari cabang/provinsi
     if (req.user) {
-      if (req.user.managedProvinceId) {
+      if (req.user.managedDojoId) {
+        where.dojoId = String(req.user.managedDojoId);
+      } else if (req.user.managedProvinceId) {
         where.dojo = {
           branch: {
-            provinceId: req.user.managedProvinceId
-          }
+            provinceId: req.user.managedProvinceId,
+          },
         };
       } else if (req.user.managedBranchId) {
         where.dojo = {
-          branchId: req.user.managedBranchId
+          branchId: req.user.managedBranchId,
         };
       }
     }
@@ -244,7 +252,7 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
         }
       },
       skip,
-      take: Number(limit),
+      take,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -255,8 +263,8 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
       data: members,
       meta: {
         total,
-        page: Number(page),
-        limit: Number(limit)
+        page: pageSafe,
+        limit: take
       }
     });
   } catch (error: any) {

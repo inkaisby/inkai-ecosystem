@@ -51,6 +51,15 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
 
   const handleRegister = async () => {
     if (!user) return;
+    const memberId = user.member?.id ?? user.id;
+    if (!memberId) {
+      setToast({
+        show: true,
+        message: "Akun Anda belum punya profil anggota. Lengkapi pendaftaran atau hubungi admin.",
+        type: 'error',
+      });
+      return;
+    }
     if (!selectedCategoryId && event.categories?.length > 0) {
       setToast({ show: true, message: "Silakan pilih kategori terlebih dahulu.", type: 'error' });
       return;
@@ -60,7 +69,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     try {
       const response = await eventApi.registerEvent({
         eventId: id,
-        memberId: user.member?.id || user.id,
+        memberId,
         categoryId: selectedCategoryId || undefined
       });
       

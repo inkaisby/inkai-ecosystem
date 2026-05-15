@@ -8,6 +8,7 @@ router.get('/', optionalAuthenticate, eventController.getAllEvents);
 router.get('/my/registrations', authenticate, eventController.getMyEvents);
 router.get('/:id', optionalAuthenticate, eventController.getEventById);
 router.post('/', authenticate, eventController.createEvent);
+router.post('/register/bulk', authenticate, eventController.bulkRegisterForEvent);
 router.post('/register', authenticate, eventController.registerForEvent);
 router.put('/register/:id', authenticate, eventController.updateRegistration);
 router.patch('/:id', authenticate, eventController.updateEvent);

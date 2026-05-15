@@ -30,9 +30,11 @@ export const notifyAdmins = async (params: {
   role?: 'ADMINISTRATOR' | 'ADMIN_PUSAT' | 'ADMIN_PROVINCE' | 'ADMIN_BRANCH';
   provinceId?: string;
   branchId?: string;
+  /** Akun ADMIN_DOJO yang mengurus dojo ini (ketua ranting / administrator dojo). */
+  dojoId?: string;
 }) => {
   try {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (params.role) {
       where.roles = { some: { name: params.role } };
     }
@@ -45,19 +47,41 @@ export const notifyAdmins = async (params: {
 
     const admins = await prisma.user.findMany({
       where,
-      select: { id: true }
+      select: { id: true },
     });
 
-    if (admins.length === 0) return;
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          title: params.title,
+          content: params.content,
+          type: params.type || 'INFO',
+        })),
+      });
+    }
 
-    await prisma.notification.createMany({
-      data: admins.map(admin => ({
-        userId: admin.id,
-        title: params.title,
-        content: params.content,
-        type: params.type || 'INFO',
-      }))
-    });
+    if (params.dojoId) {
+      const dojoHeads = await prisma.user.findMany({
+        where: {
+          managedDojoId: params.dojoId,
+          isActive: true,
+          isDeleted: false,
+          roles: { some: { name: 'ADMIN_DOJO' } },
+        },
+        select: { id: true },
+      });
+      if (dojoHeads.length > 0) {
+        await prisma.notification.createMany({
+          data: dojoHeads.map((admin) => ({
+            userId: admin.id,
+            title: params.title,
+            content: params.content,
+            type: params.type || 'INFO',
+          })),
+        });
+      }
+    }
   } catch (error) {
     console.error('Failed to notify admins:', error);
   }

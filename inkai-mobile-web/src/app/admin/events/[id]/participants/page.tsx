@@ -16,16 +16,29 @@ import {
   XCircle,
   MessageSquare,
   Phone,
-  MoreVertical
+  MoreVertical,
+  UserPlus,
+  Square,
+  CheckSquare,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 import AdminModalPortal from '@/components/admin/AdminModalPortal';
+import { useAuth } from '@/context/AuthContext';
+
+const REGISTRAR_ROLES = new Set([
+  'ADMINISTRATOR',
+  'ADMIN_PUSAT',
+  'ADMIN_PROVINCE',
+  'ADMIN_BRANCH',
+  'ADMIN_DOJO',
+]);
 
 export default function EventParticipantsPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [event, setEvent] = useState<any>(null);
   const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +46,140 @@ export default function EventParticipantsPage() {
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
   const [verifying, setVerifying] = useState(false);
+
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkMembers, setBulkMembers] = useState<any[]>([]);
+  const [bulkMembersLoading, setBulkMembersLoading] = useState(false);
+  const [bulkSearch, setBulkSearch] = useState('');
+  const [bulkCategoryId, setBulkCategoryId] = useState('');
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<Record<string, boolean>>({});
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
+  const canBulkRegister = useMemo(() => {
+    const roles = user?.roles;
+    if (!Array.isArray(roles)) return false;
+    return roles.some((r: string) => REGISTRAR_ROLES.has(r));
+  }, [user]);
+
+  const registeredMemberIds = useMemo(
+    () => new Set(participants.map((p) => p.memberId).filter(Boolean)),
+    [participants],
+  );
+
+  const bulkFilteredMembers = useMemo(() => {
+    const q = bulkSearch.trim().toLowerCase();
+    if (!q) return bulkMembers;
+    return bulkMembers.filter(
+      (m) =>
+        m.fullName?.toLowerCase().includes(q) ||
+        m.nia?.toLowerCase().includes(q) ||
+        (m.user?.email && String(m.user.email).toLowerCase().includes(q)),
+    );
+  }, [bulkMembers, bulkSearch]);
+
+  const bulkSelectedCount = useMemo(
+    () => Object.entries(bulkSelectedIds).filter(([, v]) => v).length,
+    [bulkSelectedIds],
+  );
+
+  const selectableBulkMembers = useMemo(
+    () => bulkFilteredMembers.filter((m) => !registeredMemberIds.has(m.id)),
+    [bulkFilteredMembers, registeredMemberIds],
+  );
+
+  const bulkCategoryFeeDisplay = useMemo(() => {
+    if (!event?.categories?.length) return 0;
+    const c = event.categories.find(
+      (cat: { id: string; fee: number }) => cat.id === bulkCategoryId,
+    );
+    return c?.fee ?? 0;
+  }, [event, bulkCategoryId]);
+
+  const fetchBulkMembers = useCallback(async () => {
+    if (!canBulkRegister) return;
+    setBulkMembersLoading(true);
+    try {
+      const res = await api.members.getAll({ page: 1, limit: 500, search: '' });
+      if (res.status === 'success') setBulkMembers(res.data || []);
+    } catch {
+      toast.error('Gagal memuat daftar anggota');
+    } finally {
+      setBulkMembersLoading(false);
+    }
+  }, [canBulkRegister]);
+
+  const handleOpenBulkModal = useCallback(() => {
+    if (!canBulkRegister) return;
+    setBulkSearch('');
+    setBulkSelectedIds({});
+    const cats = event?.categories;
+    if (Array.isArray(cats) && cats.length > 0) {
+      setBulkCategoryId(String(cats[0].id));
+    } else {
+      setBulkCategoryId('');
+    }
+    setBulkModalOpen(true);
+    void fetchBulkMembers();
+  }, [canBulkRegister, event, fetchBulkMembers]);
+
+  const toggleBulkMember = (memberId: string) => {
+    if (registeredMemberIds.has(memberId)) return;
+    setBulkSelectedIds((s) => ({ ...s, [memberId]: !s[memberId] }));
+  };
+
+  const toggleBulkSelectAllVisible = () => {
+    if (selectableBulkMembers.length === 0) return;
+    const allOn = selectableBulkMembers.every((m) => bulkSelectedIds[m.id]);
+    const next = { ...bulkSelectedIds };
+    for (const m of selectableBulkMembers) {
+      next[m.id] = !allOn;
+    }
+    setBulkSelectedIds(next);
+  };
+
+  const handleBulkRegisterSubmit = async () => {
+    if (!event?.id) return;
+    const memberIds = Object.entries(bulkSelectedIds)
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    if (memberIds.length === 0) {
+      toast.error('Pilih minimal satu anggota.');
+      return;
+    }
+    if (event.categories?.length > 0 && !bulkCategoryId) {
+      toast.error('Pilih kategori — nominal tagihan mengikuti pengaturan cabang pada agenda.');
+      return;
+    }
+    setBulkSubmitting(true);
+    try {
+      const res = await api.events.bulkRegister({
+        eventId: event.id,
+        memberIds,
+        categoryId: event.categories?.length ? bulkCategoryId : undefined,
+      });
+      if (res.status === 'success') {
+        const d = res.data || {};
+        const nOk = Array.isArray(d.succeeded) ? d.succeeded.length : 0;
+        const dup = Array.isArray(d.skippedAlreadyRegistered) ? d.skippedAlreadyRegistered.length : 0;
+        const forb = Array.isArray(d.skippedForbidden) ? d.skippedForbidden.length : 0;
+        const miss = Array.isArray(d.skippedNotFound) ? d.skippedNotFound.length : 0;
+        if (typeof res.message === 'string') toast.success(res.message);
+        else toast.success(nOk > 0 ? `Berhasil mendaftar ${nOk} anggota` : 'Permintaan selesai');
+        const skips: string[] = [];
+        if (dup) skips.push(`${dup} sudah terdaftar`);
+        if (forb) skips.push(`${forb} di luar wilayah`);
+        if (miss) skips.push(`${miss} tidak ditemukan`);
+        if (skips.length > 0) toast(skips.join(' · '), { duration: 5500 });
+        setBulkModalOpen(false);
+        await fetchData();
+      }
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } };
+      toast.error(ax.response?.data?.message || 'Gagal pendaftaran massal');
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -179,9 +326,25 @@ export default function EventParticipantsPage() {
             <h1 className="text-xs font-black uppercase tracking-[0.2em] text-amber-500 leading-none mb-1">Manajemen Peserta</h1>
             <p className="text-[10px] font-bold text-gray-500 truncate uppercase tracking-widest">{event?.title || 'Loading...'}</p>
           </div>
-          <button className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all">
-            <Download size={20} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {canBulkRegister && (
+              <button
+                type="button"
+                onClick={handleOpenBulkModal}
+                className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 active:scale-90 transition-all"
+                title="Daftarkan beberapa anggota sekaligus"
+              >
+                <UserPlus size={20} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all"
+              aria-label="Unduh daftar peserta"
+            >
+              <Download size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Search & Filter */}
@@ -202,6 +365,34 @@ export default function EventParticipantsPage() {
         </div>
 
         <div className="space-y-8">
+          {canBulkRegister && (
+            <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-amber-600/90 mb-1">
+                Pendaftaran atas nama pengurus
+              </p>
+              <p className="text-[11px] font-bold text-[var(--text-light)] tracking-tight leading-snug opacity-95">
+                {registeredMemberIds.size} anggota sudah terdaftar pada agenda ini. Gunakan tombol{' '}
+                <span className="text-amber-500 font-black"> + </span>
+                untuk mendaftar banyak anggota sekaligus; tagihan memakai nominal kategori dari cabang.
+              </p>
+            </div>
+          )}
+
+          {event?.registrationsScopedToManagedDojo === true && (
+            <div className="rounded-2xl border border-sky-500/25 bg-sky-500/[0.07] px-4 py-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-sky-400/95 mb-1">
+                Peserta dari dojo Anda saja
+              </p>
+              <p className="text-[11px] font-bold text-[var(--text-light)] tracking-tight leading-snug opacity-95">
+                Daftar ini mencakup anggota dari {user?.managedDojoName || 'dojo yang Anda kelola'} yang terdaftar di agenda ini,{' '}
+                <span className="text-sky-300 font-black">
+                  termasuk yang mendaftar mandiri dari aplikasi
+                </span>
+                . Pengurus cabang lain melihat seluruh cabang.
+              </p>
+            </div>
+          )}
+
           {/* Stats Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 p-5 rounded-[2rem] shadow-2xl relative overflow-hidden group">
@@ -407,6 +598,191 @@ export default function EventParticipantsPage() {
           </div>
         )}
       </AnimatePresence>
+      </AdminModalPortal>
+
+      <AdminModalPortal>
+        <AnimatePresence>
+          {bulkModalOpen && event && (
+            <div key="bulk-register-drawer" className="admin-modal-overlay admin-modal-overlay--bottom">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => !bulkSubmitting && setBulkModalOpen(false)}
+                className="admin-modal-backdrop-hitbox"
+                aria-hidden
+              />
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+                className="admin-modal-drawer-sheet mobile-hpad pt-8 pb-[calc(env(safe-area-inset-bottom,24px)+24px)] max-h-[94vh] flex flex-col min-h-0"
+              >
+                <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-5 opacity-50" />
+
+                <h2 className="text-center text-sm font-black uppercase tracking-[0.2em] text-amber-500 mb-2">
+                  Daftar massal anggota
+                </h2>
+                <p className="text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6 px-1 leading-snug">
+                  Anda hanya dapat memilih anggota pada wilayah Anda. Nominal tagihan mengikuti kategori yang telah ditetapkan cabang pada agenda ini.
+                </p>
+
+                {event.categories?.length > 0 ? (
+                  <div className="mb-4 shrink-0">
+                    <label className="text-[9px] font-black uppercase text-gray-500 tracking-widest mb-2 block">
+                      Kategori & biaya
+                    </label>
+                    <select
+                      value={bulkCategoryId}
+                      onChange={(e) => setBulkCategoryId(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-bold uppercase text-[var(--text-light)] appearance-none cursor-pointer focus:outline-none focus:border-amber-500/50"
+                      style={{ colorScheme: 'dark' }}
+                    >
+                      {event.categories.map((cat: { id: string; name: string; fee: number }) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name} — Rp {Number(cat.fee).toLocaleString('id-ID')}
+                        </option>
+                      ))}
+                    </select>
+                    {bulkCategoryId ? (
+                      <p className="text-[10px] text-gray-500 mt-2 font-bold uppercase tracking-tight">
+                        Per anggota:{' '}
+                        <span className="text-amber-500">
+                          Rp {Number(bulkCategoryFeeDisplay || 0).toLocaleString('id-ID')}
+                        </span>{' '}
+                        — tagihan dibuat otomatis
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-[10px] font-bold text-gray-500 uppercase text-center mb-4 leading-relaxed shrink-0">
+                    Agenda ini tanpa kategori — biaya event tidak dihitung.
+                  </p>
+                )}
+
+                <div className="relative shrink-0 mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Filter nama / NIA / email..."
+                    value={bulkSearch}
+                    onChange={(e) => setBulkSearch(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center mb-3 gap-3 shrink-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                    Dipilih{' '}
+                    <span className="text-white">{bulkSelectedCount}</span> · dapat dipilih{' '}
+                    {selectableBulkMembers.length}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={bulkMembersLoading || selectableBulkMembers.length === 0}
+                    onClick={() => toggleBulkSelectAllVisible()}
+                    className="text-[10px] font-black uppercase tracking-widest text-amber-500 disabled:opacity-40 py-2 px-1"
+                  >
+                    Pilih semua terlihat
+                  </button>
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-2 mb-6 pr-0.5 -mr-0.5">
+                  {bulkMembersLoading ? (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                      <Loader2 className="animate-spin text-amber-500" size={28} />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                        Memuat anggota...
+                      </p>
+                    </div>
+                  ) : bulkFilteredMembers.length === 0 ? (
+                    <div className="py-14 text-center text-[10px] font-black uppercase tracking-widest text-gray-600">
+                      Tidak ada data anggota
+                    </div>
+                  ) : (
+                    bulkFilteredMembers.map((m) => {
+                      const isReg = registeredMemberIds.has(m.id);
+                      const isSel = !!bulkSelectedIds[m.id];
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          disabled={isReg || bulkSubmitting}
+                          onClick={() => toggleBulkMember(m.id)}
+                          className={`w-full flex items-center gap-3 p-4 rounded-[1.35rem] border text-left transition-all ${
+                            isReg
+                              ? 'opacity-35 border-white/5 bg-white/[0.02] cursor-default'
+                              : isSel
+                                ? 'border-amber-500/40 bg-amber-500/[0.08] active:scale-[0.98]'
+                                : 'border-white/8 bg-white/[0.03] active:scale-[0.98]'
+                          }`}
+                        >
+                          <span className="shrink-0 text-gray-400">
+                            {isReg ? (
+                              <CheckSquare size={22} />
+                            ) : isSel ? (
+                              <CheckSquare size={22} className="text-amber-500" />
+                            ) : (
+                              <Square size={22} />
+                            )}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex justify-between gap-2 items-start mb-1">
+                              <p className="text-[13px] font-black text-[var(--text-light)] uppercase truncate tracking-tight">
+                                {m.fullName}
+                              </p>
+                              {isReg && (
+                                <span className="shrink-0 text-[9px] font-black uppercase text-amber-600/90 bg-white/10 px-2 py-0.5 rounded-md border border-white/10">
+                                  Terdaftar
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-[9px] font-bold uppercase text-gray-600 tracking-wider">
+                              <span>NIA {(m.nia as string | null | undefined) || '—'}</span>
+                              <span className="text-gray-700">•</span>
+                              <span className="truncate">{m.dojo?.name}</span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="shrink-0 space-y-3 pt-2 border-t border-white/10 mt-auto">
+                  <button
+                    type="button"
+                    disabled={
+                      bulkSubmitting ||
+                      bulkSelectedCount === 0 ||
+                      (event.categories?.length > 0 && !bulkCategoryId)
+                    }
+                    onClick={() => handleBulkRegisterSubmit()}
+                    className="w-full py-4 bg-amber-500 disabled:bg-gray-800 disabled:text-gray-600 text-black font-black uppercase tracking-[0.18em] text-[11px] rounded-2xl shadow-xl shadow-amber-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 min-h-[52px]"
+                  >
+                    {bulkSubmitting ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" />
+                        Memproses...
+                      </>
+                    ) : (
+                      <>Daftar {bulkSelectedCount} terpilih</>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={bulkSubmitting}
+                    onClick={() => setBulkModalOpen(false)}
+                    className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-400"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </AdminModalPortal>
     </>
   );

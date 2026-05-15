@@ -29,6 +29,26 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { eventApi, getAssetUrl, api } from "@/lib/api";
 
+function roleNames(userRoles: unknown): string[] {
+  if (!Array.isArray(userRoles)) return [];
+  return userRoles
+    .map((r: any) => (typeof r === "string" ? r : r?.name))
+    .filter((n): n is string => typeof n === "string" && !!n);
+}
+
+/** Label baris atas / oranye pada kartu untuk akun admin (bukan NIA sungguhan). */
+function adminMembershipCardHeadline(roleList: string[]): {
+  headline: string;
+  scopeBadge: string;
+} {
+  const has = (...keys: string[]) => keys.some((k) => roleList.includes(k));
+  let scopeBadge = "CABANG";
+  if (has("ADMINISTRATOR", "ADMIN_PUSAT")) scopeBadge = "PUSAT";
+  else if (has("ADMIN_DOJO")) scopeBadge = "DOJO/RANTING";
+  else if (has("ADMIN_BRANCH")) scopeBadge = "CABANG";
+  return { headline: "ADMIN", scopeBadge };
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const {
@@ -183,6 +203,9 @@ export default function Dashboard() {
     );
   };
 
+  const roles = roleNames(user.roles);
+  const adminCardLabels = isAdmin ? adminMembershipCardHeadline(roles) : null;
+
   const highestBelt = (() => {
     if (isAdmin) return "—";
     const fromCurrent =
@@ -312,8 +335,12 @@ export default function Dashboard() {
 
       <section className={styles.section}>
         <MemberCard
-          nia={user.nia || (isAdmin ? "ADMINISTRATOR" : "MEMPROSES NIA...")}
-          name={user.fullName || "Anggota"}
+          nia={
+            adminCardLabels
+              ? adminCardLabels.scopeBadge
+              : user.nia || "MEMPROSES NIA..."
+          }
+          name={adminCardLabels ? adminCardLabels.headline : user.fullName || "Anggota"}
           highestBelt={highestBelt}
           dojo={
             user.dojo

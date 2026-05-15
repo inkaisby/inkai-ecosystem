@@ -180,6 +180,8 @@ export const api = Object.assign(apiInstance, {
     create: (data: Partial<Event>) => apiInstance.post('/events', data).then(res => res.data),
     delete: (id: string) => apiInstance.delete(`/events/${id}`).then(res => res.data),
     update: (id: string, data: Partial<Event>) => apiInstance.patch(`/events/${id}`, data).then(res => res.data),
+    bulkRegister: (data: { eventId: string; memberIds: string[]; categoryId?: string }) =>
+      apiInstance.post('/events/register/bulk', data).then((res) => res.data),
   },
   attendance: {
     getLogs: () => apiInstance.get('/attendance/logs').then(res => res.data),

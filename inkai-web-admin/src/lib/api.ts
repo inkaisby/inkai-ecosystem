@@ -102,6 +102,11 @@ export const api = {
         body: JSON.stringify(data),
       }),
     delete: (id: string) => request(`/events/${id}`, { method: 'DELETE' }),
+    bulkRegister: (data: { eventId: string; memberIds: string[]; categoryId?: string }) =>
+      request('/events/register/bulk', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
   notifications: {
     getNotifications: () => request('/notifications/my'),
