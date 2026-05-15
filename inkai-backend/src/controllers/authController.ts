@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -33,6 +34,34 @@ const sessionUserInclude = {
     },
   },
 };
+
+/** Email: huruf kecil penuh (HP sering kapital otomatis di awal). NIA: tanpa spasi + varian tanpa titik jika berbeda. */
+function parseLoginIdentifier(raw: string): { type: 'email'; value: string } | { type: 'nia'; values: string[] } {
+  const trimmed = raw.trim();
+  if (trimmed.includes('@')) {
+    return { type: 'email', value: trimmed.toLowerCase() };
+  }
+  const compact = trimmed.replace(/\s+/g, '');
+  const variants = new Set<string>();
+  if (compact) variants.add(compact);
+  const noDots = compact.replace(/\./g, '');
+  if (noDots && noDots !== compact) variants.add(noDots);
+  const values = Array.from(variants);
+  return { type: 'nia', values: values.length ? values : ['__impossible_nia__'] };
+}
+
+function userWhereForLoginIdentifier(
+  parsed: ReturnType<typeof parseLoginIdentifier>,
+): Prisma.UserWhereInput {
+  if (parsed.type === 'email') {
+    return { email: { equals: parsed.value, mode: 'insensitive' } };
+  }
+  return {
+    OR: parsed.values.map((v) => ({
+      member: { nia: { equals: v, mode: 'insensitive' } },
+    })),
+  };
+}
 
 function collectPermissionSlugs(
   roles: Array<{ permissions: Array<{ permission: { slug: string } | null }> }>,
@@ -84,7 +113,9 @@ function buildSessionUserResponse(user: any, permissionSlugs: string[]) {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, fullName, phoneNumber, dojoId, isParent } = req.body;
+    const { email: emailBody, password, fullName, phoneNumber, dojoId, isParent } = req.body;
+    const email =
+      typeof emailBody === 'string' ? emailBody.trim().toLowerCase() : emailBody;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -154,16 +185,12 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    const parsedId = parseLoginIdentifier(identifier);
     console.log(`Login attempt for: ${identifier}`);
 
     // Find user by email or NIA
     let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: { equals: identifier, mode: 'insensitive' } },
-          { member: { nia: identifier } },
-        ],
-      },
+      where: userWhereForLoginIdentifier(parsedId),
       include: sessionUserInclude,
     });
 
@@ -280,13 +307,10 @@ export const adminLogin = async (req: Request, res: Response) => {
       });
     }
 
+    const parsedId = parseLoginIdentifier(identifier);
+
     let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: { equals: identifier, mode: 'insensitive' } },
-          { member: { nia: identifier } },
-        ],
-      },
+      where: userWhereForLoginIdentifier(parsedId),
       include: { 
         member: {
           include: {
@@ -507,15 +531,15 @@ export const uploadFile = async (req: any, res: Response) => {
 
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
-    const { identifier } = req.body;
+    const raw =
+      typeof req.body?.identifier === 'string' ? req.body.identifier.trim() : '';
+    if (!raw) {
+      return res.status(400).json({ status: 'error', message: 'Email atau NIA wajib diisi' });
+    }
+    const parsedId = parseLoginIdentifier(raw);
 
     const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: identifier },
-          { member: { nia: identifier } }
-        ]
-      }
+      where: userWhereForLoginIdentifier(parsedId),
     });
 
     if (!user) {

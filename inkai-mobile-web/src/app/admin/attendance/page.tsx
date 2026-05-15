@@ -15,6 +15,8 @@ import {
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import AdminModalPortal from '@/components/admin/AdminModalPortal';
 
 type AttendanceLog = {
   id: string;
@@ -40,6 +42,10 @@ export default function AttendancePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleteAttendancePrompt, setDeleteAttendancePrompt] = useState<{
+    id: string;
+    memberName: string;
+  } | null>(null);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -100,12 +106,21 @@ export default function AttendancePage() {
     }
   };
 
-  const removeLog = async (id: string, name: string) => {
-    if (!window.confirm(`Hapus catatan absensi ${name || 'ini'} dari laporan?`)) return;
+  const openDeleteAttendancePrompt = (id: string, name: string) => {
+    setDeleteAttendancePrompt({
+      id,
+      memberName: (name || 'anggota ini').trim() || 'anggota ini',
+    });
+  };
+
+  const executeRemoveLog = async () => {
+    if (!deleteAttendancePrompt) return;
+    const { id } = deleteAttendancePrompt;
     setBusyId(id);
     try {
       await api.attendance.deleteStaff(id);
       toast.success('Catatan absensi dihapus');
+      setDeleteAttendancePrompt(null);
       cancelEdit();
       await fetchLogs();
     } catch (err: unknown) {
@@ -117,6 +132,7 @@ export default function AttendancePage() {
   };
 
   return (
+    <>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center gap-4">
         <button
@@ -259,7 +275,9 @@ export default function AttendancePage() {
                             <button
                               type="button"
                               disabled={busyId !== null}
-                              onClick={() => void removeLog(log.id, log.member?.fullName || '')}
+                              onClick={() =>
+                                openDeleteAttendancePrompt(log.id, log.member?.fullName || '')
+                              }
                               title="Hapus dari laporan"
                               className="p-2 rounded-lg border border-red-500/25 bg-red-500/10 text-red-400 hover:bg-red-500/15 disabled:opacity-30"
                             >
@@ -283,5 +301,77 @@ export default function AttendancePage() {
         </div>
       </div>
     </div>
+
+    <AdminModalPortal>
+      <AnimatePresence>
+        {deleteAttendancePrompt && (
+          <motion.div
+            key="delete-attendance-confirm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="admin-modal-overlay admin-modal-overlay--dialog admin-modal-overlay--stack"
+            role="presentation"
+            onClick={() => {
+              if (busyId === null) setDeleteAttendancePrompt(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="admin-modal-dialog-panel relative"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-att-title"
+              aria-describedby="delete-att-desc"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-red-500/5 blur-3xl" />
+
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] border border-red-500/20 bg-red-500/10 text-red-500 shadow-2xl shadow-red-500/10">
+                <Trash2 size={32} aria-hidden />
+              </div>
+              <h3
+                id="delete-att-title"
+                className="mb-3 text-xl font-black uppercase tracking-tight text-white"
+              >
+                Hapus catatan absensi?
+              </h3>
+              <p
+                id="delete-att-desc"
+                className="mb-8 text-xs font-medium leading-relaxed text-gray-400"
+              >
+                Catatan kehadiran{' '}
+                <span className="break-words font-bold text-white">
+                  {deleteAttendancePrompt.memberName}
+                </span>{' '}
+                akan dihapus dari laporan. Tindakan ini{' '}
+                <span className="font-bold text-red-400">permanen</span>.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => void executeRemoveLog()}
+                  disabled={busyId === deleteAttendancePrompt.id}
+                  className="w-full rounded-2xl bg-red-500 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-red-500/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {busyId === deleteAttendancePrompt.id ? 'Menghapus...' : 'Ya, hapus catatan'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === deleteAttendancePrompt.id}
+                  onClick={() => setDeleteAttendancePrompt(null)}
+                  className="w-full rounded-2xl border border-white/5 bg-white/5 py-4 text-xs font-bold uppercase tracking-[0.2em] text-gray-400 transition-all active:scale-95 disabled:opacity-40"
+                >
+                  Batalkan
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </AdminModalPortal>
+    </>
   );
 }

@@ -14,11 +14,19 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import AdminModalPortal from '@/components/admin/AdminModalPortal';
 
 export default function InventoryPage() {
   const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteProductPrompt, setDeleteProductPrompt] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [productDeletingId, setProductDeletingId] = useState<string | null>(null);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -36,17 +44,32 @@ export default function InventoryPage() {
     fetchProducts();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus produk ini dari inventaris?')) return;
+  const openDeleteProductPrompt = (id: string, name: string) => {
+    setDeleteProductPrompt({
+      id,
+      name: String(name ?? 'produk ini').trim() || 'produk ini',
+    });
+  };
+
+  const executeDeleteProduct = async () => {
+    if (!deleteProductPrompt) return;
+    const { id } = deleteProductPrompt;
+    setProductDeletingId(id);
     try {
       await api.inventory.delete(id);
-      setProducts(products.filter(p => p.id !== id));
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      toast.success('Produk dihapus dari inventaris');
+      setDeleteProductPrompt(null);
     } catch (err) {
       console.error(err);
+      toast.error('Gagal menghapus produk');
+    } finally {
+      setProductDeletingId(null);
     }
   };
 
   return (
+    <>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="space-y-6">
@@ -142,8 +165,10 @@ export default function InventoryPage() {
                             <Edit size={16} />
                           </button>
                           <button 
-                            onClick={() => handleDelete(item.id)}
-                            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                            type="button"
+                            disabled={productDeletingId !== null}
+                            onClick={() => openDeleteProductPrompt(item.id, item.name)}
+                            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-30"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -177,5 +202,76 @@ export default function InventoryPage() {
         </div>
       )}
     </div>
+
+    <AdminModalPortal>
+      <AnimatePresence>
+        {deleteProductPrompt && (
+          <motion.div
+            key="delete-product-confirm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="admin-modal-overlay admin-modal-overlay--dialog admin-modal-overlay--stack"
+            role="presentation"
+            onClick={() => {
+              if (productDeletingId === null) setDeleteProductPrompt(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="admin-modal-dialog-panel relative"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-inv-title"
+              aria-describedby="delete-inv-desc"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-red-500/5 blur-3xl" />
+
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] border border-red-500/20 bg-red-500/10 text-red-500 shadow-2xl shadow-red-500/10">
+                <Trash2 size={32} aria-hidden />
+              </div>
+              <h3
+                id="delete-inv-title"
+                className="mb-3 text-xl font-black uppercase tracking-tight text-white"
+              >
+                Hapus produk?
+              </h3>
+              <p
+                id="delete-inv-desc"
+                className="mb-8 text-xs font-medium leading-relaxed text-gray-400"
+              >
+                <span className="break-words font-bold text-white">{deleteProductPrompt.name}</span>{' '}
+                akan dihapus dari inventaris. Tindakan ini{' '}
+                <span className="font-bold text-red-400">permanen</span>.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => void executeDeleteProduct()}
+                  disabled={productDeletingId === deleteProductPrompt.id}
+                  className="w-full rounded-2xl bg-red-500 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-red-500/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {productDeletingId === deleteProductPrompt.id
+                    ? 'Menghapus...'
+                    : 'Ya, hapus produk'}
+                </button>
+                <button
+                  type="button"
+                  disabled={productDeletingId === deleteProductPrompt.id}
+                  onClick={() => setDeleteProductPrompt(null)}
+                  className="w-full rounded-2xl border border-white/5 bg-white/5 py-4 text-xs font-bold uppercase tracking-[0.2em] text-gray-400 transition-all active:scale-95 disabled:opacity-40"
+                >
+                  Batalkan
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </AdminModalPortal>
+    </>
   );
 }

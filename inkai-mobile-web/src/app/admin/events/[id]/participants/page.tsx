@@ -6,10 +6,8 @@ import {
   Users, 
   ChevronLeft, 
   Search, 
-  Download, 
   UserCheck,
   Loader2,
-  Filter,
   MapPin,
   CheckCircle2,
   Clock,
@@ -182,6 +180,10 @@ export default function EventParticipantsPage() {
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [registrationUpdatingId, setRegistrationUpdatingId] = useState<string | null>(null);
   const [registrationDeletingId, setRegistrationDeletingId] = useState<string | null>(null);
+  const [deleteRegPrompt, setDeleteRegPrompt] = useState<{
+    regId: string;
+    memberName: string;
+  } | null>(null);
 
   const canBulkRegister = useMemo(() => {
     const roles = user?.roles;
@@ -471,8 +473,16 @@ export default function EventParticipantsPage() {
     }
   };
 
-  const handleDeleteRegistration = async (regId: string, memberName: string) => {
-    if (!window.confirm(`Hapus pendaftaran ${memberName || 'peserta ini'} dari agenda?`)) return;
+  const openDeleteRegistrationPrompt = (regId: string, memberName: string) => {
+    setDeleteRegPrompt({
+      regId,
+      memberName: (memberName || 'peserta ini').trim() || 'peserta ini',
+    });
+  };
+
+  const executeDeleteRegistration = async () => {
+    if (!deleteRegPrompt) return;
+    const { regId } = deleteRegPrompt;
     setRegistrationDeletingId(regId);
     try {
       const res = await api.events.deleteRegistration(regId);
@@ -481,6 +491,7 @@ export default function EventParticipantsPage() {
         setSelectedParticipant((prev: { id: string } | null) =>
           prev?.id === regId ? null : prev,
         );
+        setDeleteRegPrompt(null);
         await fetchData();
       }
     } catch (err: unknown) {
@@ -655,19 +666,12 @@ export default function EventParticipantsPage() {
                 <Copy size={20} aria-hidden />
               </button>
             ) : null}
-            <button
-              type="button"
-              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all"
-              aria-label="Unduh daftar peserta"
-            >
-              <Download size={20} />
-            </button>
           </div>
         </div>
 
-        {/* Search & Filter */}
-        <div className="flex gap-2 mb-8">
-          <div className="relative flex-1">
+        {/* Search */}
+        <div className="mb-8">
+          <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
             <input 
               type="text" 
@@ -677,9 +681,6 @@ export default function EventParticipantsPage() {
               className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/50 transition-all"
             />
           </div>
-          <button className="p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all">
-            <Filter size={18} />
-          </button>
         </div>
 
         <div className="space-y-8">
@@ -820,7 +821,7 @@ export default function EventParticipantsPage() {
                       </span>
                       {showInlineRegistrationActions ? (
                         <div
-                          className="flex items-center gap-0.5 shrink-0"
+                          className="flex shrink-0 items-center gap-2"
                           onClick={(e) => e.stopPropagation()}
                           role="presentation"
                         >
@@ -830,9 +831,9 @@ export default function EventParticipantsPage() {
                               title={paymentTitle}
                               aria-label={paymentTitle}
                               onClick={() => setSelectedParticipant(p)}
-                              className={`p-1.5 rounded-lg border transition-colors active:scale-95 disabled:opacity-40 ${receiptBtnClass}`}
+                              className={`inline-flex size-11 shrink-0 items-center justify-center rounded-xl border transition-colors active:scale-95 disabled:opacity-40 ${receiptBtnClass}`}
                             >
-                              <Receipt size={13} strokeWidth={2.25} aria-hidden />
+                              <Receipt size={16} strokeWidth={2.25} aria-hidden />
                             </button>
                           ) : null}
                           <button
@@ -845,9 +846,9 @@ export default function EventParticipantsPage() {
                             }
                             aria-label="WhatsApp peserta"
                             onClick={() => handleWhatsAppParticipant(p)}
-                            className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-green-500 hover:bg-white/10 transition-colors active:scale-95 disabled:opacity-35 disabled:pointer-events-none"
+                            className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-green-500 transition-colors hover:bg-white/10 active:scale-95 disabled:pointer-events-none disabled:opacity-35"
                           >
-                            <Phone size={13} aria-hidden />
+                            <Phone size={16} aria-hidden />
                           </button>
                           <button
                             type="button"
@@ -859,9 +860,9 @@ export default function EventParticipantsPage() {
                             }
                             aria-label="Chat peserta"
                             onClick={() => void handleChatParticipant(p)}
-                            className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-amber-500 hover:bg-white/10 transition-colors active:scale-95 disabled:opacity-35 disabled:pointer-events-none"
+                            className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-amber-500 transition-colors hover:bg-white/10 active:scale-95 disabled:pointer-events-none disabled:opacity-35"
                           >
-                            <MessageSquare size={13} aria-hidden />
+                            <MessageSquare size={16} aria-hidden />
                           </button>
                           {isRegistrationApprovedForReport(p.status) ? (
                             <button
@@ -869,9 +870,9 @@ export default function EventParticipantsPage() {
                               title="Salin ringkasan untuk lapor ke cabang (tempel di WhatsApp)"
                               aria-label="Salin ringkasan peserta"
                               onClick={() => void handleCopyParticipantResume(p)}
-                              className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-sky-400 hover:bg-white/10 transition-colors active:scale-95"
+                              className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sky-400 transition-colors hover:bg-white/10 active:scale-95"
                             >
-                              <Copy size={13} aria-hidden />
+                              <Copy size={16} aria-hidden />
                             </button>
                           ) : null}
                         </div>
@@ -926,7 +927,7 @@ export default function EventParticipantsPage() {
                               registrationUpdatingId !== null
                             }
                             onClick={() =>
-                              void handleDeleteRegistration(
+                              openDeleteRegistrationPrompt(
                                 p.id,
                                 p.member?.fullName || '',
                               )
@@ -1256,6 +1257,82 @@ export default function EventParticipantsPage() {
                 </div>
               </motion.div>
             </div>
+          )}
+        </AnimatePresence>
+      </AdminModalPortal>
+
+      <AdminModalPortal>
+        <AnimatePresence>
+          {deleteRegPrompt && (
+            <motion.div
+              key="delete-reg-confirm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="admin-modal-overlay admin-modal-overlay--dialog admin-modal-overlay--stack"
+              role="presentation"
+              onClick={() => {
+                if (registrationDeletingId === null) setDeleteRegPrompt(null);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="admin-modal-dialog-panel relative"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-reg-title"
+                aria-describedby="delete-reg-desc"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-red-500/5 blur-3xl" />
+
+                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] border border-red-500/20 bg-red-500/10 text-red-500 shadow-2xl shadow-red-500/10">
+                  <Trash2 size={32} aria-hidden />
+                </div>
+                <h3
+                  id="delete-reg-title"
+                  className="mb-3 text-xl font-black uppercase tracking-tight text-white"
+                >
+                  Hapus pendaftaran?
+                </h3>
+                <p
+                  id="delete-reg-desc"
+                  className="mb-8 text-xs font-medium leading-relaxed text-gray-400"
+                >
+                  Pendaftaran{' '}
+                  <span className="break-words font-bold text-white">
+                    {deleteRegPrompt.memberName}
+                  </span>{' '}
+                  akan dihapus dari agenda ini. Tindakan ini{' '}
+                  <span className="font-bold text-red-400">permanen</span> dan
+                  tidak dapat dibatalkan.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void executeDeleteRegistration()}
+                    disabled={
+                      registrationDeletingId === deleteRegPrompt.regId
+                    }
+                    className="w-full rounded-2xl bg-red-500 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-red-500/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {registrationDeletingId === deleteRegPrompt.regId
+                      ? 'Menghapus...'
+                      : 'Ya, hapus pendaftaran'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={registrationDeletingId === deleteRegPrompt.regId}
+                    onClick={() => setDeleteRegPrompt(null)}
+                    className="w-full rounded-2xl border border-white/5 bg-white/5 py-4 text-xs font-bold uppercase tracking-[0.2em] text-gray-400 transition-all active:scale-95 disabled:opacity-40"
+                  >
+                    Batalkan
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </AdminModalPortal>

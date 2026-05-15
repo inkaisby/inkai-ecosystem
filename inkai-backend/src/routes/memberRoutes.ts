@@ -26,6 +26,7 @@ router.post('/bulk', authenticate, memberController.bulkCreateMembers);
 // 2. Collection routes
 router.get('/', authenticate, memberController.getAllMembers);
 router.post('/', authenticate, memberController.createMember);
+router.post('/:id/provision-login', authenticate, memberController.provisionMemberLogin);
 
 // 3. Wildcard ID routes last
 router.get('/:id', authenticate, memberController.getMemberDetail);

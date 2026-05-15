@@ -26,6 +26,43 @@ function canSetMemberNiaAndRank(roleNames: string[]): boolean {
   return roleNames.some((r) => allowed.has(r));
 }
 
+/** Buat User + tautkan ke Member (satu klik); diizinkan untuk admin wilayah/dojo. */
+function canProvisionMemberLogin(roleNames: string[]): boolean {
+  const allowed = new Set([
+    'ADMINISTRATOR',
+    'ADMIN_PUSAT',
+    'ADMIN_PROVINCE',
+    'ADMIN_BRANCH',
+    'ADMIN_DOJO',
+    'ADMIN',
+  ]);
+  return roleNames.some((r) => allowed.has(r));
+}
+
+function adminScopedToMember(
+  reqUser: AuthRequest['user'],
+  member: {
+    dojoId: string;
+    dojo: { branchId: string; branch: { provinceId: string } };
+  },
+): boolean {
+  if (!reqUser) return false;
+  if (reqUser.managedDojoId) return member.dojoId === reqUser.managedDojoId;
+  if (reqUser.managedProvinceId) {
+    return member.dojo.branch.provinceId === reqUser.managedProvinceId;
+  }
+  if (reqUser.managedBranchId) return member.dojo.branchId === reqUser.managedBranchId;
+  return true;
+}
+
+function syntheticLoginEmailForMember(member: { id: string; nia: string | null }): string {
+  const nia = member.nia?.trim();
+  if (nia) {
+    return `${nia.replace(/\./g, '').toLowerCase()}@inkai.id`;
+  }
+  return `m.${member.id.replace(/-/g, '').toLowerCase()}@inkai.id`;
+}
+
 export const getMyProfile = async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
@@ -1078,6 +1115,93 @@ export const updateMemberRank = async (req: AuthRequest, res: Response) => {
       status: 'error',
       message: error.message || 'Server error',
     });
+  }
+};
+
+/** Admin: buat akun User (password default 123456) untuk Member yang belum punya userId. */
+export const provisionMemberLogin = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const adminRoles = jwtRoleNames(req.user);
+    if (!canProvisionMemberLogin(adminRoles)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Tidak ada wewenang untuk membuat akun login anggota.',
+      });
+    }
+
+    const member = await prisma.member.findFirst({
+      where: { id, isDeleted: false },
+      include: {
+        dojo: { include: { branch: true } },
+      },
+    });
+
+    if (!member) {
+      return res.status(404).json({ status: 'error', message: 'Anggota tidak ditemukan.' });
+    }
+
+    if (!adminScopedToMember(req.user, member)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Akses ditolak untuk anggota di luar wilayah Anda.',
+      });
+    }
+
+    if (member.userId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Anggota ini sudah memiliki akun login.',
+      });
+    }
+
+    const email = syntheticLoginEmailForMember(member);
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({
+        status: 'error',
+        message:
+          `Email ${email} sudah terpakai. Ubah NIA anggota atau hubungi admin (bentrok dengan akun lain).`,
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash('123456', 12);
+
+    const user = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.create({
+        data: {
+          email,
+          passwordHash: hashedPassword,
+          fullName: member.fullName,
+          roles: {
+            connectOrCreate: {
+              where: { name: 'MEMBER' },
+              create: { name: 'MEMBER' },
+            },
+          },
+        },
+      });
+      await tx.member.update({
+        where: { id: member.id },
+        data: { userId: u.id },
+      });
+      return u;
+    });
+
+    res.json({
+      status: 'success',
+      message:
+        'Akun login berhasil dibuat. Default password: 123456 — minta anggota segera mengganti sandi.',
+      data: {
+        memberId: member.id,
+        userId: user.id,
+        email: user.email,
+        defaultPassword: '123456',
+      },
+    });
+  } catch (error: any) {
+    console.error('[provisionMemberLogin]', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 

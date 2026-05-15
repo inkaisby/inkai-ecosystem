@@ -389,6 +389,39 @@ html[data-clock-phase="day"] .mobile-content {
   }
 }
 
+/**
+ * Dropdown TopBar (notifikasi / menu akun).
+ * Tanpa Tailwind: `bg-black/80`, `text-white/90`, dll. tidak pernah ter-apply.
+ * Z-index di atas BottomNav (100) dan backdrop (115).
+ */
+[data-admin-shell] .admin-topbar-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 115;
+  background-color: rgba(0, 0, 0, 0.8);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .admin-topbar-dropdown-backdrop {
+  background-color: rgba(15, 23, 42, 0.42);
+}
+
+@media (min-width: 640px) {
+  [data-admin-shell] .admin-topbar-dropdown-backdrop {
+    display: none;
+  }
+}
+
+[data-admin-shell] .admin-topbar-dropdown-popover {
+  z-index: 120;
+}
+
+/** Ring badge lonceng — ikut --background-dark (siang/malam) */
+.admin-topbar-bell-badge-ring {
+  border: 2px solid var(--background-dark);
+}
+
 /** Latar fullscreen admin (ganti #0A0A0C); ikut jam siang/malam */
 .adm-bg {
   background-color: var(--background-dark);

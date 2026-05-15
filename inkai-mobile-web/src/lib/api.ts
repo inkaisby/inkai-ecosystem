@@ -155,6 +155,8 @@ export const api = Object.assign(apiInstance, {
       apiInstance
         .patch(`/members/${memberId}/ranks/${rankId}`, payload)
         .then((res) => res.data),
+    provisionLogin: (memberId: string) =>
+      apiInstance.post(`/members/${memberId}/provision-login`).then((res) => res.data),
     verify: (id: string) => apiInstance.get(`/members/verify/${id}`).then(res => res.data),
     uploadDocument: (formData: FormData) => apiInstance.post('/members/upload-document', formData).then(res => res.data),
   },

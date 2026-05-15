@@ -148,22 +148,23 @@ export default function TopBar() {
           >
             <Bell size={20} strokeWidth={2} />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-[var(--background-dark)]"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full admin-topbar-bell-badge-ring"></span>
             )}
           </button>
 
           {showNotifications && (
             <>
               {/* Backdrop for mobile */}
-              <div 
-                className="fixed inset-0 bg-black/80 backdrop-blur-md z-45 sm:hidden" 
-                onClick={() => setShowNotifications(false)} 
+              <div
+                className="admin-topbar-dropdown-backdrop"
+                onClick={() => setShowNotifications(false)}
+                aria-hidden
               />
-              
-              <div className="fixed inset-x-0 bottom-0 admin-notif-sheet sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-dark-panel backdrop-blur-xl border-t border-white/10 sm:border sm:rounded-2xl shadow-2xl z-50 flex flex-col animate-in slide-in-from-bottom sm:slide-none duration-300 overflow-hidden">
+
+              <div className="fixed inset-x-0 bottom-0 admin-notif-sheet admin-topbar-dropdown-popover sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-dark-panel backdrop-blur-xl border-t border-white/10 sm:border sm:rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:slide-none duration-300 overflow-hidden">
                 {/* Header */}
                 <div className="flex justify-between items-center p-5 border-b border-white/5 bg-white/[0.02]">
-                  <h4 className="text-sm font-black uppercase tracking-widest text-white/90">Notifikasi</h4>
+                  <h4 className="text-sm font-black uppercase tracking-widest text-white">Notifikasi</h4>
                   <div className="flex items-center gap-3">
                     {unreadCount > 0 && (
                       <span className="text-[10px] bg-amber-500 text-black px-2 py-0.5 rounded-full font-black">
@@ -276,13 +277,13 @@ export default function TopBar() {
             {showUserMenu && (
               <>
                 <div
-                  className="fixed inset-0 bg-black-80 backdrop-blur-md z-45 sm:hidden"
+                  className="admin-topbar-dropdown-backdrop"
                   onClick={() => setShowUserMenu(false)}
                   aria-hidden
                 />
-                <div className="fixed inset-x-0 bottom-0 admin-account-sheet sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-48 z-50 flex flex-col sm:rounded-2xl overflow-hidden border-t sm:border border-white/10 bg-dark-panel shadow-2xl animate-in slide-in-from-bottom sm:slide-none duration-200">
+                <div className="fixed inset-x-0 bottom-0 admin-account-sheet admin-topbar-dropdown-popover sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-48 flex flex-col sm:rounded-2xl overflow-hidden border-t sm:border border-white/10 bg-dark-panel shadow-2xl animate-in slide-in-from-bottom sm:slide-none duration-200">
                   <div className="flex justify-between items-center p-4 border-b border-white/5 sm:hidden">
-                    <span className="text-sm font-black uppercase tracking-widest text-white/90">Akun</span>
+                    <span className="text-sm font-black uppercase tracking-widest text-white">Akun</span>
                     <button
                       type="button"
                       onClick={() => setShowUserMenu(false)}

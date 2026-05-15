@@ -64,6 +64,8 @@ export const api = {
     getDetail: (id: string) => request(`/members/${id}`),
     create: (data: any) => request('/members', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => request(`/members/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    provisionLogin: (id: string) =>
+      request(`/members/${id}/provision-login`, { method: 'POST' }),
     updateMemberRank: (memberId: string, rankId: string, data: any) =>
       request(`/members/${memberId}/ranks/${rankId}`, {
         method: 'PATCH',
