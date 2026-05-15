@@ -45,22 +45,27 @@ function MemberAvatarRing({
   sizeClass,
   initialClassName,
   ringClassName,
+  compact,
 }: {
   fullName?: string;
   currentRank?: string | null;
   photoUrl?: string | null;
-  /** Mis. `w-14 h-14` atau `w-20 h-20` — lingkaran luar mengikuti kelas ini */
+  /** Mis. `w-8 h-8` (daftar), `w-20 h-20` (drawer) */
   sizeClass: string;
   initialClassName?: string;
   ringClassName?: string;
+  /** Ukuran sangat kecil seperti inisial di baris daftar */
+  compact?: boolean;
 }) {
   const ring = beltRingVisual(currentRank);
   const src = photoUrl ? getAssetUrl(photoUrl) : '';
   const initial = fullName?.charAt(0) || '?';
+  const padClass = compact ? 'p-[2px]' : 'p-[3px]';
+  const initialFallback = compact ? 'text-[10px] leading-none' : 'text-xl';
 
   return (
     <div
-      className={`rounded-full shrink-0 box-border p-[3px] flex items-center justify-center ${sizeClass} ${ringClassName ?? ''}`}
+      className={`rounded-full shrink-0 box-border ${padClass} flex items-center justify-center ${sizeClass} ${ringClassName ?? ''}`}
       style={{
         backgroundColor: ring.bg,
         boxShadow: ring.shadow,
@@ -75,7 +80,7 @@ function MemberAvatarRing({
           />
         ) : (
           <span
-            className={`text-amber-500 font-black uppercase ${initialClassName ?? 'text-xl'}`}
+            className={`text-amber-500 font-black uppercase ${initialClassName ?? initialFallback}`}
           >
             {initial}
           </span>
@@ -613,13 +618,14 @@ export default function EventParticipantsPage() {
                   layoutId={`participant-${p.id}`}
                   key={p.id}
                   onClick={() => setSelectedParticipant(p)}
-                  className="bg-white/[0.03] border border-white/5 p-4 rounded-[2rem] flex items-center gap-3 active:scale-[0.98] transition-all shadow-xl relative overflow-hidden group"
+                  className="bg-white/[0.03] border border-white/5 p-4 rounded-[2rem] flex items-center gap-2.5 active:scale-[0.98] transition-all shadow-xl relative overflow-hidden group"
                 >
                   <MemberAvatarRing
                     fullName={p.member?.fullName}
                     currentRank={p.member?.currentRank}
                     photoUrl={p.member?.user?.photoUrl}
-                    sizeClass="w-14 h-14"
+                    sizeClass="w-8 h-8"
+                    compact
                     ringClassName="group-active:scale-90 transition-transform"
                   />
 
