@@ -22,6 +22,7 @@ import {
   CheckSquare,
   Trash2,
   Receipt,
+  Copy,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, getAssetUrl } from '@/lib/api';
@@ -29,6 +30,43 @@ import { beltRingVisual } from '@/lib/beltRing';
 import toast from 'react-hot-toast';
 import AdminModalPortal from '@/components/admin/AdminModalPortal';
 import { useAuth } from '@/context/AuthContext';
+
+function isRegistrationApprovedForReport(status: string | undefined): boolean {
+  return status === 'APPROVED' || status === 'SUCCESS' || status === 'PAID';
+}
+
+/** Cuplikan Kyu/Dan dari `currentRank` untuk laporan WhatsApp ringkas. */
+function shortRankLabel(rank: string | null | undefined): string {
+  const r = String(rank ?? '').trim();
+  if (!r) return '';
+  const kyu = r.match(/kyu\s*\d+/i);
+  if (kyu) {
+    const n = kyu[0].replace(/\s+/g, ' ');
+    return n.replace(/^kyu/i, 'Kyu');
+  }
+  const dan = r.match(/dan\s*\d+/i);
+  if (dan) {
+    const n = dan[0].replace(/\s+/g, ' ');
+    return n.replace(/^dan/i, 'Dan');
+  }
+  return '';
+}
+
+function participantAmountForBranchReport(p: {
+  id?: string;
+  category?: { fee?: number | null };
+  member?: {
+    billings?: Array<{ registrationId?: string | null; status?: string; amount?: number | null }>;
+  };
+}): number {
+  const billing = p.member?.billings?.find((b) => b.registrationId === p.id);
+  if (billing?.status === 'PAID' && billing.amount != null) {
+    const n = Number(billing.amount);
+    return Number.isFinite(n) ? n : 0;
+  }
+  const fee = Number(p.category?.fee ?? 0);
+  return Number.isFinite(fee) ? fee : 0;
+}
 
 const REGISTRAR_ROLES = new Set([
   'ADMINISTRATOR',
@@ -371,6 +409,47 @@ export default function EventParticipantsPage() {
     await handleChatParticipant(selectedParticipant);
   };
 
+  const buildParticipantBranchResume = useCallback(
+    (p: any) => {
+      const agenda = event?.title?.trim() || 'Agenda';
+      const name = String(p.member?.fullName ?? '').trim() || '-';
+      const nia = String(p.member?.nia ?? '').trim() || '-';
+      const dojo = String(p.member?.dojo?.name ?? '').trim() || '-';
+      const branch = String(p.member?.dojo?.branch?.name ?? '').trim() || '-';
+      const province = String(p.member?.dojo?.branch?.province?.name ?? '').trim() || '-';
+      const cat = String(p.category?.name ?? '').trim() || '-';
+      let statusLine = String(p.status ?? '-');
+      if (p.status === 'PAID') statusLine = 'Lunas (dibayar)';
+      else if (p.status === 'APPROVED' || p.status === 'SUCCESS') statusLine = 'Disetujui';
+
+      return [
+        `📋 Laporan peserta disetujui — ${agenda}`,
+        `Nama: ${name}`,
+        `NIA: ${nia}`,
+        `Ranting/Dojo: ${dojo}`,
+        `Cabang: ${branch}`,
+        `Provinsi: ${province}`,
+        `Kategori: ${cat}`,
+        `Status pendaftaran: ${statusLine}`,
+      ].join('\n');
+    },
+    [event?.title],
+  );
+
+  const handleCopyParticipantResume = useCallback(
+    async (p: any) => {
+      if (!isRegistrationApprovedForReport(p.status)) return;
+      const text = buildParticipantBranchResume(p);
+      try {
+        await navigator.clipboard.writeText(text);
+        toast.success('Ringkasan disalin — tempel di WhatsApp untuk lapor cabang');
+      } catch {
+        toast.error('Gagal menyalin (izin clipboard?)');
+      }
+    },
+    [buildParticipantBranchResume],
+  );
+
   const handleRegistrationStatusChange = async (
     regId: string,
     currentStatus: string,
@@ -419,7 +498,7 @@ export default function EventParticipantsPage() {
         p.member?.nia?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = filterStatus === 'Semua' || 
-        (filterStatus === 'Terverifikasi' && (p.status === 'APPROVED' || p.status === 'SUCCESS' || p.status === 'PAID')) ||
+        (filterStatus === 'Disetujui' && (p.status === 'APPROVED' || p.status === 'SUCCESS' || p.status === 'PAID')) ||
         (filterStatus === 'Pending' && p.status === 'PENDING') ||
         (filterStatus === 'Ditolak' && p.status === 'REJECTED');
 
@@ -431,6 +510,61 @@ export default function EventParticipantsPage() {
     participants.find((p) => p.member?.dojo?.name)?.member?.dojo?.name ||
     user?.managedDojoName ||
     'dojo Anda';
+
+  const approvedParticipantsForReport = useMemo(() => {
+    const rows = participants.filter((p) => isRegistrationApprovedForReport(p.status));
+    return [...rows].sort((a, b) =>
+      String(a.member?.fullName || '').localeCompare(String(b.member?.fullName || ''), 'id'),
+    );
+  }, [participants]);
+
+  const buildBranchWhatsAppAggregateReport = useCallback(() => {
+    const agenda = event?.title?.trim() || 'Agenda';
+    const dojoLine = String(scopedDojoLabel || '').trim() || '-';
+    const lines = approvedParticipantsForReport.map((p, i) => {
+      const name = String(p.member?.fullName ?? '').trim() || '-';
+      const rk = shortRankLabel(p.member?.currentRank);
+      const suffix = rk ? ` ${rk}` : '';
+      return `${i + 1}. ${name}${suffix}`;
+    });
+    let total = 0;
+    for (const p of approvedParticipantsForReport) {
+      total += participantAmountForBranchReport(p);
+    }
+    const totalFmt = new Intl.NumberFormat('id-ID').format(Math.round(total));
+    const body = [
+      agenda,
+      `Ranting/Dojo: ${dojoLine}`,
+      '',
+      'Peserta yang terdaftar',
+      ...lines,
+      '…',
+      '',
+      `Total pembayaran Rp ${totalFmt}`,
+    ].join('\n');
+    return body;
+  }, [
+    approvedParticipantsForReport,
+    event?.title,
+    scopedDojoLabel,
+  ]);
+
+  const handleCopyBranchAggregateReport = useCallback(async () => {
+    if (approvedParticipantsForReport.length === 0) {
+      toast.error('Belum ada peserta disetujui untuk dilaporkan');
+      return;
+    }
+    const text = buildBranchWhatsAppAggregateReport();
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Laporan cabang disalin — tempel di WhatsApp');
+    } catch {
+      toast.error('Gagal menyalin (izin clipboard?)');
+    }
+  }, [
+    approvedParticipantsForReport.length,
+    buildBranchWhatsAppAggregateReport,
+  ]);
 
   const selfRegisteredParticipants = useMemo(() => {
     const rows = participants.filter(
@@ -458,7 +592,7 @@ export default function EventParticipantsPage() {
         return (
           <div className="flex items-center gap-1 text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 text-[9px] font-black uppercase">
             <CheckCircle2 size={10} />
-            Terverifikasi
+            Disetujui
           </div>
         );
       case 'PENDING':
@@ -510,6 +644,17 @@ export default function EventParticipantsPage() {
                 <UserPlus size={20} />
               </button>
             )}
+            {showInlineRegistrationActions && approvedParticipantsForReport.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => void handleCopyBranchAggregateReport()}
+                className="p-2.5 rounded-xl bg-sky-500/15 border border-sky-500/35 text-sky-400 active:scale-90 transition-all"
+                title="Salin laporan cabang (WhatsApp): judul, dojo, daftar peserta disetujui, total"
+                aria-label="Salin laporan cabang untuk WhatsApp"
+              >
+                <Copy size={20} aria-hidden />
+              </button>
+            ) : null}
             <button
               type="button"
               className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all"
@@ -582,7 +727,7 @@ export default function EventParticipantsPage() {
 
           {/* Status Filter Tabs */}
           <div className="flex flex-wrap gap-1 justify-start overflow-x-auto no-scrollbar pb-1">
-            {['Semua', 'Pending', 'Terverifikasi', 'Ditolak'].map((s) => (
+            {['Semua', 'Pending', 'Disetujui', 'Ditolak'].map((s) => (
               <button
                 key={s}
                 type="button"
@@ -718,6 +863,17 @@ export default function EventParticipantsPage() {
                           >
                             <MessageSquare size={13} aria-hidden />
                           </button>
+                          {isRegistrationApprovedForReport(p.status) ? (
+                            <button
+                              type="button"
+                              title="Salin ringkasan untuk lapor ke cabang (tempel di WhatsApp)"
+                              aria-label="Salin ringkasan peserta"
+                              onClick={() => void handleCopyParticipantResume(p)}
+                              className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-sky-400 hover:bg-white/10 transition-colors active:scale-95"
+                            >
+                              <Copy size={13} aria-hidden />
+                            </button>
+                          ) : null}
                         </div>
                       ) : null}
                       <span className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md">
@@ -886,7 +1042,7 @@ export default function EventParticipantsPage() {
                       <UserCheck size={18} />
                     )}
                     {selectedParticipant.status === 'PAID' || selectedParticipant.status === 'APPROVED' || selectedParticipant.status === 'SUCCESS' 
-                      ? 'Sudah Terverifikasi' 
+                      ? 'Sudah Disetujui' 
                       : 'Verifikasi Pembayaran'}
                   </button>
                   <div className="grid grid-cols-2 gap-3">

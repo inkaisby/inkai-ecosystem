@@ -93,8 +93,21 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   }
 
   const isUKT = event.title?.toUpperCase().includes('UKT') || event.title?.toUpperCase().includes('UJIAN');
-  const isPaid = userRegistration?.status === 'PAID';
+  const regStatus = userRegistration?.status as string | undefined;
+  const isPaid = regStatus === 'PAID';
+  const isApprovedLike =
+    regStatus === 'APPROVED' || regStatus === 'SUCCESS';
   const isRegistered = !!userRegistration;
+
+  const registrationFooterLabel = isPaid
+    ? "SUDAH TERDAFTAR (LUNAS)"
+    : regStatus === "REJECTED"
+      ? "PENDAFTARAN DITOLAK"
+      : isApprovedLike
+        ? "SUDAH TERDAFTAR (DISETUJUI)"
+        : isRegistered
+          ? "SUDAH TERDAFTAR (PENDING)"
+          : "DAFTAR SEKARANG";
 
   return (
     <div className={styles.container}>
@@ -174,9 +187,19 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           disabled={isRegistering || isPaid || (isRegistered && !isPaid)}
           onClick={handleRegister}
         >
-          {isRegistering ? <Loader2 className={styles.spinner} size={20} /> : 
-           isPaid ? <><CircleCheck size={20} /> SUDAH TERDAFTAR (LUNAS)</> :
-           isRegistered ? "SUDAH TERDAFTAR (PENDING)" : "DAFTAR SEKARANG"}
+          {isRegistering ? (
+            <Loader2 className={styles.spinner} size={20} />
+          ) : isPaid ? (
+            <>
+              <CircleCheck size={20} /> {registrationFooterLabel}
+            </>
+          ) : isApprovedLike ? (
+            <>
+              <CircleCheck size={20} /> {registrationFooterLabel}
+            </>
+          ) : (
+            registrationFooterLabel
+          )}
         </button>
       </footer>
 

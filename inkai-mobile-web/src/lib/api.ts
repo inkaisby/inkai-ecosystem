@@ -188,8 +188,21 @@ export const api = Object.assign(apiInstance, {
       apiInstance.delete(`/events/register/${registrationId}`).then((res) => res.data),
   },
   attendance: {
-    getLogs: () => apiInstance.get('/attendance/logs').then(res => res.data),
-    checkIn: (data: { memberId?: string; dojoId: string; method?: string; latitude?: number; longitude?: number }) => apiInstance.post('/attendance/checkin', data).then(res => res.data),
+    getMy: (params?: { limit?: number }) =>
+      apiInstance.get('/attendance/me', { params }).then((res) => res.data),
+    getLogs: () => apiInstance.get('/attendance/logs').then((res) => res.data),
+    checkIn: (data: {
+      memberId?: string;
+      dojoId?: string;
+      eventId?: string;
+      method?: string;
+      latitude?: number;
+      longitude?: number;
+    }) => apiInstance.post('/attendance/checkin', data).then((res) => res.data),
+    updateStaff: (id: string, payload: { checkInAt: string }) =>
+      apiInstance.patch(`/attendance/${id}`, payload).then((res) => res.data),
+    deleteStaff: (id: string) =>
+      apiInstance.delete(`/attendance/${id}`).then((res) => res.data),
   },
   verifications: {
     getPending: () => apiInstance.get('/verifications/pending').then(res => res.data),

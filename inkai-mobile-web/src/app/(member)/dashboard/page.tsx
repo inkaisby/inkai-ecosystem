@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Bell,
   LogOut,
@@ -49,6 +49,27 @@ function adminMembershipCardHeadline(roleList: string[]): {
   return { headline: "ADMIN", scopeBadge };
 }
 
+type RegistrationBadgeVariant = "paid" | "approved" | "pending" | "rejected";
+
+function registrationStatusPresentation(
+  status: string | undefined,
+): { label: string; variant: RegistrationBadgeVariant } | null {
+  if (!status) return null;
+  switch (status) {
+    case "PAID":
+      return { label: "LUNAS", variant: "paid" };
+    case "SUCCESS":
+    case "APPROVED":
+      return { label: "DISETUJUI", variant: "approved" };
+    case "PENDING":
+      return { label: "PENDING", variant: "pending" };
+    case "REJECTED":
+      return { label: "DITOLAK", variant: "rejected" };
+    default:
+      return { label: status, variant: "pending" };
+  }
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const {
@@ -70,28 +91,7 @@ export default function Dashboard() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!user || isAuthLoading) return;
-    fetchEvents();
-    fetchUnreadCount();
-  }, [user, isAuthLoading]);
-
-  const fetchUnreadCount = async () => {
-    if (!user) return;
-    try {
-      const res = await api.notifications.getMy();
-      if (res.status === "success") {
-        const count = (res.data || []).filter((n: any) => !n.isRead).length;
-        setUnreadCount(count);
-      }
-    } catch (error: any) {
-      if (error.response?.status !== 401) {
-        console.error("Fetch unread count error:", error);
-      }
-    }
-  };
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const [upcomingRes, myEventsRes] = await Promise.all([
         eventApi.getEvents(),
@@ -133,6 +133,38 @@ export default function Dashboard() {
     } finally {
       setIsEventsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!user || isAuthLoading) return;
+    void fetchEvents();
+    void fetchUnreadCount();
+  }, [user, isAuthLoading, fetchEvents]);
+
+  useEffect(() => {
+    if (!user || isAuthLoading) return;
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void fetchEvents();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [user, isAuthLoading, fetchEvents]);
+
+  const fetchUnreadCount = async () => {
+    if (!user) return;
+    try {
+      const res = await api.notifications.getMy();
+      if (res.status === "success") {
+        const count = (res.data || []).filter((n: any) => !n.isRead).length;
+        setUnreadCount(count);
+      }
+    } catch (error: any) {
+      if (error.response?.status !== 401) {
+        console.error("Fetch unread count error:", error);
+      }
+    }
   };
 
   const quickActions = [
@@ -163,6 +195,10 @@ export default function Dashboard() {
     const isUKT =
       event.title?.toUpperCase().includes("UKT") ||
       event.title?.toUpperCase().includes("UJIAN");
+    const regBadge =
+      isHistory && event.registrationStatus
+        ? registrationStatusPresentation(event.registrationStatus)
+        : null;
     return (
       <div
         key={event.id}
@@ -187,13 +223,13 @@ export default function Dashboard() {
               event.location ||
               "Indonesia"}
           </p>
-          {isHistory && event.registrationStatus && (
+          {regBadge ? (
             <span
-              className={`${styles.statusBadge} ${event.registrationStatus === "PAID" ? styles.paid : styles.pending}`}
+              className={`${styles.statusBadge} ${styles[regBadge.variant]}`}
             >
-              {event.registrationStatus === "PAID" ? "LUNAS" : "PENDING"}
+              {regBadge.label}
             </span>
-          )}
+          ) : null}
         </div>
         <ChevronRight size={16} className={styles.chevron} />
       </div>
@@ -423,7 +459,7 @@ export default function Dashboard() {
               <h2 className={styles.sectionTitle}>Riwayat agenda</h2>
               <button
                 className={styles.seeAll}
-                onClick={() => router.push("/events")}
+                onClick={() => router.push("/absensi#riwayat")}
               >
                 Lihat riwayat
               </button>

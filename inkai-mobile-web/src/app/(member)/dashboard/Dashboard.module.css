@@ -210,6 +210,17 @@
   color: #facc15;
 }
 
+/** Disetujui ketua ranting / cabang — APPROVED atau SUCCESS */
+.approved {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.rejected {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
 .chevron {
   color: var(--text-muted);
 }

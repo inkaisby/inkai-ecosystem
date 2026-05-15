@@ -43,16 +43,20 @@ export const push = async (req: Request, res: Response) => {
             checkInAt: new Date(att.checkInAt),
             method: att.method,
             isDeleted: att.isDeleted || false,
-            updatedAt: new Date()
+            ...(typeof att.eventId === 'string' || att.eventId === null
+              ? { eventId: att.eventId }
+              : {}),
+            updatedAt: new Date(),
           },
           create: {
             id: att.id,
             memberId: att.memberId,
             dojoId: att.dojoId,
+            ...(typeof att.eventId !== 'undefined' ? { eventId: att.eventId } : {}),
             checkInAt: new Date(att.checkInAt),
             method: att.method,
-            isDeleted: att.isDeleted || false
-          }
+            isDeleted: att.isDeleted || false,
+          },
         });
       }
     }

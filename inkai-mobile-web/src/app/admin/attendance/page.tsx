@@ -1,44 +1,126 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { 
-  ClipboardCheck, 
-  Search, 
-  MapPin, 
-  Users, 
-  Clock, 
-  Calendar,
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  ClipboardCheck,
+  Search,
+  MapPin,
+  Clock,
   Loader2,
-  ChevronLeft
+  ChevronLeft,
+  Pencil,
+  Trash2,
+  Calendar,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+
+type AttendanceLog = {
+  id: string;
+  checkInAt: string;
+  method?: string;
+  member?: { fullName?: string; nia?: string };
+  dojo?: { name?: string };
+  event?: { id?: string; title?: string } | null;
+};
+
+function toDatetimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function AttendancePage() {
   const router = useRouter();
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.attendance.getLogs();
+      const rows = Array.isArray(response?.data) ? response.data : [];
+      setLogs(rows);
+    } catch (err: unknown) {
+      const ax = err as { message?: string; response?: { data?: { message?: string } } };
+      setError(ax.response?.data?.message || ax.message || 'Gagal memuat');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const response = await api.attendance.getLogs();
-        setLogs(response.data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLogs();
-  }, []);
+    void fetchLogs();
+  }, [fetchLogs]);
+
+  const filtered = logs.filter((log) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    const name = String(log.member?.fullName ?? '').toLowerCase();
+    const nia = String(log.member?.nia ?? '').toLowerCase();
+    const dojo = String(log.dojo?.name ?? '').toLowerCase();
+    const agenda = String(log.event?.title ?? '').toLowerCase();
+    return name.includes(q) || nia.includes(q) || dojo.includes(q) || agenda.includes(q);
+  });
+
+  const startEdit = (log: AttendanceLog) => {
+    setEditingId(log.id);
+    setEditValue(toDatetimeLocalValue(log.checkInAt));
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  const saveEdit = async (id: string) => {
+    const dt = new Date(editValue);
+    if (Number.isNaN(dt.getTime())) {
+      toast.error('Waktu tidak valid');
+      return;
+    }
+    setBusyId(id);
+    try {
+      await api.attendance.updateStaff(id, { checkInAt: dt.toISOString() });
+      toast.success('Waktu absensi diperbarui');
+      cancelEdit();
+      await fetchLogs();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } };
+      toast.error(ax.response?.data?.message || 'Gagal menyimpan');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const removeLog = async (id: string, name: string) => {
+    if (!window.confirm(`Hapus catatan absensi ${name || 'ini'} dari laporan?`)) return;
+    setBusyId(id);
+    try {
+      await api.attendance.deleteStaff(id);
+      toast.success('Catatan absensi dihapus');
+      cancelEdit();
+      await fetchLogs();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } };
+      toast.error(ax.response?.data?.message || 'Gagal menghapus');
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header */}
       <div className="flex items-center gap-4">
-        <button 
+        <button
+          type="button"
           onClick={() => router.back()}
           className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90"
         >
@@ -52,24 +134,28 @@ export default function AttendancePage() {
           <h2 className="text-xl font-black uppercase text-white leading-tight">Presensi</h2>
         </div>
       </div>
-      <p className="text-[11px] text-gray-500 leading-relaxed">Pantau kehadiran anggota di setiap dojo secara real-time.</p>
+      <p className="text-[11px] text-gray-500 leading-relaxed">
+        Pantau kehadiran anggota. Koreksi waktu atau hapus catatan salah hanya untuk pengurus — anggota tidak
+        dapat mengedit riwayat dari aplikasi.
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="glass-card p-4">
           <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">Kehadiran Hari Ini</p>
           <h4 className="text-2xl font-bold">{logs.length}</h4>
         </div>
-        {/* Add more stat cards if needed */}
       </div>
 
       <div className="glass-card space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-3">
           <h3 className="text-xl font-bold">Log Aktivitas Terbaru</h3>
-          <div className="relative w-64">
+          <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-            <input 
-              type="text" 
-              placeholder="Cari anggota..." 
+            <input
+              type="text"
+              placeholder="Cari anggota, dojo, agenda..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               className="w-full bg-black-20 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-amber-500/50"
             />
           </div>
@@ -88,31 +174,50 @@ export default function AttendancePage() {
                 <tr className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
                   <th className="pb-4 pl-2 font-medium">Anggota</th>
                   <th className="pb-4 font-medium">Dojo</th>
+                  <th className="pb-4 font-medium">Agenda</th>
                   <th className="pb-4 font-medium">Waktu</th>
                   <th className="pb-4 font-medium">Metode</th>
-                  <th className="pb-4 text-right pr-2 font-medium">Status</th>
+                  <th className="pb-4 text-right pr-2 font-medium">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-white/[0.02] transition-all">
+                {filtered.map((log) => (
+                  <tr key={log.id} className="hover:bg-white/[0.02] transition-all align-top">
                     <td className="py-4 pl-2">
                       <p className="font-bold text-white">{log.member?.fullName}</p>
                       <p className="text-[10px] text-gray-500 mt-0.5">{log.member?.nia}</p>
                     </td>
                     <td className="py-4">
                       <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-gray-500" />
+                        <MapPin size={14} className="text-gray-500 shrink-0" />
                         <span className="text-xs">{log.dojo?.name}</span>
                       </div>
                     </td>
                     <td className="py-4">
-                      <div className="flex items-center gap-2 text-gray-400">
-                        <Clock size={14} />
-                        <span className="text-xs">
-                          {new Date(log.checkInAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                      <div className="flex items-start gap-2 text-xs text-gray-300">
+                        <Calendar size={14} className="text-gray-500 shrink-0 mt-0.5" />
+                        <span>{log.event?.title || '—'}</span>
                       </div>
+                    </td>
+                    <td className="py-4">
+                      {editingId === log.id ? (
+                        <input
+                          type="datetime-local"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="bg-black/40 border border-white/15 rounded-lg px-2 py-1 text-[11px] text-white max-w-[11rem]"
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2 text-gray-400">
+                          <Clock size={14} />
+                          <span className="text-xs">
+                            {new Date(log.checkInAt).toLocaleString('id-ID', {
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            })}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="py-4">
                       <span className="text-[10px] px-2 py-0.5 bg-white/5 rounded-full border border-white/10 text-gray-500">
@@ -120,19 +225,59 @@ export default function AttendancePage() {
                       </span>
                     </td>
                     <td className="py-4 text-right pr-2">
-                      <span className="text-[10px] font-bold uppercase text-green-500 bg-green-500/10 px-2 py-1 rounded">
-                        HADIR
-                      </span>
+                      <div className="flex justify-end gap-1 flex-wrap">
+                        {editingId === log.id ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={busyId === log.id}
+                              onClick={() => void saveEdit(log.id)}
+                              className="text-[10px] font-black uppercase px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 disabled:opacity-40"
+                            >
+                              Simpan
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busyId === log.id}
+                              onClick={cancelEdit}
+                              className="text-[10px] font-black uppercase px-2 py-1 rounded-lg bg-white/5 text-gray-400 border border-white/10"
+                            >
+                              Batal
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              disabled={busyId !== null}
+                              onClick={() => startEdit(log)}
+                              title="Ubah waktu"
+                              className="p-2 rounded-lg border border-white/10 bg-white/5 text-amber-400 hover:bg-white/10 disabled:opacity-30"
+                            >
+                              <Pencil size={14} aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busyId !== null}
+                              onClick={() => void removeLog(log.id, log.member?.fullName || '')}
+                              title="Hapus dari laporan"
+                              className="p-2 rounded-lg border border-red-500/25 bg-red-500/10 text-red-400 hover:bg-red-500/15 disabled:opacity-30"
+                            >
+                              <Trash2 size={14} aria-hidden />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
-          
-          {logs.length === 0 && !loading && (
+
+          {filtered.length === 0 && !loading && (
             <div className="py-20 text-center text-gray-500">
-              Belum ada riwayat kehadiran hari ini.
+              {logs.length === 0 ? 'Belum ada riwayat kehadiran hari ini.' : 'Tidak ada hasil pencarian.'}
             </div>
           )}
         </div>

@@ -161,6 +161,8 @@ model Attendance {
   id        String   @id @default(uuid())
   memberId  String
   dojoId    String
+  /// Absensi terkait agenda/event (mis. latihan bersama); null = absensi QR rutin di dojo.
+  eventId   String?
   checkInAt DateTime @default(now())
   method    String   @default("QR_SCAN")
   latitude  Float?
@@ -170,6 +172,9 @@ model Attendance {
   isDeleted Boolean  @default(false)
   dojo      Dojo     @relation(fields: [dojoId], references: [id])
   member    Member   @relation(fields: [memberId], references: [id])
+  event     Event?   @relation(fields: [eventId], references: [id])
+
+  @@index([memberId, eventId])
 }
 
 model Billing {
@@ -216,6 +221,7 @@ model Event {
   categories    EventCategory[]
   registrations EventRegistration[]
   verifications Verification[]
+  attendances   Attendance[]
 }
 
 model EventCategory {
