@@ -117,6 +117,13 @@ export interface Member {
   };
 }
 
+export interface EventCategory {
+  /** Hanya ada pada respons API; boleh diomit saat kirim categories di create/update. */
+  id?: string;
+  name: string;
+  fee: number;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -127,8 +134,13 @@ export interface Event {
   location?: string;
   branchId?: string | null;
   branch?: { id: string; name: string; city?: string | null } | null;
-  categories?: unknown[];
+  categories?: EventCategory[];
 }
+
+/** Body create/update event; `categories[].id` dipakai saat PATCH tarif bertahap. */
+export type EventUpsertPayload = Omit<Partial<Event>, "categories"> & {
+  categories?: Array<{ id?: string; name: string; fee: number }>;
+};
 
 // Create the combined api object
 export const api = Object.assign(apiInstance, {
@@ -185,9 +197,9 @@ export const api = Object.assign(apiInstance, {
   events: {
     getAll: () => apiInstance.get('/events').then(res => res.data),
     getDetail: (id: string) => apiInstance.get(`/events/${id}`).then(res => res.data),
-    create: (data: Partial<Event>) => apiInstance.post('/events', data).then(res => res.data),
+    create: (data: EventUpsertPayload) => apiInstance.post('/events', data).then(res => res.data),
     delete: (id: string) => apiInstance.delete(`/events/${id}`).then(res => res.data),
-    update: (id: string, data: Partial<Event>) => apiInstance.patch(`/events/${id}`, data).then(res => res.data),
+    update: (id: string, data: EventUpsertPayload) => apiInstance.patch(`/events/${id}`, data).then(res => res.data),
     bulkRegister: (data: { eventId: string; memberIds: string[]; categoryId?: string }) =>
       apiInstance.post('/events/register/bulk', data).then((res) => res.data),
     updateRegistration: (registrationId: string, data: { categoryId?: string | null; status?: string }) =>

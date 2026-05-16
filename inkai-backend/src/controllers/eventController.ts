@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import { notifyAdmins, createNotification } from '../utils/notification';
 import { invalidateCache } from '../utils/redis';
@@ -13,6 +14,138 @@ import {
   shouldRestrictEventRegistrationsToManagedDojo,
 } from '../utils/eventScope';
 import { pickUniqueEventFeeAmount } from '../utils/eventFeeBilling';
+
+const EVENT_CATEGORY_FALLBACK_NAME = 'Pendaftaran';
+
+/** Gunakan sebagai prefix agar PATCH agenda dapat membalas 400 (bukan 500). */
+const BAD_REQ_PREFIX = 'BAD_REQUEST:';
+
+function badRequest(message: string): Error {
+  return new Error(`${BAD_REQ_PREFIX}${message}`);
+}
+
+/**
+ * Menyamakan tarif nama kategori tanpa selalu menghapus baris —
+ * menghindari melanggar FK `EventRegistration.categoryId`.
+ *
+ * Perilaku:
+ * - Setiap incoming punya id → pembaruan in-place untuk kategori tersebut.
+ * - Tanpa id: bisa membuat baru (agenda belum ada kategori), mengubah tepat satu
+ *   kategori (satu tariff lama ↔ satu tariff baru), atau mengganti daftar lengkap hanya jika tidak ada peserta terikat/kategori ada ≤1 tertentu.
+ */
+async function reconcileEventCategoriesForPatch(
+  tx: Prisma.TransactionClient,
+  eventId: string,
+  incomingRaw: unknown[],
+): Promise<void> {
+  const incomingParsed = incomingRaw.map((raw) => {
+    const c = raw as Record<string, unknown>;
+    const id =
+      typeof c.id === 'string' && String(c.id).trim() !== '' ? String(c.id).trim() : undefined;
+    const name =
+      typeof c.name === 'string' && String(c.name).trim() !== '' ? String(c.name).trim() : '';
+    const feeNum = parseFloat(String(c.fee ?? 0));
+    return {
+      id,
+      name,
+      fee: Number.isFinite(feeNum) ? feeNum : 0,
+    };
+  });
+
+  if (incomingParsed.length === 0) {
+    const regWithCat = await tx.eventRegistration.count({
+      where: { eventId, categoryId: { not: null } },
+    });
+    if (regWithCat > 0) {
+      throw badRequest(
+        'Tidak dapat menghapus semua tarif — ada peserta dengan kategori terpilih.',
+      );
+    }
+    await tx.eventCategory.deleteMany({ where: { eventId } });
+    return;
+  }
+
+  const existing = await tx.eventCategory.findMany({ where: { eventId } });
+
+  const anyHaveIds = incomingParsed.some((r) => r.id);
+  const allHaveIds = incomingParsed.every((r) => r.id);
+
+  if (anyHaveIds && !allHaveIds) {
+    throw badRequest(
+      'Untuk memperbarui beberapa tarif sekaligus, sertakan id pada setiap kategori.',
+    );
+  }
+
+  if (allHaveIds) {
+    const byId = new Map(existing.map((e) => [e.id, e]));
+    for (const row of incomingParsed) {
+      const rid = row.id as string;
+      const exRow = byId.get(rid);
+      if (!exRow) throw badRequest('Salah satu id kategori tidak termasuk agenda ini.');
+      await tx.eventCategory.update({
+        where: { id: rid },
+        data: {
+          name: row.name || exRow.name,
+          fee: row.fee,
+        },
+      });
+    }
+    return;
+  }
+
+  if (!allHaveIds && existing.length > 1) {
+    throw badRequest(
+      'Agenda memiliki beberapa kategori tarif — sertakan id setiap baris dalam permintaan.',
+    );
+  }
+
+  if (existing.length === 1 && incomingParsed.length === 1) {
+    const [exRow] = existing;
+    const row = incomingParsed[0];
+    await tx.eventCategory.update({
+      where: { id: exRow.id },
+      data: {
+        name: row.name || exRow.name,
+        fee: row.fee,
+      },
+    });
+    return;
+  }
+
+  if (existing.length === 0 && incomingParsed.length > 0) {
+    for (const row of incomingParsed) {
+      await tx.eventCategory.create({
+        data: {
+          eventId,
+          name: row.name || EVENT_CATEGORY_FALLBACK_NAME,
+          fee: row.fee,
+        },
+      });
+    }
+    return;
+  }
+
+  const blockingRegs = await tx.eventRegistration.count({
+    where: { eventId, categoryId: { in: existing.map((e) => e.id) } },
+  });
+  if (blockingRegs > 0) {
+    throw badRequest(
+      'Tidak dapat mengganti seluruh daftar tarif — ada peserta terikat pada tarif sebelumnya. Gunakan penyuntingan bertanda id (per kategori).',
+    );
+  }
+
+  await tx.eventCategory.deleteMany({ where: { eventId } });
+
+  for (const row of incomingParsed) {
+    await tx.eventCategory.create({
+      data: {
+        eventId,
+        name: row.name || EVENT_CATEGORY_FALLBACK_NAME,
+        fee: row.fee,
+      },
+    });
+  }
+}
 
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
@@ -872,21 +1005,7 @@ export const updateEvent = async (req: Request, res: Response) => {
       });
 
       if (categories && Array.isArray(categories)) {
-        await tx.eventCategory.deleteMany({
-          where: { eventId: id },
-        });
-
-        await tx.event.update({
-          where: { id },
-          data: {
-            categories: {
-              create: categories.map((c: { name: string; fee: number | string }) => ({
-                name: c.name,
-                fee: parseFloat(String(c.fee)),
-              })),
-            },
-          },
-        });
+        await reconcileEventCategoriesForPatch(tx, id, categories);
       }
 
       return tx.event.findUnique({
@@ -903,6 +1022,12 @@ export const updateEvent = async (req: Request, res: Response) => {
     res.json({ status: 'success', data: event });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
+    if (errMessage.startsWith(BAD_REQ_PREFIX)) {
+      return res.status(400).json({
+        status: 'error',
+        message: errMessage.slice(BAD_REQ_PREFIX.length),
+      });
+    }
     console.error('[EventController] Error:', error);
     res.status(500).json({ status: 'error', message: errMessage });
   }

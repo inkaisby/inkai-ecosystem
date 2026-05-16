@@ -208,6 +208,7 @@ export default function Login() {
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="glass-input w-full py-4 pl-12 pr-4 text-sm"
                   required
+                  autoFocus
                 />
               </div>
             </div>

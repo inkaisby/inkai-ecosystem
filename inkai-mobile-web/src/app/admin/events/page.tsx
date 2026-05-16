@@ -16,6 +16,7 @@ import {
   GraduationCap,
   Users,
   MapPin,
+  Wallet,
   ChevronRight,
   ChevronLeft,
   Trash2,
@@ -25,10 +26,16 @@ import {
   Building2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { api } from "@/lib/api";
+import { api, type EventUpsertPayload } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+
+interface EventCategoryRow {
+  id: string;
+  name: string;
+  fee: number;
+}
 
 interface Event {
   id: string;
@@ -40,6 +47,7 @@ interface Event {
   location?: string;
   branchId?: string | null;
   branch?: { id: string; name: string; city?: string | null } | null;
+  categories?: EventCategoryRow[];
   _count?: {
     registrations: number;
   };
@@ -100,6 +108,101 @@ function clampRegistrationCloseToStart<
   return { ...fd, registrationCloseTime: st };
 }
 
+const AGENDA_TITLE_OPTIONS = {
+  "Kegiatan Umum": [
+    "LATIHAN BERSAMA",
+    "RAPAT KERJA (RAKER)",
+    "PELATIHAN PELATIH / WASIT",
+    "KEGIATAN SOSIAL",
+  ],
+  Kejuaraan: [
+    "KEJURNAS INKAI",
+    "KEJURDA INKAI",
+    "OPEN TOURNAMENT",
+    "PIALA GUBERNUR",
+    "PIALA WALIKOTA",
+  ],
+  "Ujian Kenaikan": [
+    "UJIAN KENAIKAN TINGKAT (UKT)",
+    "GASHUKU & UKT NASIONAL",
+    "UJIAN DAN (SABUK HITAM)",
+  ],
+} as const;
+
+function titleBelongsToCategory(category: string, title: string): boolean {
+  const list = AGENDA_TITLE_OPTIONS[category as keyof typeof AGENDA_TITLE_OPTIONS];
+  return !!(list && (list as readonly string[]).includes(title));
+}
+
+const AGENDA_COMBINED_SEP = "::";
+
+const DEFAULT_EVENT_REGISTRATION_CATEGORY = "Pendaftaran";
+
+function parseRegistrationFeeRp(s: string): number {
+  const raw = String(s ?? "")
+    .replace(/\s+/g, "")
+    .replace(/,/g, "");
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.round(n);
+}
+
+/** Ringkasan daftar tarif untuk kartu agenda / modal (nilai dibulatkan). */
+function formatEventFeeSummaryLabel(
+  categories: EventCategoryRow[] | undefined,
+): string | null {
+  if (!categories?.length) return null;
+  const fees = categories
+    .map((c) => Math.round(Number(c.fee ?? 0)))
+    .filter((x) => Number.isFinite(x) && x > 0);
+  if (!fees.length) return null;
+  const min = Math.min(...fees);
+  const max = Math.max(...fees);
+  const fmt = (v: number) =>
+    new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(v);
+  if (min === max) return `Rp ${fmt(min)}`;
+  return `Rp ${fmt(min)} – ${fmt(max)}`;
+}
+
+/** Buat agenda: tanpa biaya kosong atau satu kategori "Pendaftaran". */
+function buildCategoriesPayloadForCreate(
+  registrationFeeRp: string,
+): {
+  categories?: Array<{ id?: string; name: string; fee: number }>;
+} {
+  const feeNum = parseRegistrationFeeRp(registrationFeeRp);
+  if (feeNum <= 0) return {};
+  return {
+    categories: [{ name: DEFAULT_EVENT_REGISTRATION_CATEGORY, fee: feeNum }],
+  };
+}
+
+type EventFeeFormRow = { id: string; name: string; feeRp: string };
+
+/** Edit: banyak baris (dari API, dengan id) atau satu angka ketika agenda belum punya kategori. */
+function buildCategoriesPayloadForEdit(
+  feeRows: EventFeeFormRow[],
+  registrationFeeRp: string,
+): {
+  categories?: Array<{ id?: string; name: string; fee: number }>;
+} {
+  if (feeRows.length > 0) {
+    return {
+      categories: feeRows.map((r) => ({
+        ...(r.id.trim() !== "" ? { id: r.id.trim() } : {}),
+        name: r.name.trim() || DEFAULT_EVENT_REGISTRATION_CATEGORY,
+        fee: parseRegistrationFeeRp(r.feeRp),
+      })),
+    };
+  }
+
+  const feeNum = parseRegistrationFeeRp(registrationFeeRp);
+  if (feeNum <= 0) return {};
+  return {
+    categories: [{ name: DEFAULT_EVENT_REGISTRATION_CATEGORY, fee: feeNum }],
+  };
+}
+
 export default function EventsPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -151,7 +254,10 @@ export default function EventsPage() {
     eventProvinceId: "",
     registrationCloseDate: "",
     registrationCloseTime: "",
+    registrationFeeRp: "",
   });
+
+  const [eventFeeRows, setEventFeeRows] = useState<EventFeeFormRow[]>([]);
 
   /** national = cabang kosong/null (terlihat di semua ranting sesuaturan backend); branch = wilayah tertentu */
   const [wilayahScope, setWilayahScope] = useState<"national" | "branch">(
@@ -327,7 +433,9 @@ export default function EventsPage() {
       eventProvinceId: "",
       registrationCloseDate: "",
       registrationCloseTime: "",
+      registrationFeeRp: "",
     });
+    setEventFeeRows([]);
   };
 
   const filteredEvents = useMemo(() => {
@@ -371,6 +479,23 @@ export default function EventsPage() {
   };
 
   const openEditModal = async (event: Event) => {
+    const normalizedCats: EventCategoryRow[] = Array.isArray(event.categories)
+      ? event.categories.map((c) => ({
+          id: typeof c?.id === "string" ? c.id : "",
+          name:
+            (typeof c?.name === "string" ? c.name.trim() : "") ||
+            DEFAULT_EVENT_REGISTRATION_CATEGORY,
+          fee: Number(c?.fee ?? 0),
+        }))
+      : [];
+    setEventFeeRows(
+      normalizedCats.map((c) => ({
+        id: c.id,
+        name: c.name,
+        feeRp: String(Math.round(Number(c.fee ?? 0))),
+      })),
+    );
+
     setWilayahScope(event.branchId ? "branch" : "national");
     setFormData({
       id: event.id,
@@ -402,6 +527,7 @@ export default function EventsPage() {
       registrationCloseTime: event.registrationCloseAt
         ? dateToLocalTimeInput(new Date(event.registrationCloseAt))
         : "",
+      registrationFeeRp: "",
     });
     setModalMode("edit");
     setShowEventModal(true);
@@ -557,7 +683,11 @@ export default function EventsPage() {
 
                 {/* Events List */}
                 <div className="space-y-3">
-                  {filteredEvents.map((event) => (
+                  {filteredEvents.map((event) => {
+                    const feeLine = formatEventFeeSummaryLabel(
+                      event.categories,
+                    );
+                    return (
                     <motion.div
                       layoutId={event.id}
                       key={event.id}
@@ -613,6 +743,12 @@ export default function EventsPage() {
                             <MapPin size={12} className="text-amber-500" />{" "}
                             {event.location || "Indonesia"}
                           </span>
+                          {feeLine ? (
+                            <span className="flex items-center gap-1.5 text-[10px] text-amber-500/90 font-black truncate">
+                              <Wallet size={12} className="shrink-0" />
+                              {feeLine}
+                            </span>
+                          ) : null}
                           <span className="text-[9px] text-gray-600 font-bold truncate">
                             Cabang:{" "}
                             {event.branch?.name ||
@@ -632,7 +768,8 @@ export default function EventsPage() {
                         <Edit2 size={18} />
                       </button>
                     </motion.div>
-                  ))}
+                    );
+                  })}
 
                   {filteredEvents.length === 0 && (
                     <div className="py-16 text-center bg-white/5 rounded-3xl border border-white/5">
@@ -899,6 +1036,47 @@ export default function EventsPage() {
                           </p>
                         </div>
 
+                        {/* Biaya pendaftaran — selaras EventCategory di backend */}
+                        <div className="bg-white/[0.02] p-3.5 min-[390px]:p-5 rounded-2xl min-[390px]:rounded-3xl border border-white/5 shadow-inner">
+                          <div className="flex items-center gap-2 text-amber-500 px-0.5 mb-3">
+                            <Wallet size={16} className="shrink-0" />
+                            <h4 className="text-[11px] font-black uppercase tracking-[0.2em]">
+                              Biaya pendaftaran peserta
+                            </h4>
+                          </div>
+                          {selectedEvent.categories &&
+                          selectedEvent.categories.length > 0 ? (
+                            <ul className="space-y-2">
+                              {selectedEvent.categories.map((c) => (
+                                <li
+                                  key={c.id ?? `${c.name}-${c.fee}`}
+                                  className="flex justify-between gap-3 text-sm font-medium text-gray-300 border border-white/[0.06] rounded-xl px-3 py-2.5 bg-black/20"
+                                >
+                                  <span className="min-w-0 truncate text-white font-bold uppercase text-[11px] tracking-wide">
+                                    {c.name || DEFAULT_EVENT_REGISTRATION_CATEGORY}
+                                  </span>
+                                  <span className="tabular-nums shrink-0 text-amber-500 font-black">
+                                    Rp{" "}
+                                    {Math.round(
+                                      Number(c.fee ?? 0),
+                                    ).toLocaleString("id-ID")}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-[13px] text-gray-500 leading-relaxed">
+                              Belum ada tarif kategori. Anggota tidak membayar
+                              biaya pendaftaran melalui alur tagihan event.
+                            </p>
+                          )}
+                          <p className="text-[10px] text-gray-600 mt-3 leading-relaxed">
+                            Tagihan yang dibayar anggota memakai nominal dasar
+                            ini plus kode unik kecil (agar pembayaran mudah
+                            dicocokkan di sistem).
+                          </p>
+                        </div>
+
                         {/* Informasi Peserta */}
                         <div className="space-y-3 min-[390px]:space-y-4">
                           <div className="flex items-center gap-2 text-amber-500 px-0.5">
@@ -1079,7 +1257,17 @@ export default function EventsPage() {
                             }
                           }
 
-                          const eventPayload = {
+                          const categoriesPart =
+                            modalMode === "create"
+                              ? buildCategoriesPayloadForCreate(
+                                  formData.registrationFeeRp,
+                                )
+                              : buildCategoriesPayloadForEdit(
+                                  eventFeeRows,
+                                  formData.registrationFeeRp,
+                                );
+
+                          const eventPayload: EventUpsertPayload = {
                             title: finalTitle,
                             description: formData.description,
                             startDate: startIso,
@@ -1087,6 +1275,7 @@ export default function EventsPage() {
                             registrationCloseAt,
                             location: formData.location,
                             ...wilayahPart,
+                            ...categoriesPart,
                           };
 
                           if (modalMode === "create") {
@@ -1113,34 +1302,91 @@ export default function EventsPage() {
                       className="space-y-8 pb-32 adm-dark-field"
                     >
                       <div className="space-y-6">
-                        {/* Kategori */}
+                        {/* Kategori + nama agenda (satu pemilihan) */}
                         <div className="space-y-2">
                           <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">
-                            Kategori Agenda
+                            Kategori & Nama Agenda
                           </label>
                           <div className="relative">
                             <select
-                              name="category"
-                              value={formData.category}
-                              onChange={(e) =>
+                              name="categoryAndTitle"
+                              required
+                              value={
+                                formData.title.trim() === ""
+                                  ? ""
+                                  : `${formData.category}${AGENDA_COMBINED_SEP}${formData.title}`
+                              }
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (!v.trim()) {
+                                  setFormData({
+                                    ...formData,
+                                    category: "Kegiatan Umum",
+                                    title: "",
+                                  });
+                                  return;
+                                }
+                                const sep = v.indexOf(AGENDA_COMBINED_SEP);
+                                if (sep === -1) return;
                                 setFormData({
                                   ...formData,
-                                  category: e.target.value,
-                                })
-                              }
-                              required
+                                  category: v.slice(0, sep),
+                                  title: v.slice(sep + AGENDA_COMBINED_SEP.length),
+                                });
+                              }}
                               className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all appearance-none cursor-pointer text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
                             >
-                              <option value="Kegiatan Umum">
-                                Kegiatan Umum (Lain-lain)
+                              <option value="">
+                                Pilih kategori dan nama agenda…
                               </option>
-                              <option value="Kejuaraan">
-                                Kejuaraan / Turnamen
-                              </option>
-                              <option value="Ujian Kenaikan">
-                                Ujian Kenaikan Tingkat
-                              </option>
+                              {formData.title.trim() !== "" &&
+                                !titleBelongsToCategory(
+                                  formData.category,
+                                  formData.title,
+                                ) && (
+                                  <option
+                                    value={`${formData.category}${AGENDA_COMBINED_SEP}${formData.title}`}
+                                  >
+                                    {formData.title} (nama saat ini)
+                                  </option>
+                                )}
+                              <optgroup label="Kegiatan Umum (Lain-lain)">
+                                {AGENDA_TITLE_OPTIONS["Kegiatan Umum"].map(
+                                  (title) => (
+                                    <option
+                                      key={`Kegiatan Umum:${title}`}
+                                      value={`Kegiatan Umum${AGENDA_COMBINED_SEP}${title}`}
+                                    >
+                                      {title}
+                                    </option>
+                                  ),
+                                )}
+                              </optgroup>
+                              <optgroup label="Kejuaraan / Turnamen">
+                                {AGENDA_TITLE_OPTIONS["Kejuaraan"].map(
+                                  (title) => (
+                                    <option
+                                      key={`Kejuaraan:${title}`}
+                                      value={`Kejuaraan${AGENDA_COMBINED_SEP}${title}`}
+                                    >
+                                      {title}
+                                    </option>
+                                  ),
+                                )}
+                              </optgroup>
+                              <optgroup label="Ujian Kenaikan Tingkat">
+                                {AGENDA_TITLE_OPTIONS["Ujian Kenaikan"].map(
+                                  (title) => (
+                                    <option
+                                      key={`Ujian Kenaikan:${title}`}
+                                      value={`Ujian Kenaikan${AGENDA_COMBINED_SEP}${title}`}
+                                    >
+                                      {title}
+                                    </option>
+                                  ),
+                                )}
+                              </optgroup>
                             </select>
                             <ChevronRight
                               size={16}
@@ -1271,84 +1517,6 @@ export default function EventsPage() {
                           </div>
                         )}
 
-                        {/* Nama Event */}
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">
-                            Nama Event / Agenda
-                          </label>
-                          <div className="relative">
-                            <select
-                              name="title"
-                              required
-                              value={formData.title}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  title: e.target.value,
-                                })
-                              }
-                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all appearance-none cursor-pointer text-white shadow-inner"
-                              style={{ colorScheme: "dark" }}
-                            >
-                              <option value="">
-                                Pilih salah satu item di daftar...
-                              </option>
-                              {formData.category === "Kejuaraan" && (
-                                <>
-                                  <option value="KEJURNAS INKAI">
-                                    KEJURNAS INKAI
-                                  </option>
-                                  <option value="KEJURDA INKAI">
-                                    KEJURDA INKAI
-                                  </option>
-                                  <option value="OPEN TOURNAMENT">
-                                    OPEN TOURNAMENT
-                                  </option>
-                                  <option value="PIALA GUBERNUR">
-                                    PIALA GUBERNUR
-                                  </option>
-                                  <option value="PIALA WALIKOTA">
-                                    PIALA WALIKOTA
-                                  </option>
-                                </>
-                              )}
-                              {formData.category === "Ujian Kenaikan" && (
-                                <>
-                                  <option value="UJIAN KENAIKAN TINGKAT (UKT)">
-                                    UJIAN KENAIKAN TINGKAT (UKT)
-                                  </option>
-                                  <option value="GASHUKU & UKT NASIONAL">
-                                    GASHUKU & UKT NASIONAL
-                                  </option>
-                                  <option value="UJIAN DAN (SABUK HITAM)">
-                                    UJIAN DAN (SABUK HITAM)
-                                  </option>
-                                </>
-                              )}
-                              {formData.category === "Kegiatan Umum" && (
-                                <>
-                                  <option value="LATIHAN BERSAMA">
-                                    LATIHAN BERSAMA
-                                  </option>
-                                  <option value="RAPAT KERJA (RAKER)">
-                                    RAPAT KERJA (RAKER)
-                                  </option>
-                                  <option value="PELATIHAN PELATIH / WASIT">
-                                    PELATIHAN PELATIH / WASIT
-                                  </option>
-                                  <option value="KEGIATAN SOSIAL">
-                                    KEGIATAN SOSIAL
-                                  </option>
-                                </>
-                              )}
-                            </select>
-                            <ChevronRight
-                              size={16}
-                              className="absolute right-5 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none"
-                            />
-                          </div>
-                        </div>
-
                         {/* Lokasi */}
                         <div className="space-y-2">
                           <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">
@@ -1376,6 +1544,106 @@ export default function EventsPage() {
                               style={{ colorScheme: "dark" }}
                             />
                           </div>
+                        </div>
+
+                        {/* Biaya pendaftaran (EventCategory.fee — dasar tagihan anggota) */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">
+                            Biaya pendaftaran (per peserta)
+                          </label>
+                          {modalMode === "edit" && eventFeeRows.length > 0 ? (
+                            <div className="space-y-3">
+                              <p className="text-[10px] text-gray-600 leading-relaxed ml-1">
+                                Satu nominal per kategori. Tagihan pembayaran
+                                mengikuti baris ini (ditambah kode unik kecil oleh
+                                sistem).
+                              </p>
+                              <div className="space-y-3">
+                                {eventFeeRows.map((row, idx) => (
+                                  <div
+                                    key={row.id ? row.id : `fee-${idx}`}
+                                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2"
+                                  >
+                                    <span className="text-[11px] font-black uppercase tracking-wide text-white block truncate border-b border-white/5 pb-2">
+                                      {row.name}
+                                    </span>
+                                    <div className="relative">
+                                      <Wallet
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
+                                        size={18}
+                                      />
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        step={1}
+                                        inputMode="numeric"
+                                        autoComplete="off"
+                                        aria-label={`Biaya ${row.name}`}
+                                        value={row.feeRp}
+                                        onChange={(e) =>
+                                          setEventFeeRows((rows) =>
+                                            rows.map((r, i) =>
+                                              i === idx
+                                                ? { ...r, feeRp: e.target.value }
+                                                : r,
+                                            ),
+                                          )
+                                        }
+                                        placeholder="0"
+                                        className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white placeholder:text-gray-600 shadow-inner [color-scheme:dark]"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="relative">
+                                <Wallet
+                                  className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"
+                                  size={18}
+                                />
+                                <input
+                                  type="number"
+                                  name="registrationFeeRp"
+                                  min={0}
+                                  step={1}
+                                  inputMode="numeric"
+                                  autoComplete="off"
+                                  value={formData.registrationFeeRp}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      registrationFeeRp: e.target.value,
+                                    })
+                                  }
+                                  placeholder="0 = gratis / tanpa tagihan kategori"
+                                  className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white placeholder:text-gray-600 shadow-inner [color-scheme:dark]"
+                                />
+                              </div>
+                              <p className="text-[10px] text-gray-600 leading-relaxed ml-1">
+                                {modalMode === "create" ? (
+                                  <>
+                                    Mendefinisikan kategori tarif bernama{" "}
+                                    <span className="text-gray-400 font-bold">
+                                      {DEFAULT_EVENT_REGISTRATION_CATEGORY}
+                                    </span>{" "}
+                                    bagi agenda baru.
+                                  </>
+                                ) : (
+                                  <>
+                                    Agenda belum punya kategori dari sistem — isi
+                                    biaya untuk membuat satu kategori{" "}
+                                    <span className="text-gray-400 font-bold">
+                                      {DEFAULT_EVENT_REGISTRATION_CATEGORY}
+                                    </span>
+                                    .
+                                  </>
+                                )}
+                              </p>
+                            </>
+                          )}
                         </div>
 
                         <div className="space-y-4">
