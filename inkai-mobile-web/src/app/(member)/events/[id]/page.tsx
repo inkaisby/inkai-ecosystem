@@ -89,6 +89,34 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("VA");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  /** Fallback jika `GET /events/:id` tidak menyertakan tagihan di `member.billings`. */
+  const [feeBillingFromApi, setFeeBillingFromApi] = useState<EventFeeBillingRow | null>(null);
+
+  const syncFeeBillingFromApi = useCallback(
+    async (regId: string | null | undefined) => {
+      if (!regId || !user) {
+        setFeeBillingFromApi(null);
+        return;
+      }
+      try {
+        const response = await billingApi.getMyBillings();
+        const payload = response.data as { status?: string; data?: unknown[] };
+        if (payload?.status !== "success" || !Array.isArray(payload.data)) {
+          setFeeBillingFromApi(null);
+          return;
+        }
+        const row = payload.data.find((x) => {
+          if (typeof x !== "object" || x === null) return false;
+          const b = x as EventFeeBillingRow;
+          return b.registrationId === regId && String(b.type) === "EVENT_FEE";
+        }) as EventFeeBillingRow | undefined;
+        setFeeBillingFromApi(row ?? null);
+      } catch {
+        setFeeBillingFromApi(null);
+      }
+    },
+    [user],
+  );
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -105,11 +133,14 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           if (reg) {
             setUserRegistration(reg);
             setSelectedCategoryId(reg.categoryId ?? null);
+            void syncFeeBillingFromApi(reg.id);
           } else {
             setUserRegistration(null);
+            setFeeBillingFromApi(null);
           }
         } else {
           setUserRegistration(null);
+          setFeeBillingFromApi(null);
         }
       }
     } catch (error) {
@@ -117,7 +148,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     } finally {
       setIsLoading(false);
     }
-  }, [id, user]);
+  }, [id, user, syncFeeBillingFromApi]);
 
   useEffect(() => {
     const t = globalThis.setTimeout(() => {
@@ -173,7 +204,8 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   };
 
   const handlePayEventFee = async () => {
-    const b = eventFeeBillingForRegistration(userRegistration);
+    const b =
+      eventFeeBillingForRegistration(userRegistration) ?? feeBillingFromApi;
     if (!b?.id) {
       setToast({
         show: true,
@@ -259,8 +291,18 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const isApprovedLike =
     regStatus === 'APPROVED' || regStatus === 'SUCCESS';
   const isRegistered = !!userRegistration;
-  const eventFeeBilling = eventFeeBillingForRegistration(userRegistration);
-  const categoryFee = Number(userRegistration?.category?.fee ?? 0);
+  const eventFeeBillingNested = eventFeeBillingForRegistration(userRegistration);
+  const eventFeeBilling = eventFeeBillingNested ?? feeBillingFromApi;
+  const categoryFee = (() => {
+    const fromReg = Number(userRegistration?.category?.fee ?? 0);
+    if (fromReg > 0) return fromReg;
+    const cid = userRegistration?.categoryId;
+    if (cid && event.categories?.length) {
+      const c = event.categories.find((cat) => cat.id === cid);
+      return Number(c?.fee ?? 0);
+    }
+    return 0;
+  })();
   const isPendingMember = isRegistered && regStatus === 'PENDING';
   const isRejected = regStatus === 'REJECTED';
   const waitingPaymentVerify =
@@ -270,8 +312,8 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const needsPayRegistrationFee =
     isApprovedLike &&
     !isPaid &&
-    categoryFee > 0 &&
-    eventFeeBilling?.status === 'PENDING';
+    eventFeeBilling?.status === 'PENDING' &&
+    (Number(eventFeeBilling?.amount ?? 0) > 0 || categoryFee > 0);
 
   const effectiveRegistrationClose = event.registrationCloseAt
     ? new Date(event.registrationCloseAt)
@@ -407,6 +449,104 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
             </div>
           </section>
         )}
+
+        {isRegistered &&
+        isApprovedLike &&
+        !isPaid &&
+        !isRejected ? (
+          <>
+            {waitingPaymentVerify ? (
+              <section className={styles.section} aria-live="polite">
+                <div className={styles.paymentWaitingBox}>
+                  <p className={styles.paymentWaitingTitle}>Menunggu verifikasi</p>
+                  <p>
+                    Bendahara sedang meninjau pembayaran Anda. Nominal harus sama dengan tagihan resmi.
+                  </p>
+                  {eventFeeBilling?.amount != null ? (
+                    <span className={styles.paymentWaitingAmount}>
+                      Rp{" "}
+                      {new Intl.NumberFormat("id-ID").format(
+                        Number(eventFeeBilling.amount),
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+
+            {needsPayRegistrationFee && eventFeeBilling ? (
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>Pembayaran</h2>
+                <div className={styles.paymentCard}>
+                  <p className={styles.paymentCardTitle}>Nominal yang harus dibayar</p>
+                  <p className={styles.paymentCardAmount}>
+                    Rp{" "}
+                    {new Intl.NumberFormat("id-ID").format(
+                      Number(eventFeeBilling.amount),
+                    )}
+                  </p>
+                  {typeof eventFeeBilling.baseFeeAmount === "number" &&
+                  typeof eventFeeBilling.uniqueTail === "number" ? (
+                    <p className={styles.paymentCardHint}>
+                      Biaya kategori Rp{" "}
+                      {new Intl.NumberFormat("id-ID").format(
+                        Math.round(eventFeeBilling.baseFeeAmount),
+                      )}{" "}
+                      + kode unik Rp {eventFeeBilling.uniqueTail}. Gunakan nominal persis
+                      ini untuk transfer, tunai, atau QRIS.
+                    </p>
+                  ) : (
+                    <p className={styles.paymentCardHint}>
+                      Gunakan nominal di atas. Untuk upload bukti, pilih metode Transfer
+                      pada langkah berikutnya.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.paymentCardBtn}
+                    onClick={() => setShowPaymentModal(true)}
+                  >
+                    <Wallet size={18} aria-hidden />
+                    Lanjutkan pembayaran
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.paymentCardBtn} ${styles.paymentCardBtnSecondary}`}
+                    onClick={() => router.push("/billing")}
+                  >
+                    Buka halaman Pembayaran
+                  </button>
+                </div>
+              </section>
+            ) : null}
+
+            {!needsPayRegistrationFee &&
+            !waitingPaymentVerify &&
+            categoryFee > 0 &&
+            !eventFeeBilling ? (
+              <section className={styles.section}>
+                <div className={styles.paymentPendingBox}>
+                  <p className={styles.paymentPendingTitle}>Tagihan belum tersedia</p>
+                  <p>
+                    Kategori Anda mencantumkan biaya Rp{" "}
+                    {new Intl.NumberFormat("id-ID").format(categoryFee)}. Tagihan resmi
+                    (dengan kode unik) akan muncul di aplikasi setelah data disinkronkan.
+                    Silakan buka menu{" "}
+                    <strong className={styles.paymentPendingGold}>Pembayaran</strong>{" "}
+                    atau hubungi pengurus cabang/dojo.
+                  </p>
+                  <button
+                    type="button"
+                    className={`${styles.paymentCardBtn} ${styles.paymentCardBtnSecondary} ${styles.paymentCardSpaced}`}
+                    onClick={() => router.push("/billing")}
+                  >
+                    Ke menu Pembayaran
+                  </button>
+                </div>
+              </section>
+            ) : null}
+          </>
+        ) : null}
       </div>
 
       <footer className={styles.footer}>

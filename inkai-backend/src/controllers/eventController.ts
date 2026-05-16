@@ -111,7 +111,7 @@ export const getEventById = async (req: Request, res: Response) => {
                   include: { branch: true },
                 },
                 billings: {
-                  where: { type: 'EVENT_FEE' },
+                  where: { type: 'EVENT_FEE', isDeleted: false },
                   include: { payment: true },
                 },
               },
