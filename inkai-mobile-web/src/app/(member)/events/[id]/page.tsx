@@ -413,7 +413,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     !isPaid &&
     !isPendingMember &&
     !isRejected &&
-    ((!isRegistered && !blockSelfRegister) || showStickyPayCta);
+    ((!isRegistered && !blockSelfRegister) || showStickyPayCta || waitingPaymentVerify);
 
   const footerMutedRegistered =
     isPaid ||
