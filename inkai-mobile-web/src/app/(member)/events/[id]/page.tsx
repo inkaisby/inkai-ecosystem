@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useCallback } from "react";
+import { useEffect, useState, use, useCallback, useRef } from "react";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -89,6 +89,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("VA");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const categorySectionRef = useRef<HTMLDivElement>(null);
   /** Fallback jika `GET /events/:id` tidak menyertakan tagihan di `member.billings`. */
   const [feeBillingFromApi, setFeeBillingFromApi] = useState<EventFeeBillingRow | null>(null);
 
@@ -138,10 +139,16 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           } else {
             setUserRegistration(null);
             setFeeBillingFromApi(null);
+            if (eventData.categories && eventData.categories.length === 1) {
+              setSelectedCategoryId(eventData.categories[0].id);
+            }
           }
         } else {
           setUserRegistration(null);
           setFeeBillingFromApi(null);
+          if (eventData.categories && eventData.categories.length === 1) {
+            setSelectedCategoryId(eventData.categories[0].id);
+          }
         }
       }
     } catch (error) {
@@ -179,6 +186,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     }
     if (!selectedCategoryId && event?.categories && event.categories.length > 0) {
       setToast({ show: true, message: "Silakan pilih kategori terlebih dahulu.", type: 'error' });
+      categorySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -575,7 +583,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
         ) : null}
 
         {event.categories && event.categories.length > 0 && (
-          <section className={styles.section}>
+          <section className={styles.section} ref={categorySectionRef}>
             <h2 className={styles.sectionTitle}>{isUKT ? 'Ujian Kenaikan Sabuk' : 'Kategori Lomba'}</h2>
             <div className={styles.categoryList}>
               {event.categories
