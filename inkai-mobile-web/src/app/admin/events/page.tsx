@@ -48,6 +48,8 @@ interface Event {
   branchId?: string | null;
   branch?: { id: string; name: string; city?: string | null } | null;
   categories?: EventCategoryRow[];
+  createdById?: string;
+  provinceId?: string;
   _count?: {
     registrations: number;
   };
@@ -269,6 +271,34 @@ export default function EventsPage() {
   const [branchOptions, setBranchOptions] = useState<
     { id: string; name: string; city?: string | null }[]
   >([]);
+
+  const canEditEvent = useCallback(
+    (ev: Event | null) => {
+      if (!ev || !user) return false;
+      // Administrator & Admin Pusat bisa segalanya
+      if (isSuper) return true;
+
+      // Pembuat pertama kali (pemilik)
+      if (ev.createdById === user.id) return true;
+
+      // Admin Cabang: Bisa edit jika agenda milik cabangnya
+      if (isBranchAdmin && ev.branchId === user.managedBranchId) return true;
+
+      // Admin Provinsi: Bisa edit jika agenda milik provinsinya atau cabang di bawahnya
+      if (isProvinceAdmin) {
+        if (ev.provinceId === user.managedProvinceId) return true;
+        // Jika ada data branch, cek provinceId di branch (opsional tergantung data API)
+        if (
+          ev.branch &&
+          (ev.branch as any).provinceId === user.managedProvinceId
+        )
+          return true;
+      }
+
+      return false;
+    },
+    [isSuper, isBranchAdmin, isProvinceAdmin, user],
+  );
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -758,15 +788,20 @@ export default function EventsPage() {
                         </div>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditModal(event);
-                        }}
-                        className="p-2 text-gray-400 hover:text-white transition-all active:scale-90"
-                      >
-                        <Edit2 size={18} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {canEditEvent(event) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(event);
+                            }}
+                            className="p-2 text-gray-400 hover:text-white transition-all active:scale-90"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                        )}
+                        <ChevronRight size={18} className="text-gray-600 group-hover:text-amber-500 transition-colors" />
+                      </div>
                     </motion.div>
                     );
                   })}
@@ -832,21 +867,25 @@ export default function EventsPage() {
                     </button>
 
                     <div className="flex gap-1.5 min-[390px]:gap-2 shrink-0">
-                      <button
-                        onClick={() => {
-                          setShowDetailModal(false);
-                          openEditModal(selectedEvent);
-                        }}
-                        className="p-2 min-[390px]:p-2.5 bg-white/5 text-white rounded-xl border border-white/10 active:scale-90 transition-all"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteEvent(selectedEvent.id, e)}
-                        className="p-2 min-[390px]:p-2.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 active:scale-90 transition-all"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {canEditEvent(selectedEvent) && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setShowDetailModal(false);
+                              openEditModal(selectedEvent);
+                            }}
+                            className="p-2 min-[390px]:p-2.5 bg-white/5 text-white rounded-xl border border-white/10 active:scale-90 transition-all"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteEvent(selectedEvent.id, e)}
+                            className="p-2 min-[390px]:p-2.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 active:scale-90 transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -1116,19 +1155,21 @@ export default function EventsPage() {
 
                   {/* BOTTOM ACTION BAR */}
                   <div className="mobile-hpad-compact pt-3 min-[390px]:pt-5 adm-chrome-soft backdrop-blur-xl border-t border-white/5 mt-auto shrink-0 pb-[max(14px,calc(env(safe-area-inset-bottom,0px)+16px))] min-[390px]:pb-[calc(env(safe-area-inset-bottom,24px)+24px)]">
-                    <div className="flex gap-3 items-center">
-                      <button
-                        onClick={() => {
-                          setShowDetailModal(false);
-                          router.push(
-                            `/admin/events/${selectedEvent.id}/participants`,
-                          );
-                        }}
-                        className="flex-1 min-h-[48px] py-3 min-[390px]:py-4 rounded-2xl bg-amber-500 text-black text-[10px] min-[390px]:text-[11px] font-black uppercase tracking-[0.15em] min-[390px]:tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 px-2"
-                      >
-                        <Users size={18} />
-                        Kelola Peserta Event
-                      </button>
+                    <div className="flex gap-3 items-center w-full">
+                      {canEditEvent(selectedEvent) && (
+                        <button
+                          onClick={() => {
+                            setShowDetailModal(false);
+                            router.push(
+                              `/admin/events/${selectedEvent.id}/participants`,
+                            );
+                          }}
+                          className="flex-1 min-h-[48px] py-3 min-[390px]:py-4 rounded-2xl bg-amber-500 text-black text-[10px] min-[390px]:text-[11px] font-black uppercase tracking-[0.15em] min-[390px]:tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 px-2"
+                        >
+                          <Users size={18} />
+                          Kelola Peserta Event
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1334,7 +1375,7 @@ export default function EventsPage() {
                                   title: v.slice(sep + AGENDA_COMBINED_SEP.length),
                                 });
                               }}
-                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all appearance-none cursor-pointer text-white shadow-inner"
+                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all appearance-none cursor-pointer text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
                             >
                               <option value="">
@@ -1348,7 +1389,7 @@ export default function EventsPage() {
                                   <option
                                     value={`${formData.category}${AGENDA_COMBINED_SEP}${formData.title}`}
                                   >
-                                    {formData.title} (nama saat ini)
+                                    {formData.title} (saat ini)
                                   </option>
                                 )}
                               <optgroup label="Kegiatan Umum (Lain-lain)">
@@ -1400,61 +1441,67 @@ export default function EventsPage() {
                           isProvinceAdmin ||
                           isBranchAdmin ||
                           isDojoAdmin) && (
-                          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                          <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                             <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-0.5 block">
                               Wilayah tayang agenda
                             </label>
                             {isBranchAdmin && (
-                              <p className="text-xs text-gray-400 leading-relaxed">
-                                Agenda akan diikat ke cabang Anda:{" "}
+                              <p className="text-[11px] text-gray-400 leading-relaxed">
+                                Agenda terikat ke cabang:{" "}
                                 <span className="text-white font-bold">
                                   {user?.managedBranchName || "—"}
                                 </span>
                               </p>
                             )}
                             {isDojoAdmin && (
-                              <p className="text-xs text-gray-400 leading-relaxed">
-                                Agenda menggunakan cabang dari dojo Anda:{" "}
+                              <p className="text-[11px] text-gray-400 leading-relaxed">
+                                Agenda mengikuti cabang dojo:{" "}
                                 <span className="text-white font-bold">
                                   {user?.managedDojoName || "—"}
                                 </span>
                               </p>
                             )}
                             {(isSuper || isProvinceAdmin) && (
-                              <div className="space-y-3">
-                                <label className="flex gap-3 items-start cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="wilayahScope"
-                                    className="mt-1 shrink-0"
-                                    checked={wilayahScope === "national"}
-                                    onChange={() => {
-                                      setWilayahScope("national");
-                                      setFormData((f) => ({
-                                        ...f,
-                                        branchId: "",
-                                        eventProvinceId: "",
-                                      }));
-                                    }}
-                                  />
-                                  <span className="text-sm text-gray-300 leading-snug">
-                                    Nasional — semua cabang dapat melihat (tidak
-                                    dibatasi ke satu kota/cabang).
-                                  </span>
-                                </label>
-                                <label className="flex gap-3 items-start cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="wilayahScope"
-                                    className="mt-1 shrink-0"
-                                    checked={wilayahScope === "branch"}
-                                    onChange={() => setWilayahScope("branch")}
-                                  />
-                                  <span className="text-sm text-gray-300 leading-snug">
-                                    Cabang tertentu — misalnya Surabaya tidak
-                                    tampil di Sidoarjo.
-                                  </span>
-                                </label>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <label className="flex gap-3 items-center cursor-pointer group">
+                                    <div className="relative flex items-center justify-center">
+                                      <input
+                                        type="radio"
+                                        name="wilayahScope"
+                                        className="w-4 h-4 rounded-full border-2 border-white/20 bg-transparent appearance-none checked:bg-amber-500 checked:border-amber-500 transition-all"
+                                        checked={wilayahScope === "national"}
+                                        onChange={() => {
+                                          setWilayahScope("national");
+                                          setFormData((f) => ({
+                                            ...f,
+                                            branchId: "",
+                                            eventProvinceId: "",
+                                          }));
+                                        }}
+                                      />
+                                      <div className={`absolute w-1.5 h-1.5 bg-black rounded-full pointer-events-none transition-opacity ${wilayahScope === "national" ? "opacity-100" : "opacity-0"}`} />
+                                    </div>
+                                    <span className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                                      Nasional (Semua cabang)
+                                    </span>
+                                  </label>
+                                  <label className="flex gap-3 items-center cursor-pointer group">
+                                    <div className="relative flex items-center justify-center">
+                                      <input
+                                        type="radio"
+                                        name="wilayahScope"
+                                        className="w-4 h-4 rounded-full border-2 border-white/20 bg-transparent appearance-none checked:bg-amber-500 checked:border-amber-500 transition-all"
+                                        checked={wilayahScope === "branch"}
+                                        onChange={() => setWilayahScope("branch")}
+                                      />
+                                      <div className={`absolute w-1.5 h-1.5 bg-black rounded-full pointer-events-none transition-opacity ${wilayahScope === "branch" ? "opacity-100" : "opacity-0"}`} />
+                                    </div>
+                                    <span className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                                      Cabang Tertentu
+                                    </span>
+                                  </label>
+                                </div>
                                 {wilayahScope === "branch" && isSuper && (
                                   <div className="relative">
                                     <select
@@ -1466,7 +1513,7 @@ export default function EventsPage() {
                                           branchId: "",
                                         })
                                       }
-                                      className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 appearance-none cursor-pointer text-white shadow-inner"
+                                      className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 appearance-none cursor-pointer text-white shadow-inner"
                                       style={{ colorScheme: "dark" }}
                                     >
                                       <option value="">Pilih provinsi…</option>
@@ -1492,7 +1539,7 @@ export default function EventsPage() {
                                           branchId: e.target.value,
                                         })
                                       }
-                                      className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 appearance-none cursor-pointer text-white shadow-inner"
+                                      className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 appearance-none cursor-pointer text-white shadow-inner"
                                       style={{ colorScheme: "dark" }}
                                     >
                                       <option value="">
@@ -1540,7 +1587,7 @@ export default function EventsPage() {
                                 })
                               }
                               placeholder="Gedung Olahraga, Kota..."
-                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white placeholder:text-gray-600 shadow-inner"
+                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white placeholder:text-gray-600 shadow-inner"
                               style={{ colorScheme: "dark" }}
                             />
                           </div>
@@ -1555,14 +1602,13 @@ export default function EventsPage() {
                             <div className="space-y-3">
                               <p className="text-[10px] text-gray-600 leading-relaxed ml-1">
                                 Satu nominal per kategori. Tagihan pembayaran
-                                mengikuti baris ini (ditambah kode unik kecil oleh
-                                sistem).
+                                mengikuti baris ini.
                               </p>
                               <div className="space-y-3">
                                 {eventFeeRows.map((row, idx) => (
                                   <div
                                     key={row.id ? row.id : `fee-${idx}`}
-                                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2"
+                                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3"
                                   >
                                     <span className="text-[11px] font-black uppercase tracking-wide text-white block truncate border-b border-white/5 pb-2">
                                       {row.name}
@@ -1590,7 +1636,7 @@ export default function EventsPage() {
                                           )
                                         }
                                         placeholder="0"
-                                        className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white placeholder:text-gray-600 shadow-inner [color-scheme:dark]"
+                                        className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl pl-11 pr-4 py-4 text-sm font-bold focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white placeholder:text-gray-600 shadow-inner [color-scheme:dark]"
                                       />
                                     </div>
                                   </div>
@@ -1618,27 +1664,24 @@ export default function EventsPage() {
                                       registrationFeeRp: e.target.value,
                                     })
                                   }
-                                  placeholder="0 = gratis / tanpa tagihan kategori"
-                                  className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white placeholder:text-gray-600 shadow-inner [color-scheme:dark]"
+                                  placeholder="0 = gratis"
+                                  className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white placeholder:text-gray-600 shadow-inner [color-scheme:dark]"
                                 />
                               </div>
                               <p className="text-[10px] text-gray-600 leading-relaxed ml-1">
                                 {modalMode === "create" ? (
                                   <>
-                                    Mendefinisikan kategori tarif bernama{" "}
-                                    <span className="text-gray-400 font-bold">
-                                      {DEFAULT_EVENT_REGISTRATION_CATEGORY}
-                                    </span>{" "}
-                                    bagi agenda baru.
-                                  </>
-                                ) : (
-                                  <>
-                                    Agenda belum punya kategori dari sistem — isi
-                                    biaya untuk membuat satu kategori{" "}
+                                    Kategori tarif:{" "}
                                     <span className="text-gray-400 font-bold">
                                       {DEFAULT_EVENT_REGISTRATION_CATEGORY}
                                     </span>
-                                    .
+                                  </>
+                                ) : (
+                                  <>
+                                    Isi biaya untuk membuat kategori{" "}
+                                    <span className="text-gray-400 font-bold">
+                                      {DEFAULT_EVENT_REGISTRATION_CATEGORY}
+                                    </span>
                                   </>
                                 )}
                               </p>
@@ -1673,7 +1716,7 @@ export default function EventsPage() {
                                   }),
                                 )
                               }
-                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
                             />
                             <label className="text-[9px] font-bold uppercase text-gray-500 tracking-wider ml-1">
@@ -1692,7 +1735,7 @@ export default function EventsPage() {
                                   }),
                                 )
                               }
-                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
                             />
                           </div>
@@ -1711,7 +1754,7 @@ export default function EventsPage() {
                                   endDate: e.target.value,
                                 })
                               }
-                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
                             />
                             <label className="text-[9px] font-bold uppercase text-gray-500 tracking-wider ml-1">
@@ -1728,7 +1771,7 @@ export default function EventsPage() {
                                   endTime: e.target.value,
                                 })
                               }
-                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
                             />
                           </div>
@@ -1743,7 +1786,7 @@ export default function EventsPage() {
                             </span>
                           </div>
                           <p className="text-[11px] text-gray-500 leading-relaxed ml-0.5 -mt-1">
-                            Kosongkan untuk menutup pendaftaran mandiri otomatis saat acara dimulai (mengikuti jam mulai di atas). Pengurus tetap bisa mendaftarkan anggota dari panel peserta.
+                            Pendaftaran mandiri tutup otomatis saat acara dimulai jika dikosongkan.
                           </p>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -1763,7 +1806,7 @@ export default function EventsPage() {
                                     }),
                                   )
                                 }
-                                className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                                className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                                 style={{ colorScheme: "dark" }}
                               />
                             </div>
@@ -1792,7 +1835,7 @@ export default function EventsPage() {
                                     }),
                                   )
                                 }
-                                className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                                className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                                 style={{ colorScheme: "dark" }}
                               />
                             </div>
@@ -1804,8 +1847,7 @@ export default function EventsPage() {
                             formData.registrationCloseDate ===
                               formData.startDate && (
                               <p className="text-[10px] text-gray-500 leading-relaxed -mt-1">
-                                Tanggal tutup sama dengan hari mulai acara: jam tutup paling lambat sama
-                                dengan jam mulai ({formData.startTime.slice(0, 5)}).
+                                Jam tutup paling lambat: {formData.startTime.slice(0, 5)}.
                               </p>
                             )}
                         </div>
@@ -1827,7 +1869,7 @@ export default function EventsPage() {
                               })
                             }
                             placeholder="Jelaskan detail kegiatan..."
-                            className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none text-white placeholder:text-gray-600 shadow-inner"
+                            className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all resize-none text-white placeholder:text-gray-600 shadow-inner"
                             style={{ colorScheme: "dark" }}
                           />
                         </div>
@@ -1836,12 +1878,12 @@ export default function EventsPage() {
                   </div>
 
                   {/* BOTTOM ACTION BAR */}
-                  <div className="mobile-hpad pt-6 adm-chrome-soft backdrop-blur-xl border-t border-white/5 mt-auto pb-[calc(env(safe-area-inset-bottom,24px)+24px)]">
+                  <div className="mobile-hpad pt-5 adm-chrome-soft backdrop-blur-xl border-t border-white/5 mt-auto pb-[calc(env(safe-area-inset-bottom,16px)+16px)]">
                     <div className="flex gap-3">
                       <button
                         type="button"
                         onClick={() => setShowEventModal(false)}
-                        className="flex-1 py-4 rounded-2xl border border-white/10 text-[10px] font-black hover:bg-white/5 transition-all text-gray-400 uppercase tracking-widest"
+                        className="flex-1 py-3.5 rounded-2xl border border-white/10 text-[10px] font-black hover:bg-white/5 transition-all text-gray-400 uppercase tracking-widest"
                       >
                         Batal
                       </button>
@@ -1849,7 +1891,7 @@ export default function EventsPage() {
                         form="eventForm"
                         type="submit"
                         disabled={isSubmitting}
-                        className="flex-[2] py-4 rounded-2xl bg-amber-500 text-black text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex-[2] py-3.5 rounded-2xl bg-amber-500 text-black text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {isSubmitting ? (
                           <>
