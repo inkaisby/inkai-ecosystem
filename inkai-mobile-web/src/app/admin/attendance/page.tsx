@@ -22,7 +22,6 @@ import { useAuth } from '@/context/AuthContext';
 type AttendanceLog = {
   id: string;
   checkInAt: string;
-  method?: string;
   member?: { fullName?: string; nia?: string };
   dojo?: { name?: string };
   event?: { id?: string; title?: string } | null;
@@ -238,14 +237,13 @@ export default function AttendancePage() {
             <div className="p-8 text-center text-red-500">Error: {error}</div>
           ) : (
             <div className="overflow-x-auto w-full max-w-full min-w-0 overscroll-x-contain [-webkit-overflow-scrolling:touch] touch-pan-x pb-1">
-            <table className="w-full min-w-[620px] table-fixed text-left text-sm">
+            <table className="w-full min-w-[540px] table-fixed text-left text-sm">
               <thead>
                 <tr className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
-                  <th className="pb-4 pl-2 font-medium min-w-0 w-[22%]">Anggota</th>
-                  <th className="pb-4 font-medium min-w-0 w-[14%]">Dojo</th>
-                  <th className="pb-4 font-medium min-w-0 w-[20%]">Agenda</th>
-                  <th className="pb-4 font-medium min-w-0 w-[18%]">Waktu</th>
-                  <th className="pb-4 font-medium min-w-0 w-[14%]">Metode</th>
+                  <th className="pb-4 pl-2 font-medium min-w-0 w-[26%]">Anggota</th>
+                  <th className="pb-4 font-medium min-w-0 w-[18%]">Dojo</th>
+                  <th className="pb-4 font-medium min-w-0 w-[26%]">Agenda</th>
+                  <th className="pb-4 font-medium min-w-0 w-[22%]">Waktu</th>
                   <th className="pb-4 text-right pr-2 pl-3 font-medium w-[100px] min-w-[100px] max-w-[100px] shadow-[-12px_0_14px_-10px_rgba(0,0,0,0.25)] bg-[var(--glass-bg)] backdrop-blur-md sticky right-0 z-30 border-l border-white/10 align-top">
                     Aksi
                   </th>
@@ -280,11 +278,6 @@ export default function AttendancePage() {
                           })}
                         </span>
                       </div>
-                    </td>
-                    <td className="py-4 min-w-0 align-top">
-                      <span className="text-[10px] px-2 py-0.5 bg-white/5 rounded-full border border-white/10 text-gray-500 break-all inline-block max-w-full">
-                        {log.method}
-                      </span>
                     </td>
                     <td className="py-4 text-right pr-2 pl-3 min-w-0 align-top w-[100px] min-w-[100px] max-w-[100px] shadow-[-12px_0_14px_-10px_rgba(0,0,0,0.2)] bg-[var(--glass-bg)] backdrop-blur-md sticky right-0 z-20 border-l border-white/10 group-hover:bg-white/[0.02]">
                       <div className="flex justify-end gap-1 flex-nowrap relative z-10">
@@ -380,10 +373,6 @@ export default function AttendancePage() {
                   <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Agenda</p>
                     <p className="text-white break-words">{editModalLog.event?.title || '—'}</p>
-                  </div>
-                  <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Metode</p>
-                    <p className="text-white">{editModalLog.method || '—'}</p>
                   </div>
                 </div>
               </div>
