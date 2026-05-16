@@ -141,13 +141,15 @@ function MemberAvatarRing({
   const initialFallback = compact ? 'text-[10px] leading-none' : 'text-xl';
 
   return (
+  return (
     <div
-      className={`rounded-full shrink-0 flex-none box-border ${padClass} flex items-center justify-center overflow-hidden ${sizeClass} ${ringClassName ?? ''}`}
+      className={`rounded-full shrink-0 flex-none box-border ${padClass} flex items-center justify-center overflow-hidden ${ringClassName ?? ''}`}
       style={{
         backgroundColor: ring.bg,
         boxShadow: ring.shadow,
-        width: compact ? '2rem' : undefined,
-        height: compact ? '2rem' : undefined,
+        width: compact ? '2rem' : (sizeClass.includes('px') ? undefined : '3.5rem'), // Fallback if no size
+        height: compact ? '2rem' : (sizeClass.includes('px') ? undefined : '3.5rem'),
+        ...((typeof sizeClass === 'string' && sizeClass.includes('px')) ? { width: sizeClass, height: sizeClass } : {}),
         maxWidth: compact ? '2rem' : undefined,
         maxHeight: compact ? '2rem' : undefined,
       }}
@@ -158,6 +160,7 @@ function MemberAvatarRing({
             src={src}
             alt={fullName ? `Foto ${fullName}` : 'Foto peserta'}
             className="h-full w-full max-h-full max-w-full min-w-0 object-cover"
+            style={{ width: '100%', height: '100%' }}
           />
         ) : (
           <span
@@ -167,6 +170,15 @@ function MemberAvatarRing({
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Helper component to ensure sizes work without Tailwind */
+function FixedAvatar({ size = 56, ...props }: any) {
+  return (
+    <div style={{ width: size, height: size }} className="mx-auto mb-3">
+       <MemberAvatarRing {...props} sizeClass={`${size}px`} ringClassName="w-full h-full" />
     </div>
   );
 }
@@ -1016,19 +1028,18 @@ export default function EventParticipantsPage() {
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="admin-modal-drawer-sheet mobile-hpad pt-8 pb-[calc(env(safe-area-inset-bottom,24px)+24px)]"
+              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              className="admin-modal-drawer-sheet mobile-hpad pt-6 pb-[calc(env(safe-area-inset-bottom,24px)+24px)]"
+              style={{ maxHeight: '90vh' }}
             >
               <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6 opacity-50" />
               
               <div className="flex flex-col items-center text-center mb-6">
-                <MemberAvatarRing
+                <FixedAvatar
+                  size={100}
                   fullName={selectedParticipant.member?.fullName}
                   currentRank={selectedParticipant.member?.currentRank}
                   photoUrl={selectedParticipant.member?.user?.photoUrl}
-                  sizeClass="w-14 h-14 max-w-[3.5rem] max-h-[3.5rem]"
-                  initialClassName="text-lg"
-                  ringClassName="mb-3 shadow-lg mx-auto"
                 />
                 <h3 className="text-xl font-black uppercase text-white tracking-tight leading-none mb-2">
                   {selectedParticipant.member?.fullName}
@@ -1136,12 +1147,36 @@ export default function EventParticipantsPage() {
                       Chat
                     </button>
                   </div>
-                  <button 
-                    className="w-full py-3 text-red-500/50 hover:text-red-500 font-black uppercase tracking-widest text-[9px] transition-colors"
-                    onClick={() => toast.error('Fitur penolakan segera hadir')}
-                  >
-                    Tolak Pendaftaran
-                  </button>
+                  {!statusLocked && (
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <button
+                        type="button"
+                        disabled={registrationUpdatingId !== null}
+                        onClick={() => handleRegistrationStatusChange(selectedParticipant.id, selectedParticipant.status, 'APPROVED')}
+                        className="flex items-center justify-center gap-2 rounded-2xl border border-green-500/30 bg-green-500/10 py-3.5 text-[10px] font-black uppercase tracking-widest text-green-400 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {registrationUpdatingId === selectedParticipant.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <CheckCircle2 size={14} />
+                        )}
+                        Setujui
+                      </button>
+                      <button
+                        type="button"
+                        disabled={registrationUpdatingId !== null}
+                        onClick={() => handleRegistrationStatusChange(selectedParticipant.id, selectedParticipant.status, 'REJECTED')}
+                        className="flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 py-3.5 text-[10px] font-black uppercase tracking-widest text-red-400 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {registrationUpdatingId === selectedParticipant.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <XCircle size={14} />
+                        )}
+                        Tolak
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
