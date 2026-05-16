@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Wallet, Loader2, Check, Clock, ShieldAlert, Trash2, ChevronRight, Landmark, QrCode, Banknote } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, Wallet, Loader2, Check, Clock, ShieldAlert, Trash2, ChevronRight, Landmark, QrCode, Banknote, Upload } from "lucide-react";
 import styles from "./Billing.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { billingApi } from "@/lib/api";
+import api, { billingApi } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomToast from "@/components/CustomToast/CustomToast";
 import ConfirmationModal from "@/components/ConfirmationModal/ConfirmationModal";
+import { compressImage } from "@/lib/imageUtils";
 
 export default function Billing() {
   const router = useRouter();
@@ -19,6 +21,7 @@ export default function Billing() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState('VA');
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [mounted, setMounted] = useState(false);
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [confirmModal, setConfirmModal] = useState({ show: false, id: '', title: '', message: '' });
@@ -45,22 +48,60 @@ export default function Billing() {
     const pendingBillings = billings.filter(b => b.status === 'PENDING');
     if (pendingBillings.length === 0) return;
 
+    if (selectedMethod === 'TRANSFER' && !proofFile) {
+      setToast({ show: true, message: 'Unggah bukti transfer (screenshot atau PDF) terlebih dahulu.', type: 'error' });
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      // Process each pending billing
+      let proofUrl: string | undefined;
+      if (selectedMethod === 'TRANSFER' && proofFile) {
+        let file = proofFile;
+        if (file.type.startsWith('image/')) {
+          try {
+            file = await compressImage(file, 900);
+          } catch {
+            /* gunakan asal */
+          }
+        }
+        const fd = new FormData();
+        fd.append('file', file);
+        const uploadRes = await api.auth.uploadFile(fd);
+        const url =
+          uploadRes &&
+          typeof uploadRes === 'object' &&
+          'fileUrl' in uploadRes &&
+          typeof (uploadRes as { fileUrl: unknown }).fileUrl === 'string'
+            ? (uploadRes as { fileUrl: string }).fileUrl
+            : '';
+        if (!url) throw new Error('Upload gagal: URL tidak diterima.');
+        proofUrl = url;
+      }
+
       for (const billing of pendingBillings) {
         await billingApi.processPayment({
           billingId: billing.id,
-          paymentMethod: selectedMethod
+          paymentMethod: selectedMethod,
+          ...(proofUrl ? { proofUrl } : {}),
         });
       }
       
-      const message = selectedMethod === 'CASH' ? 'Permintaan terkirim. Silakan bayar ke Bendahara Dojo.' : 'Pembayaran Berhasil!';
+      const message =
+        selectedMethod === 'CASH'
+          ? 'Permintaan terkirim. Silakan bayar ke Bendahara Dojo.'
+          : selectedMethod === 'TRANSFER'
+            ? 'Bukti pembayaran terkirim. Menunggu verifikasi bendahara.'
+            : selectedMethod === 'QRIS'
+              ? 'Pengajuan QRIS terkirim. Bayar tepat nominal di e-wallet, lalu tunggu verifikasi bendahara.'
+              : 'Pembayaran Berhasil!';
       setToast({ show: true, message, type: 'success' });
       setShowPaymentModal(false);
+      setProofFile(null);
       fetchBillings();
-    } catch (error: any) {
-      setToast({ show: true, message: "Gagal memproses pembayaran: " + (error.response?.data?.message || error.message), type: 'error' });
+    } catch (error: unknown) {
+      const ax = error as { response?: { data?: { message?: string } }; message?: string };
+      setToast({ show: true, message: "Gagal memproses pembayaran: " + (ax.response?.data?.message || ax.message || 'Error'), type: 'error' });
     } finally {
       setIsProcessing(false);
     }
@@ -99,6 +140,10 @@ export default function Billing() {
   const totalUnpaid = billings
     .filter(b => b.status === 'PENDING')
     .reduce((sum, b) => sum + Number(b.amount), 0);
+
+  const pendingHasUniqueTail = billings.some(
+    (b) => b.status === 'PENDING' && typeof b.uniqueTail === 'number',
+  );
 
   const hasWaiting = billings.some(b => b.status === 'WAITING_VERIFICATION');
 
@@ -143,6 +188,11 @@ export default function Billing() {
                       {isPaid ? `Lunas pada: ${new Date(bill.updatedAt).toLocaleDateString('id-ID')}` : 
                        isWaiting ? "Menunggu Verifikasi" : `Jatuh tempo: ${new Date(bill.dueDate).toLocaleDateString('id-ID')}`}
                     </p>
+                    {!isPaid && !isWaiting && bill.type === 'EVENT_FEE' && typeof bill.uniqueTail === 'number' ? (
+                      <p className={styles.billMeta}>
+                        Kode unik +{bill.uniqueTail} · bayar tepat sesuai nominal
+                      </p>
+                    ) : null}
                   </div>
                   <div className={styles.billRight}>
                     <p className={`${styles.amount} ${isPaid ? styles.amountPaid : ''}`}>
@@ -172,7 +222,10 @@ export default function Billing() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className={styles.modalOverlay}
-              onClick={() => setShowPaymentModal(false)}
+              onClick={() => {
+                setShowPaymentModal(false);
+                setProofFile(null);
+              }}
             />
             <motion.div 
               initial={{ y: "100%" }}
@@ -180,24 +233,34 @@ export default function Billing() {
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className={styles.modal}
+              onClick={(e) => e.stopPropagation()}
             >
               <h3 className={styles.modalTitle}>Konfirmasi Pembayaran</h3>
               <div className={styles.modalSummary}>
                 <span>Total Tagihan</span>
                 <span className={styles.modalAmount}>Rp {new Intl.NumberFormat('id-ID').format(totalUnpaid)}</span>
               </div>
+              {pendingHasUniqueTail ? (
+                <p className={styles.uniqueFeeNote}>
+                  Nominal di atas sudah termasuk kode unik per tagihan event — bayar <strong>tepat</strong> total tersebut (scan QR hanya membuka aplikasi; masukkan nominal manual bila diminta).
+                </p>
+              ) : null}
               
               <p className={styles.methodLabel}>Pilih Metode Pembayaran:</p>
               <div className={styles.methods}>
                 {[
                   { id: 'VA', label: 'Virtual Account (Dojo)', icon: <Landmark size={20} /> },
                   { id: 'QRIS', label: 'QRIS / E-Wallet', icon: <QrCode size={20} /> },
+                  { id: 'TRANSFER', label: 'Transfer bank / e-wallet (upload bukti)', icon: <Upload size={20} /> },
                   { id: 'CASH', label: 'Tunai ke Bendahara Dojo', icon: <Banknote size={20} /> },
                 ].map(method => (
                   <div 
                     key={method.id} 
                     className={`${styles.methodItem} ${selectedMethod === method.id ? styles.methodSelected : ''}`}
-                    onClick={() => setSelectedMethod(method.id)}
+                    onClick={() => {
+                      setSelectedMethod(method.id);
+                      if (method.id !== 'TRANSFER') setProofFile(null);
+                    }}
                   >
                     <div className={styles.methodIcon}>{method.icon}</div>
                     <span className={styles.methodText}>{method.label}</span>
@@ -206,10 +269,53 @@ export default function Billing() {
                 ))}
               </div>
 
+              {selectedMethod === 'QRIS' && (
+                <div className={styles.qrisPanel}>
+                  <p className={styles.qrisExactAmount}>
+                    Bayar tepat: Rp {new Intl.NumberFormat('id-ID').format(totalUnpaid)}
+                  </p>
+                  <Image
+                    src="/payments/qris-static.png"
+                    alt="QRIS INKAI STORES — satukan pembayaran"
+                    width={320}
+                    height={320}
+                    className={styles.qrisImage}
+                    priority
+                    sizes="(max-width: 500px) 90vw, 280px"
+                  />
+                  <p className={styles.qrisSteps}>
+                    Buka aplikasi e-wallet atau mobile banking berlogo QRIS, pindai kode ini, lalu masukkan nominal persis sama dengan yang tertera (QR statis tidak menyematkan jumlah otomatis).
+                  </p>
+                </div>
+              )}
+
+              {selectedMethod === 'TRANSFER' && (
+                <div className={styles.proofUpload}>
+                  <label className={styles.proofLabel} htmlFor="billing-proof-file">
+                    Bukti pembayaran (wajib)
+                  </label>
+                  <input
+                    id="billing-proof-file"
+                    type="file"
+                    className={styles.proofInput}
+                    accept="image/*,.pdf,application/pdf"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      setProofFile(f ?? null);
+                    }}
+                  />
+                  {proofFile ? (
+                    <p className={styles.proofName}>{proofFile.name}</p>
+                  ) : (
+                    <p className={styles.proofName}>Screenshot atau PDF bukti transfer.</p>
+                  )}
+                </div>
+              )}
+
               <button 
                 className={styles.confirmBtn}
                 disabled={isProcessing}
-                onClick={handlePayment}
+                onClick={() => void handlePayment()}
               >
                 {isProcessing ? <Loader2 className={styles.spinner} size={20} /> : "LANJUTKAN PEMBAYARAN"}
               </button>

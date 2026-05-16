@@ -12,6 +12,7 @@ import {
   staffCanRegisterMemberForEvent,
   shouldRestrictEventRegistrationsToManagedDojo,
 } from '../utils/eventScope';
+import { pickUniqueEventFeeAmount } from '../utils/eventFeeBilling';
 
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
@@ -309,12 +310,15 @@ export const registerForEvent = async (req: Request, res: Response) => {
     });
 
     if (registration.category && registration.category.fee > 0) {
+      const fee = await pickUniqueEventFeeAmount(prisma, eventId, registration.category.fee);
       await prisma.billing.create({
         data: {
           memberId: registration.memberId,
           registrationId: registration.id,
           type: 'EVENT_FEE',
-          amount: registration.category.fee,
+          amount: fee.total,
+          baseFeeAmount: fee.baseRounded,
+          uniqueTail: fee.uniqueTail,
           description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           status: 'PENDING',
@@ -325,7 +329,7 @@ export const registerForEvent = async (req: Request, res: Response) => {
         await createNotification({
           userId: registration.member.userId,
           title: 'Tagihan Pendaftaran Event',
-          content: `Silakan lanjut pembayaran untuk ${registration.event.title} kategori ${registration.category.name} sebesar Rp ${registration.category.fee.toLocaleString('id-ID')}`,
+          content: `Silakan lanjut pembayaran untuk ${registration.event.title} kategori ${registration.category.name} sebesar Rp ${fee.total.toLocaleString('id-ID')} (nominal termasuk kode unik untuk pencocokan pembayaran).`,
           type: 'INFO',
         });
       }
@@ -459,6 +463,7 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
         continue;
       }
 
+      let bulkNotifyAmount: number | null = null;
       const registration = await prisma.$transaction(async (tx) => {
         const reg = await tx.eventRegistration.create({
           data: {
@@ -482,12 +487,16 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
         });
 
         if (reg.category && reg.category.fee > 0) {
+          const fee = await pickUniqueEventFeeAmount(tx, eventId, reg.category.fee);
+          bulkNotifyAmount = fee.total;
           await tx.billing.create({
             data: {
               memberId: reg.memberId,
               registrationId: reg.id,
               type: 'EVENT_FEE',
-              amount: reg.category.fee,
+              amount: fee.total,
+              baseFeeAmount: fee.baseRounded,
+              uniqueTail: fee.uniqueTail,
               description: `Biaya pendaftaran ${reg.event.title} - ${reg.category.name}`,
               dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
               status: 'PENDING',
@@ -505,12 +514,13 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
       });
 
       if (registration.category && registration.category.fee > 0 && registration.member.userId) {
+        const showAmount = bulkNotifyAmount ?? registration.category.fee;
         await createNotification({
           userId: registration.member.userId,
           title: 'Tagihan Pendaftaran Event',
-          content: `Anda didaftarkan ke ${registration.event.title} (kategori ${registration.category.name}) sebesar Rp ${registration.category.fee.toLocaleString(
+          content: `Anda didaftarkan ke ${registration.event.title} (kategori ${registration.category.name}) sebesar Rp ${showAmount.toLocaleString(
             'id-ID',
-          )}. Silakan cek menu tagihan.`,
+          )} (nominal termasuk kode unik). Silakan cek menu tagihan.`,
           type: 'INFO',
         });
       }
@@ -643,11 +653,20 @@ export const updateRegistration = async (req: Request, res: Response) => {
         },
       });
 
+      const fee = await pickUniqueEventFeeAmount(
+        prisma,
+        registration.eventId,
+        registration.category.fee,
+        existingBilling?.id,
+      );
+
       if (existingBilling) {
         await prisma.billing.update({
           where: { id: existingBilling.id },
           data: {
-            amount: registration.category.fee,
+            amount: fee.total,
+            baseFeeAmount: fee.baseRounded,
+            uniqueTail: fee.uniqueTail,
             description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           },
@@ -658,7 +677,9 @@ export const updateRegistration = async (req: Request, res: Response) => {
             memberId: registration.memberId,
             registrationId: registration.id,
             type: 'EVENT_FEE',
-            amount: registration.category.fee,
+            amount: fee.total,
+            baseFeeAmount: fee.baseRounded,
+            uniqueTail: fee.uniqueTail,
             description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             status: 'PENDING',

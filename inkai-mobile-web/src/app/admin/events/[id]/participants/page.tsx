@@ -54,11 +54,23 @@ function participantAmountForBranchReport(p: {
   id?: string;
   category?: { fee?: number | null };
   member?: {
-    billings?: Array<{ registrationId?: string | null; status?: string; amount?: number | null }>;
+    billings?: Array<{
+      registrationId?: string | null;
+      status?: string;
+      amount?: number | null;
+      uniqueTail?: number | null;
+    }>;
   };
 }): number {
   const billing = p.member?.billings?.find((b) => b.registrationId === p.id);
   if (billing?.status === 'PAID' && billing.amount != null) {
+    const n = Number(billing.amount);
+    return Number.isFinite(n) ? n : 0;
+  }
+  if (
+    billing?.amount != null &&
+    (billing.status === 'PENDING' || billing.status === 'WAITING_VERIFICATION')
+  ) {
     const n = Number(billing.amount);
     return Number.isFinite(n) ? n : 0;
   }
@@ -201,6 +213,23 @@ export default function EventParticipantsPage() {
     () => new Set(participants.map((p) => p.memberId).filter(Boolean)),
     [participants],
   );
+
+  const selectedDrawerBilling = useMemo(() => {
+    if (!selectedParticipant) return undefined;
+    return selectedParticipant.member?.billings?.find(
+      (b: { registrationId?: string | null }) => b.registrationId === selectedParticipant.id,
+    );
+  }, [selectedParticipant]);
+
+  const canVerifyParticipantPayment =
+    selectedDrawerBilling?.status === 'WAITING_VERIFICATION';
+  const participantPaymentLunas = selectedDrawerBilling?.status === 'PAID';
+  const participantPaymentProofUrl =
+    selectedDrawerBilling?.payment &&
+    typeof selectedDrawerBilling.payment === 'object' &&
+    'proofUrl' in selectedDrawerBilling.payment
+      ? (selectedDrawerBilling.payment as { proofUrl?: string | null }).proofUrl
+      : null;
 
   const bulkFilteredMembers = useMemo(() => {
     const q = bulkSearch.trim().toLowerCase();
@@ -1008,8 +1037,23 @@ export default function EventParticipantsPage() {
                     <p className="text-xs font-bold text-white uppercase">{selectedParticipant.category?.name || '-'}</p>
                   </div>
                   <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/5">
-                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">Biaya</p>
-                    <p className="text-xs font-bold text-amber-500">Rp {selectedParticipant.category?.fee?.toLocaleString('id-ID') || '0'}</p>
+                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">Biaya kategori</p>
+                    <p className="text-xs font-bold text-white/90">
+                      Rp {selectedParticipant.category?.fee?.toLocaleString('id-ID') || '0'}
+                    </p>
+                    {selectedDrawerBilling != null && selectedDrawerBilling.amount != null ? (
+                      <>
+                        <p className="text-[9px] text-gray-500 uppercase font-black mt-3 mb-1 tracking-widest">Nominal dibayar anggota</p>
+                        <p className="text-xs font-bold text-amber-500">
+                          Rp {Number(selectedDrawerBilling.amount).toLocaleString('id-ID')}
+                        </p>
+                        {typeof selectedDrawerBilling.uniqueTail === 'number' ? (
+                          <p className="text-[9px] text-gray-500 mt-2 leading-snug normal-case font-semibold">
+                            Kode unik +{selectedDrawerBilling.uniqueTail} — cocokkan dengan mutasi / bukti.
+                          </p>
+                        ) : null}
+                      </>
+                    ) : null}
                   </div>
                   <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/5">
                     <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">Dojo</p>
@@ -1032,9 +1076,25 @@ export default function EventParticipantsPage() {
 
                 {/* Actions */}
                 <div className="pt-6 space-y-3">
-                  <button 
+                  {participantPaymentProofUrl ? (
+                    <a
+                      href={getAssetUrl(participantPaymentProofUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-500/35 bg-amber-500/[0.08] py-3.5 text-[10px] font-black uppercase tracking-widest text-amber-400 transition-colors hover:bg-amber-500/15"
+                    >
+                      <Receipt size={16} aria-hidden />
+                      Lihat bukti pembayaran
+                    </a>
+                  ) : null}
+                  <button
+                    type="button"
                     onClick={handleVerifyPayment}
-                    disabled={verifying || selectedParticipant.status === 'PAID' || selectedParticipant.status === 'APPROVED' || selectedParticipant.status === 'SUCCESS'}
+                    disabled={
+                      verifying ||
+                      !canVerifyParticipantPayment ||
+                      participantPaymentLunas
+                    }
                     className="w-full py-4 bg-amber-500 disabled:bg-gray-800 disabled:text-gray-500 text-black font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                     {verifying ? (
@@ -1042,9 +1102,11 @@ export default function EventParticipantsPage() {
                     ) : (
                       <UserCheck size={18} />
                     )}
-                    {selectedParticipant.status === 'PAID' || selectedParticipant.status === 'APPROVED' || selectedParticipant.status === 'SUCCESS' 
-                      ? 'Sudah Disetujui' 
-                      : 'Verifikasi Pembayaran'}
+                    {participantPaymentLunas
+                      ? 'Pembayaran lunas'
+                      : canVerifyParticipantPayment
+                        ? 'Verifikasi pembayaran'
+                        : 'Menunggu anggota ajukan / bayar'}
                   </button>
                   <div className="grid grid-cols-2 gap-3">
                     <button 

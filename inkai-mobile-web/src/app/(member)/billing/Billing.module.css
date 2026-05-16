@@ -179,6 +179,45 @@
   color: white;
 }
 
+.uniqueFeeNote {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: -20px 0 20px;
+  line-height: 1.45;
+}
+
+.qrisPanel {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.qrisExactAmount {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--primary-gold);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.qrisImage {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  border-radius: 12px;
+  display: block;
+  margin: 0 auto;
+}
+
+.qrisSteps {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
 .methodLabel {
   font-size: 12px;
   font-weight: bold;
@@ -241,6 +280,33 @@
   color: black;
   border-radius: 12px;
   font-weight: bold;
+}
+
+.proofUpload {
+  margin-bottom: 24px;
+}
+
+.proofLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.proofInput {
+  width: 100%;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.proofName {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #a3a3a3;
+  word-break: break-all;
 }
 
 .loadingContainer {

@@ -82,7 +82,12 @@ export const eventApi = {
 export const billingApi = {
   getMyBillings: () => 
     apiInstance.get('/billing/my'),
-  processPayment: (data: { billingId: string, paymentMethod: string }) =>
+  processPayment: (data: {
+    billingId: string;
+    paymentMethod: string;
+    externalId?: string;
+    proofUrl?: string;
+  }) =>
     apiInstance.post('/billing/pay', data),
   deleteBilling: (id: string) =>
     apiInstance.delete(`/billing/${id}`),
@@ -221,7 +226,7 @@ export const api = Object.assign(apiInstance, {
     verify: (data: { billingId: string; adminNotes?: string }) => apiInstance.post('/billing/verify', data).then(res => res.data),
     delete: (id: string) => apiInstance.delete(`/billing/${id}`).then(res => res.data),
     getMy: () => apiInstance.get('/billing/my').then(res => res.data),
-    pay: (data: { billingId: string; paymentMethod: string; externalId?: string }) => apiInstance.post('/billing/pay', data).then(res => res.data),
+    pay: (data: { billingId: string; paymentMethod: string; externalId?: string; proofUrl?: string }) => apiInstance.post('/billing/pay', data).then(res => res.data),
   },
   notifications: {
     broadcast: (data: { title: string; content: string; type: string }) => 

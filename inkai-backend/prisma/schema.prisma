@@ -183,6 +183,10 @@ model Billing {
   registrationId String?
   type           String
   amount         Float
+  /// Biaya kategori sebelum ekor unik (null = data lama / non-event)
+  baseFeeAmount  Float?
+  /// Tambahan 1–999 rupiah untuk pencocokan mutasi (QRIS statis / transfer)
+  uniqueTail     Int?
   description    String?
   dueDate        DateTime
   status         String   @default("PENDING")
@@ -198,6 +202,8 @@ model Payment {
   billingId     String    @unique
   paymentMethod String?
   externalId    String?   @unique
+  /// URL bukti bayar (upload Supabase) untuk transfer / opsi tunai dengan struk
+  proofUrl      String?
   paidAt        DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

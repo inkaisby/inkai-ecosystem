@@ -35,31 +35,51 @@ export const createBilling = async (req: Request, res: Response) => {
 
 export const processPayment = async (req: Request, res: Response) => {
   try {
-    const { billingId, paymentMethod, externalId } = req.body;
-    const status = paymentMethod === 'CASH' ? 'WAITING_VERIFICATION' : 'PAID';
-    
+    const { billingId, paymentMethod, externalId, proofUrl } = req.body as {
+      billingId?: string;
+      paymentMethod?: string;
+      externalId?: string;
+      proofUrl?: string;
+    };
+
+    if (!billingId || typeof billingId !== 'string' || !paymentMethod || typeof paymentMethod !== 'string') {
+      return res.status(400).json({ status: 'error', message: 'billingId dan paymentMethod wajib.' });
+    }
+
+    /** QRIS statis = nominal manual di e-wallet → menunggu verifikasi; VA = simulasi lunas */
+    const WAITING_VERIFICATION_METHODS = new Set(['CASH', 'TRANSFER', 'QRIS']);
+    const status = WAITING_VERIFICATION_METHODS.has(paymentMethod) ? 'WAITING_VERIFICATION' : 'PAID';
+
+    const proofTrimmed =
+      typeof proofUrl === 'string' && proofUrl.trim() !== '' ? proofUrl.trim() : null;
+
+    if (paymentMethod === 'TRANSFER' && !proofTrimmed) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Unggah bukti pembayaran (gambar atau PDF) terlebih dahulu.',
+      });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create payment record
       const payment = await tx.payment.create({
         data: {
           billingId,
           paymentMethod,
-          externalId,
-          paidAt: status === 'PAID' ? new Date() : null
-        }
+          externalId: externalId ?? null,
+          proofUrl: proofTrimmed,
+          paidAt: status === 'PAID' ? new Date() : null,
+        },
       });
 
-      // 2. Update billing status
       const updatedBilling = await tx.billing.update({
         where: { id: billingId },
-        data: { status }
+        data: { status },
       });
 
-      // 3. If PAID and has registrationId, update registration status
       if (status === 'PAID' && updatedBilling.registrationId) {
         await tx.eventRegistration.update({
           where: { id: updatedBilling.registrationId },
-          data: { status: 'PAID' }
+          data: { status: 'PAID' },
         });
       }
 
@@ -67,8 +87,9 @@ export const processPayment = async (req: Request, res: Response) => {
     });
 
     res.json({ status: 'success', data: result });
-  } catch (error: any) {
-    res.status(500).json({ status: 'error', message: error.message });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ status: 'error', message: msg });
   }
 };
 

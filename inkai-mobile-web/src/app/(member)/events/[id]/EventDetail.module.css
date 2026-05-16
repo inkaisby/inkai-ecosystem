@@ -174,6 +174,192 @@
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/** Tombol bayar biaya event (disetujui, tagihan pending) — tetap gold seperti CTA utama */
+.registerBtn.payReady {
+  background-color: var(--primary-gold);
+  color: black;
+  border: none;
+}
+
+.registerBtn.waitingVerify {
+  background-color: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 200;
+}
+
+.modalSheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #1e1e24;
+  border-radius: 24px 24px 0 0;
+  padding: 32px max(16px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  z-index: 201;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 24px;
+  color: var(--text-light);
+}
+
+.modalSummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.modalAmount {
+  font-weight: bold;
+  color: white;
+}
+
+.uniqueFeeNote {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: -20px 0 20px;
+  line-height: 1.45;
+}
+
+.qrisPanel {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.qrisExactAmount {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--primary-gold);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.qrisImage {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  border-radius: 12px;
+  display: block;
+  margin: 0 auto;
+}
+
+.qrisSteps {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+.methodLabel {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.methodItem {
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.methodSelected {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: var(--primary-gold);
+}
+
+.methodIcon {
+  color: var(--text-muted);
+}
+
+.methodSelected .methodIcon {
+  color: var(--primary-gold);
+}
+
+.methodText {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.methodSelected .methodText {
+  color: white;
+  font-weight: bold;
+}
+
+.checkIcon {
+  color: var(--primary-gold);
+}
+
+.confirmBtn {
+  width: 100%;
+  padding: 16px;
+  background-color: var(--primary-gold);
+  color: black;
+  border-radius: 12px;
+  font-weight: bold;
+  border: none;
+}
+
+.proofUpload {
+  margin-bottom: 24px;
+}
+
+.proofLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.proofInput {
+  width: 100%;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.proofName {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #a3a3a3;
+  word-break: break-all;
+}
+
 .loadingContainer {
   display: flex;
   justify-content: center;

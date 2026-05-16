@@ -1,53 +1,115 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { ArrowLeft, Calendar, MapPin, Award, Trophy, ChevronRight, Loader2, CircleCheck } from "lucide-react";
+import { useEffect, useState, use, useCallback } from "react";
+import Image from "next/image";
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  Award,
+  Trophy,
+  Loader2,
+  CircleCheck,
+  Wallet,
+  Landmark,
+  QrCode,
+  Banknote,
+  Check,
+  Upload,
+} from "lucide-react";
 import styles from "./EventDetail.module.css";
 import { useRouter } from "next/navigation";
-import { eventApi } from "@/lib/api";
+import api, { eventApi, billingApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomToast from "@/components/CustomToast/CustomToast";
+import { compressImage } from "@/lib/imageUtils";
+
+type EventFeeBillingRow = {
+  id: string;
+  registrationId?: string | null;
+  type?: string;
+  status?: string;
+  amount?: number;
+  baseFeeAmount?: number | null;
+  uniqueTail?: number | null;
+};
+
+type RegistrationWithBillings = {
+  id?: string;
+  memberId?: string;
+  categoryId?: string | null;
+  status?: string;
+  category?: { fee?: number; name?: string };
+  member?: { billings?: EventFeeBillingRow[] };
+};
+
+interface EventCategory {
+  id: string;
+  name: string;
+  fee: number;
+}
+
+interface EventDetailData {
+  title: string;
+  description?: string | null;
+  startDate: string;
+  registrationCloseAt?: string | null;
+  location?: string | null;
+  categories?: EventCategory[];
+  registrations?: RegistrationWithBillings[];
+}
+
+function eventFeeBillingForRegistration(
+  reg: RegistrationWithBillings | null,
+): EventFeeBillingRow | null {
+  const list = reg?.member?.billings;
+  if (!Array.isArray(list)) return null;
+  return (
+    list.find(
+      (b) =>
+        b.registrationId === reg?.id && String(b.type) === "EVENT_FEE",
+    ) ?? null
+  );
+}
 
 export default function EventDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [event, setEvent] = useState<any>(null);
+  const [event, setEvent] = useState<EventDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRegistering, setIsRegistering] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [userRegistration, setUserRegistration] = useState<any>(null);
+  const [userRegistration, setUserRegistration] = useState<RegistrationWithBillings | null>(null);
   const [mounted, setMounted] = useState(false);
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [registrationNowMs, setRegistrationNowMs] = useState<number | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("VA");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    fetchEvent();
-  }, [id]);
-
-  useEffect(() => {
-    const tick = () => setRegistrationNowMs(Date.now());
-    tick();
-    const interval = window.setInterval(tick, 20_000);
-    return () => window.clearInterval(interval);
-  }, [id, event?.registrationCloseAt, event?.startDate]);
-
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     try {
       const response = await eventApi.getEvent(id);
-      if (response.data.status === 'success') {
-        const eventData = response.data.data;
+      if (response.data.status === "success") {
+        const eventData = response.data.data as EventDetailData;
         setEvent(eventData);
-        
-        // Check if user is already registered
-        if (user && eventData.registrations) {
-          const reg = eventData.registrations.find((r: any) => r.memberId === user.member?.id || r.memberId === user.id);
+
+        const memberId = user?.member?.id ?? user?.id;
+        if (memberId && eventData.registrations) {
+          const reg = eventData.registrations.find(
+            (r) => r.memberId === memberId,
+          );
           if (reg) {
             setUserRegistration(reg);
-            setSelectedCategoryId(reg.categoryId);
+            setSelectedCategoryId(reg.categoryId ?? null);
+          } else {
+            setUserRegistration(null);
           }
+        } else {
+          setUserRegistration(null);
         }
       }
     } catch (error) {
@@ -55,7 +117,22 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, user]);
+
+  useEffect(() => {
+    const t = globalThis.setTimeout(() => {
+      setMounted(true);
+      void fetchEvent();
+    }, 0);
+    return () => globalThis.clearTimeout(t);
+  }, [fetchEvent]);
+
+  useEffect(() => {
+    const tick = () => setRegistrationNowMs(Date.now());
+    tick();
+    const interval = window.setInterval(tick, 20_000);
+    return () => window.clearInterval(interval);
+  }, [id, event?.registrationCloseAt, event?.startDate]);
 
   const handleRegister = async () => {
     if (!user) return;
@@ -68,10 +145,12 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       });
       return;
     }
-    if (!selectedCategoryId && event.categories?.length > 0) {
+    if (!selectedCategoryId && event?.categories && event.categories.length > 0) {
       setToast({ show: true, message: "Silakan pilih kategori terlebih dahulu.", type: 'error' });
       return;
     }
+
+    if (!event) return;
 
     setIsRegistering(true);
     try {
@@ -83,12 +162,86 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       
       if (response.data.status === 'success') {
         setToast({ show: true, message: "Pendaftaran Berhasil!", type: 'success' });
-        fetchEvent(); // Refresh data
+        void fetchEvent(); // Refresh data
       }
-    } catch (error: any) {
-      setToast({ show: true, message: error.response?.data?.message || "Gagal mendaftar.", type: 'error' });
+    } catch (error: unknown) {
+      const ax = error as { response?: { data?: { message?: string } } };
+      setToast({ show: true, message: ax.response?.data?.message || "Gagal mendaftar.", type: 'error' });
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handlePayEventFee = async () => {
+    const b = eventFeeBillingForRegistration(userRegistration);
+    if (!b?.id) {
+      setToast({
+        show: true,
+        message: "Tagihan tidak ditemukan. Cek menu Pembayaran atau hubungi pengurus.",
+        type: "error",
+      });
+      return;
+    }
+    if (selectedPaymentMethod === "TRANSFER" && !proofFile) {
+      setToast({
+        show: true,
+        message: "Unggah bukti transfer terlebih dahulu.",
+        type: "error",
+      });
+      return;
+    }
+    setIsProcessingPayment(true);
+    try {
+      let proofUrl: string | undefined;
+      if (selectedPaymentMethod === "TRANSFER" && proofFile) {
+        let file = proofFile;
+        if (file.type.startsWith("image/")) {
+          try {
+            file = await compressImage(file, 900);
+          } catch {
+            /* pakai asal */
+          }
+        }
+        const fd = new FormData();
+        fd.append("file", file);
+        const uploadRes = await api.auth.uploadFile(fd);
+        const url =
+          uploadRes &&
+          typeof uploadRes === "object" &&
+          "fileUrl" in uploadRes &&
+          typeof (uploadRes as { fileUrl: unknown }).fileUrl === "string"
+            ? (uploadRes as { fileUrl: string }).fileUrl
+            : "";
+        if (!url) throw new Error("Upload gagal.");
+        proofUrl = url;
+      }
+
+      await billingApi.processPayment({
+        billingId: b.id,
+        paymentMethod: selectedPaymentMethod,
+        ...(proofUrl ? { proofUrl } : {}),
+      });
+      const msg =
+        selectedPaymentMethod === "CASH"
+          ? "Permintaan terkirim. Silakan bayar ke Bendahara Dojo."
+          : selectedPaymentMethod === "TRANSFER"
+            ? "Bukti terkirim. Menunggu verifikasi bendahara."
+            : selectedPaymentMethod === "QRIS"
+              ? "Pengajuan QRIS terkirim. Bayar tepat nominal di e-wallet, lalu tunggu verifikasi bendahara."
+              : "Pembayaran berhasil!";
+      setToast({ show: true, message: msg, type: "success" });
+      setShowPaymentModal(false);
+      setProofFile(null);
+      await fetchEvent();
+    } catch (error: unknown) {
+      const ax = error as { response?: { data?: { message?: string } }; message?: string };
+      setToast({
+        show: true,
+        message: ax.response?.data?.message || ax.message || "Gagal memproses pembayaran.",
+        type: "error",
+      });
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -106,6 +259,19 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const isApprovedLike =
     regStatus === 'APPROVED' || regStatus === 'SUCCESS';
   const isRegistered = !!userRegistration;
+  const eventFeeBilling = eventFeeBillingForRegistration(userRegistration);
+  const categoryFee = Number(userRegistration?.category?.fee ?? 0);
+  const isPendingMember = isRegistered && regStatus === 'PENDING';
+  const isRejected = regStatus === 'REJECTED';
+  const waitingPaymentVerify =
+    isApprovedLike &&
+    !isPaid &&
+    eventFeeBilling?.status === 'WAITING_VERIFICATION';
+  const needsPayRegistrationFee =
+    isApprovedLike &&
+    !isPaid &&
+    categoryFee > 0 &&
+    eventFeeBilling?.status === 'PENDING';
 
   const effectiveRegistrationClose = event.registrationCloseAt
     ? new Date(event.registrationCloseAt)
@@ -118,15 +284,38 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
 
   const registrationFooterLabel = isPaid
     ? "SUDAH TERDAFTAR (LUNAS)"
-    : regStatus === "REJECTED"
-      ? "PENDAFTARAN DITOLAK"
-      : isApprovedLike
-        ? "SUDAH TERDAFTAR (DISETUJUI)"
-        : isRegistered
-          ? "SUDAH TERDAFTAR (PENDING)"
-          : blockSelfRegister
-            ? "PENDAFTARAN DITUTUP"
-            : "DAFTAR SEKARANG";
+    : waitingPaymentVerify
+      ? "MENUNGGU VERIFIKASI PEMBAYARAN"
+      : needsPayRegistrationFee
+        ? "BAYAR BIAYA PENDAFTARAN"
+        : regStatus === "REJECTED"
+          ? "PENDAFTARAN DITOLAK"
+          : isApprovedLike
+            ? categoryFee > 0 && !eventFeeBilling
+              ? "SUDAH TERDAFTAR (DISETUJUI) — CEK MENU PEMBAYARAN"
+              : "SUDAH TERDAFTAR (DISETUJUI)"
+            : isRegistered
+              ? "SUDAH TERDAFTAR (PENDING)"
+              : blockSelfRegister
+                ? "PENDAFTARAN DITUTUP"
+                : "DAFTAR SEKARANG";
+
+  const canTapFooter =
+    !isRegistering &&
+    !isProcessingPayment &&
+    !isPaid &&
+    !waitingPaymentVerify &&
+    !isPendingMember &&
+    !isRejected &&
+    ((!isRegistered && !blockSelfRegister) || needsPayRegistrationFee);
+
+  const footerBtnClass = `${styles.registerBtn} ${
+    isPaid || (!needsPayRegistrationFee && isRegistered)
+      ? styles.registered
+      : ""
+  } ${
+    needsPayRegistrationFee ? styles.payReady : ""
+  } ${waitingPaymentVerify ? styles.waitingVerify : ""}`;
 
   return (
     <div className={styles.container}>
@@ -194,13 +383,13 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
             <h2 className={styles.sectionTitle}>{isUKT ? 'Ujian Kenaikan Sabuk' : 'Kategori Lomba'}</h2>
             <div className={styles.categoryList}>
               {event.categories
-                .filter((cat: any) => {
+                .filter((cat: { id: string }) => {
                   if (isRegistered) {
                     return cat.id === userRegistration.categoryId;
                   }
                   return true;
                 })
-                .map((cat: any) => {
+                .map((cat: { id: string; name: string; fee: number }) => {
                   const isSelected = selectedCategoryId === cat.id;
                   return (
                     <div 
@@ -221,23 +410,35 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       </div>
 
       <footer className={styles.footer}>
-        <button 
-          className={`${styles.registerBtn} ${isRegistered ? styles.registered : ''}`}
-          disabled={
-            isRegistering ||
-            isPaid ||
-            (isRegistered && !isPaid) ||
-            blockSelfRegister
-          }
-          onClick={handleRegister}
+        <button
+          type="button"
+          className={footerBtnClass}
+          disabled={!canTapFooter}
+          onClick={() => {
+            if (needsPayRegistrationFee) {
+              setShowPaymentModal(true);
+              return;
+            }
+            void handleRegister();
+          }}
         >
           {isRegistering ? (
+            <Loader2 className={styles.spinner} size={20} />
+          ) : isProcessingPayment ? (
             <Loader2 className={styles.spinner} size={20} />
           ) : isPaid ? (
             <>
               <CircleCheck size={20} /> {registrationFooterLabel}
             </>
-          ) : isApprovedLike ? (
+          ) : needsPayRegistrationFee ? (
+            <>
+              <Wallet size={20} /> {registrationFooterLabel}
+            </>
+          ) : waitingPaymentVerify || isPendingMember ? (
+            <>
+              <CircleCheck size={20} /> {registrationFooterLabel}
+            </>
+          ) : isApprovedLike && !needsPayRegistrationFee ? (
             <>
               <CircleCheck size={20} /> {registrationFooterLabel}
             </>
@@ -246,6 +447,146 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           )}
         </button>
       </footer>
+
+      <AnimatePresence>
+        {showPaymentModal && needsPayRegistrationFee && eventFeeBilling && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={styles.modalOverlay}
+              onClick={() => {
+                if (!isProcessingPayment) {
+                  setShowPaymentModal(false);
+                  setProofFile(null);
+                }
+              }}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className={styles.modalSheet}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className={styles.modalTitle}>Konfirmasi pembayaran</h3>
+              <div className={styles.modalSummary}>
+                <span>Nominal tagihan</span>
+                <span className={styles.modalAmount}>
+                  Rp{" "}
+                  {new Intl.NumberFormat("id-ID").format(
+                    Number(eventFeeBilling.amount),
+                  )}
+                </span>
+              </div>
+              {typeof eventFeeBilling.baseFeeAmount === "number" &&
+                typeof eventFeeBilling.uniqueTail === "number" ? (
+                <p className={styles.uniqueFeeNote}>
+                  Biaya kategori Rp{" "}
+                  {new Intl.NumberFormat("id-ID").format(
+                    Math.round(eventFeeBilling.baseFeeAmount),
+                  )}{" "}
+                  + kode unik Rp {eventFeeBilling.uniqueTail} (total di atas — bayar persis agar mutasi bisa dilacak).
+                </p>
+              ) : null}
+
+              <p className={styles.methodLabel}>Pilih metode pembayaran</p>
+              <div className={styles.methods}>
+                {[
+                  { id: "VA", label: "Virtual Account (Dojo)", icon: <Landmark size={20} /> },
+                  { id: "QRIS", label: "QRIS / E-Wallet", icon: <QrCode size={20} /> },
+                  { id: "TRANSFER", label: "Transfer bank / e-wallet (upload bukti)", icon: <Upload size={20} /> },
+                  { id: "CASH", label: "Tunai ke Bendahara Dojo", icon: <Banknote size={20} /> },
+                ].map((method) => (
+                  <div
+                    key={method.id}
+                    role="button"
+                    tabIndex={0}
+                    className={`${styles.methodItem} ${selectedPaymentMethod === method.id ? styles.methodSelected : ""}`}
+                    onClick={() => {
+                      setSelectedPaymentMethod(method.id);
+                      if (method.id !== "TRANSFER") setProofFile(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedPaymentMethod(method.id);
+                      }
+                    }}
+                  >
+                    <div className={styles.methodIcon}>{method.icon}</div>
+                    <span className={styles.methodText}>{method.label}</span>
+                    {selectedPaymentMethod === method.id && (
+                      <Check size={14} className={styles.checkIcon} />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {selectedPaymentMethod === "QRIS" && (
+                <div className={styles.qrisPanel}>
+                  <p className={styles.qrisExactAmount}>
+                    Bayar tepat: Rp{" "}
+                    {new Intl.NumberFormat("id-ID").format(
+                      Number(eventFeeBilling.amount),
+                    )}
+                  </p>
+                  <Image
+                    src="/payments/qris-static.png"
+                    alt="QRIS INKAI STORES — satukan pembayaran"
+                    width={320}
+                    height={320}
+                    className={styles.qrisImage}
+                    priority
+                    sizes="(max-width: 500px) 90vw, 280px"
+                  />
+                  <p className={styles.qrisSteps}>
+                    Buka aplikasi e-wallet atau mobile banking berlogo QRIS, pindai kode ini, lalu masukkan nominal persis sama dengan yang tertera.
+                  </p>
+                </div>
+              )}
+
+              {selectedPaymentMethod === "TRANSFER" && (
+                <div className={styles.proofUpload}>
+                  <label className={styles.proofLabel} htmlFor="event-pay-proof">
+                    Bukti pembayaran (wajib)
+                  </label>
+                  <input
+                    id="event-pay-proof"
+                    type="file"
+                    className={styles.proofInput}
+                    accept="image/*,.pdf,application/pdf"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      setProofFile(f ?? null);
+                    }}
+                  />
+                  {proofFile ? (
+                    <p className={styles.proofName}>{proofFile.name}</p>
+                  ) : (
+                    <p className={styles.proofName}>Screenshot atau PDF bukti transfer.</p>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                className={styles.confirmBtn}
+                disabled={isProcessingPayment}
+                onClick={() => void handlePayEventFee()}
+              >
+                {isProcessingPayment ? (
+                  <Loader2 className={styles.spinner} size={20} />
+                ) : (
+                  "LANJUTKAN PEMBAYARAN"
+                )}
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <CustomToast 
         isVisible={toast.show} 
