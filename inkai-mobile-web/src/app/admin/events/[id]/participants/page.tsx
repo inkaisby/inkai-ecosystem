@@ -1052,11 +1052,6 @@ export default function EventParticipantsPage() {
               </div>
 
               <div className="space-y-4">
-                {/* Status check for drawer actions */}
-                {(() => {
-                  const statusLocked = selectedParticipant.status === 'PAID' || selectedParticipant.status === 'SUCCESS';
-                  return (
-                    <>
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/5">
@@ -1151,7 +1146,7 @@ export default function EventParticipantsPage() {
                       Chat
                     </button>
                   </div>
-                  {!statusLocked && (
+                  {!(selectedParticipant.status === 'PAID' || selectedParticipant.status === 'SUCCESS') && (
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <button
                         type="button"
@@ -1181,9 +1176,7 @@ export default function EventParticipantsPage() {
                       </button>
                     </div>
                   )}
-                    </>
-                  );
-                })()}
+                </div>
               </div>
             </motion.div>
           </div>
