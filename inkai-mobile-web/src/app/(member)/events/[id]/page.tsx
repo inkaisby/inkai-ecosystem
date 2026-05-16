@@ -895,6 +895,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                       }}
                     />
                   </div>
+                </div>
               )}
 
               <button
