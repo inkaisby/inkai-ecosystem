@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ClipboardCheck,
   Search,
@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminModalPortal from '@/components/admin/AdminModalPortal';
+import { useAuth } from '@/context/AuthContext';
 
 type AttendanceLog = {
   id: string;
@@ -33,12 +34,20 @@ function toDatetimeLocalValue(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function todayDateInputValue(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export default function AttendancePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [reportDate, setReportDate] = useState(todayDateInputValue);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -47,11 +56,32 @@ export default function AttendancePage() {
     memberName: string;
   } | null>(null);
 
+  const scopeHint = useMemo(() => {
+    const roles = Array.isArray(user?.roles) ? user.roles : [];
+    const r0 = typeof roles[0] === 'string' ? roles[0] : (roles[0] as { name?: string })?.name;
+    if (r0 === 'ADMIN_BRANCH' && user?.managedBranchName) {
+      return `Wilayah cabang Anda: ${user.managedBranchName}`;
+    }
+    if (r0 === 'ADMIN_DOJO' && user?.managedDojoName) {
+      return `Ranting/dojo Anda: ${user.managedDojoName}`;
+    }
+    if (r0 === 'ADMIN_PROVINCE' && user?.managedProvinceName) {
+      return `Provinsi Anda: ${user.managedProvinceName}`;
+    }
+    if (r0 === 'ADMINISTRATOR' || r0 === 'ADMIN_PUSAT') {
+      return 'Lingkup nasional';
+    }
+    return 'Data difilter sesuai hak akses akun Anda.';
+  }, [user]);
+
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.attendance.getLogs();
+      const response = await api.attendance.getLogs({
+        date: reportDate,
+        limit: 400,
+      });
       const rows = Array.isArray(response?.data) ? response.data : [];
       setLogs(rows);
     } catch (err: unknown) {
@@ -60,7 +90,7 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [reportDate]);
 
   useEffect(() => {
     void fetchLogs();
@@ -145,26 +175,39 @@ export default function AttendancePage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-amber-500 mb-0.5">
             <ClipboardCheck size={14} />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Monitoring Latihan</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Laporan pengurus</span>
           </div>
-          <h2 className="text-xl font-black uppercase text-white leading-tight">Presensi</h2>
+          <h2 className="text-xl font-black uppercase text-white leading-tight">Absensi</h2>
         </div>
       </div>
+      <p className="text-[11px] text-gray-500 leading-relaxed">{scopeHint}</p>
       <p className="text-[11px] text-gray-500 leading-relaxed">
-        Pantau kehadiran anggota. Koreksi waktu atau hapus catatan salah hanya untuk pengurus — anggota tidak
-        dapat mengedit riwayat dari aplikasi.
+        Lihat kehadiran QR dojo dan agenda per hari. Koreksi waktu absen atau hapus catatan yang salah. Anggota
+        tidak dapat mengubah riwayat dari aplikasi.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="glass-card p-4">
-          <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">Kehadiran Hari Ini</p>
-          <h4 className="text-2xl font-bold">{logs.length}</h4>
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
+        <div className="space-y-1">
+          <label className="text-[10px] font-black uppercase text-amber-500/90 tracking-widest ml-0.5">
+            Tanggal laporan
+          </label>
+          <input
+            type="date"
+            value={reportDate}
+            onChange={(e) => setReportDate(e.target.value)}
+            className="bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
+            style={{ colorScheme: 'dark' }}
+          />
+        </div>
+        <div className="glass-card px-4 py-3 flex-1 min-w-[140px] max-w-xs">
+          <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Jumlah catatan</p>
+          <p className="text-2xl font-black text-white">{logs.length}</p>
         </div>
       </div>
 
       <div className="glass-card space-y-6">
         <div className="flex justify-between items-center flex-wrap gap-3">
-          <h3 className="text-xl font-bold">Log Aktivitas Terbaru</h3>
+          <h3 className="text-lg font-bold">Daftar kehadiran</h3>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
             <input
@@ -295,7 +338,9 @@ export default function AttendancePage() {
 
           {filtered.length === 0 && !loading && (
             <div className="py-20 text-center text-gray-500">
-              {logs.length === 0 ? 'Belum ada riwayat kehadiran hari ini.' : 'Tidak ada hasil pencarian.'}
+              {logs.length === 0
+                ? 'Tidak ada catatan absensi pada tanggal ini untuk wilayah Anda.'
+                : 'Tidak ada hasil pencarian.'}
             </div>
           )}
         </div>
@@ -346,8 +391,8 @@ export default function AttendancePage() {
                 <span className="break-words font-bold text-white">
                   {deleteAttendancePrompt.memberName}
                 </span>{' '}
-                akan dihapus dari laporan. Tindakan ini{' '}
-                <span className="font-bold text-red-400">permanen</span>.
+                akan disembunyikan dari laporan (soft delete). Anggota dapat mencatat ulang absensi jika
+                diperlukan.
               </p>
               <div className="flex flex-col gap-3">
                 <button

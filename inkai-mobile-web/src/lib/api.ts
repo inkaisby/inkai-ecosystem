@@ -118,6 +118,7 @@ export interface Event {
   description?: string;
   startDate: string;
   endDate: string;
+  registrationCloseAt?: string | null;
   location?: string;
   branchId?: string | null;
   branch?: { id: string; name: string; city?: string | null } | null;
@@ -192,7 +193,8 @@ export const api = Object.assign(apiInstance, {
   attendance: {
     getMy: (params?: { limit?: number }) =>
       apiInstance.get('/attendance/me', { params }).then((res) => res.data),
-    getLogs: () => apiInstance.get('/attendance/logs').then((res) => res.data),
+    getLogs: (params?: { date?: string; limit?: number }) =>
+      apiInstance.get('/attendance/logs', { params }).then((res) => res.data),
     checkIn: (data: {
       memberId?: string;
       dojoId?: string;

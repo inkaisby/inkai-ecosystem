@@ -22,6 +22,36 @@ function startEndOfToday(): { startOfDay: Date; endOfDay: Date } {
   return { startOfDay, endOfDay };
 }
 
+/** Zona waktu untuk "hari jadwal agenda" (selaras dengan absensi member). Default WIB. */
+const EVENT_CALENDAR_TZ = process.env.EVENT_CALENDAR_TZ || 'Asia/Jakarta';
+
+/** YYYY-MM-DD di zona waktu tertentu untuk membandingkan hari kalender agenda. */
+function calendarYmdInTimeZone(d: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === 'year')?.value ?? '0';
+  const m = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const day = parts.find((p) => p.type === 'day')?.value ?? '01';
+  return `${y}-${m}-${day}`;
+}
+
+function isNowWithinEventCalendarDays(
+  now: Date,
+  startDate: Date,
+  endDate: Date,
+  timeZone: string,
+): boolean {
+  const end = endDate.getTime() < startDate.getTime() ? startDate : endDate;
+  const nowYmd = calendarYmdInTimeZone(now, timeZone);
+  const startYmd = calendarYmdInTimeZone(startDate, timeZone);
+  const endYmd = calendarYmdInTimeZone(end, timeZone);
+  return nowYmd >= startYmd && nowYmd <= endYmd;
+}
+
 /** Admin boleh mengubah/menghapus baris absensi ini? */
 async function staffCanAccessAttendance(user: AuthRequest['user'], attendanceMemberDojoId: string): Promise<boolean> {
   if (!user?.roles?.length) return false;
@@ -134,21 +164,35 @@ export const getDojoAttendance = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/** Rentang satu hari kalender WIB untuk query ?date=YYYY-MM-DD (default: hari ini WIB). */
+function jakartaDayRange(dateParam?: string): { gte: Date; lte: Date } {
+  const ymd =
+    dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+      ? dateParam
+      : new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Jakarta',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(new Date());
+  const gte = new Date(`${ymd}T00:00:00.000+07:00`);
+  const lte = new Date(`${ymd}T23:59:59.999+07:00`);
+  return { gte, lte };
+}
+
 export const getAllAttendance = async (req: AuthRequest, res: Response) => {
   try {
     const { date, limit = 50 } = req.query;
+    const take = Math.min(Math.max(Number(limit) || 50, 1), 500);
 
-    const startOfDay = date ? new Date(date as string) : new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(startOfDay);
-    endOfDay.setHours(23, 59, 59, 999);
+    const { gte, lte } = jakartaDayRange(typeof date === 'string' ? date : undefined);
 
     const scope = prismaWhereAttendanceForStaff(req);
 
     const attendances = await prisma.attendance.findMany({
       where: {
         isDeleted: false,
-        checkInAt: { gte: startOfDay, lte: endOfDay },
+        checkInAt: { gte, lte },
         ...(scope ?? {}),
       },
       include: {
@@ -157,7 +201,7 @@ export const getAllAttendance = async (req: AuthRequest, res: Response) => {
         event: { select: { id: true, title: true } },
       },
       orderBy: { checkInAt: 'desc' },
-      take: Number(limit),
+      take,
     });
 
     res.json({ status: 'success', data: attendances });
@@ -317,7 +361,7 @@ export const checkIn = async (req: AuthRequest, res: Response) => {
       }
 
       const now = new Date();
-      if (now < event.startDate || now > event.endDate) {
+      if (!isNowWithinEventCalendarDays(now, event.startDate, event.endDate, EVENT_CALENDAR_TZ)) {
         return res.status(400).json({
           status: 'error',
           message: 'Absensi agenda hanya dapat dilakukan pada rentang jadwal event.',

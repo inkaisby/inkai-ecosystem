@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Map as MapIcon, Shield, User, Award, ShieldCheck } from "lucide-react";
+import { Home, User, Award, ShieldCheck, ClipboardCheck } from "lucide-react";
 import styles from "./BottomNav.module.css";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -14,7 +14,8 @@ export default function BottomNav() {
     { icon: <Home size={20} />, label: "Home", path: "/admin" },
     { icon: <User size={20} />, label: "Anggota", path: "/admin/members" },
     { icon: <Award size={20} />, label: "Event", path: "/admin/events" },
-    { icon: <ShieldCheck size={20} />, label: "Antrean Kerja", path: "/admin/verification" },
+    { icon: <ClipboardCheck size={20} />, label: "Absensi", path: "/admin/attendance" },
+    { icon: <ShieldCheck size={20} />, label: "Antrean", path: "/admin/verification" },
     { icon: <User size={20} />, label: "Profil", path: "/profile" },
   ] : [
     { icon: <Home size={20} />, label: "Home", path: "/dashboard" },

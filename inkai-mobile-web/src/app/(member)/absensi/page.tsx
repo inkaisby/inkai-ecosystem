@@ -17,6 +17,7 @@ import {
   History,
 } from "lucide-react";
 import { api, eventApi } from "@/lib/api";
+import { formatEventPelaksanaan } from "@/lib/formatEventPelaksanaan";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -370,10 +371,7 @@ export default function AttendanceScannerPage() {
                         {ev.title}
                       </h3>
                       <p style={{ margin: "6px 0 0", fontSize: 11, color: "#888" }}>
-                        {new Date(ev.startDate).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "short",
-                        })}
+                        {formatEventPelaksanaan(ev.startDate, ev.endDate)}
                         {" · "}
                         {ev.branch?.name ||
                           ev.branch?.city ||

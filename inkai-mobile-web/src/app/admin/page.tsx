@@ -14,6 +14,7 @@ import {
   UserCheck,
   FileText,
   MessageSquare,
+  ClipboardCheck,
 } from "lucide-react";
 import StatCard from "@/components/admin/StatCard";
 import {
@@ -234,6 +235,25 @@ export default function Dashboard() {
           <span className="font-black uppercase tracking-wider">
             Tambah Anggota Baru
           </span>
+        </button>
+        <button
+          onClick={() => router.push("/admin/attendance")}
+          className="w-full glass-card p-4 flex items-center justify-between border-amber-500/15 bg-amber-500/[0.04] hover:bg-amber-500/10 active:scale-[0.99] transition-all text-left"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-500 border border-amber-500/25 shrink-0">
+              <ClipboardCheck size={22} strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-xs font-black text-white uppercase tracking-wide">
+                Laporan absensi
+              </h4>
+              <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">
+                Cabang & ranting: koreksi waktu, hapus catatan salah
+              </p>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-gray-600 shrink-0" />
         </button>
       </div>
 

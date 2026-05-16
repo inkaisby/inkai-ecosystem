@@ -36,12 +36,34 @@ interface Event {
   description?: string;
   startDate: string;
   endDate: string;
+  registrationCloseAt?: string | null;
   location?: string;
   branchId?: string | null;
   branch?: { id: string; name: string; city?: string | null } | null;
   _count?: {
     registrations: number;
   };
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** Nilai untuk input type="date" di zona waktu lokal perangkat. */
+function dateToLocalDateInput(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** Nilai untuk input type="time" (24 jam). */
+function dateToLocalTimeInput(d: Date): string {
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/** Gabungan tanggal + jam lokal → ISO UTC untuk API. */
+function localDateTimeToIso(dateYmd: string, timeHm: string): string {
+  const [y, mo, d] = dateYmd.split("-").map((x) => parseInt(x, 10));
+  const parts = (timeHm || "00:00").split(":");
+  const hh = parseInt(parts[0] ?? "0", 10);
+  const mm = parseInt(parts[1] ?? "0", 10);
+  return new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
 }
 
 export default function EventsPage() {
@@ -86,11 +108,15 @@ export default function EventsPage() {
     title: "",
     description: "",
     startDate: "",
+    startTime: "08:00",
     endDate: "",
+    endTime: "17:00",
     location: "",
     category: "Kegiatan Umum",
     branchId: "",
     eventProvinceId: "",
+    registrationCloseDate: "",
+    registrationCloseTime: "",
   });
 
   /** national = cabang kosong/null (terlihat di semua ranting sesuaturan backend); branch = wilayah tertentu */
@@ -258,11 +284,15 @@ export default function EventsPage() {
       title: "",
       description: "",
       startDate: "",
+      startTime: "08:00",
       endDate: "",
+      endTime: "17:00",
       location: "",
       category: "Kegiatan Umum",
       branchId: "",
       eventProvinceId: "",
+      registrationCloseDate: "",
+      registrationCloseTime: "",
     });
   };
 
@@ -313,11 +343,17 @@ export default function EventsPage() {
       title: event.title.replace("KEJURNAS: ", "").replace("UJIAN: ", ""),
       description: event.description || "",
       startDate: event.startDate
-        ? new Date(event.startDate).toISOString().split("T")[0]
+        ? dateToLocalDateInput(new Date(event.startDate))
         : "",
+      startTime: event.startDate
+        ? dateToLocalTimeInput(new Date(event.startDate))
+        : "08:00",
       endDate: event.endDate
-        ? new Date(event.endDate).toISOString().split("T")[0]
+        ? dateToLocalDateInput(new Date(event.endDate))
         : "",
+      endTime: event.endDate
+        ? dateToLocalTimeInput(new Date(event.endDate))
+        : "17:00",
       location: event.location || "",
       category: event.title.toLowerCase().includes("kejurnas")
         ? "Kejuaraan"
@@ -326,6 +362,12 @@ export default function EventsPage() {
           : "Kegiatan Umum",
       branchId: event.branchId ?? "",
       eventProvinceId: "",
+      registrationCloseDate: event.registrationCloseAt
+        ? dateToLocalDateInput(new Date(event.registrationCloseAt))
+        : "",
+      registrationCloseTime: event.registrationCloseAt
+        ? dateToLocalTimeInput(new Date(event.registrationCloseAt))
+        : "",
     });
     setModalMode("edit");
     setShowEventModal(true);
@@ -522,6 +564,14 @@ export default function EventsPage() {
                                 day: "numeric",
                                 month: "long",
                                 year: "numeric",
+                              },
+                            )}
+                            {" · "}
+                            {new Date(event.startDate).toLocaleTimeString(
+                              "id-ID",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
                               },
                             )}
                           </span>
@@ -737,6 +787,14 @@ export default function EventsPage() {
                                   year: "numeric",
                                 })}
                               </p>
+                              <p className="text-[11px] font-bold text-amber-500/90 mt-1.5 tabular-nums">
+                                {new Date(
+                                  selectedEvent.startDate,
+                                ).toLocaleTimeString("id-ID", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
                             </div>
                             <div className="bg-white/[0.02] p-3.5 min-[390px]:p-5 rounded-2xl min-[390px]:rounded-3xl border border-white/5 shadow-inner">
                               <p className="text-[9px] text-gray-600 uppercase font-black mb-1.5 tracking-widest">
@@ -751,8 +809,60 @@ export default function EventsPage() {
                                   year: "numeric",
                                 })}
                               </p>
+                              <p className="text-[11px] font-bold text-amber-500/90 mt-1.5 tabular-nums">
+                                {new Date(
+                                  selectedEvent.endDate,
+                                ).toLocaleTimeString("id-ID", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
                             </div>
                           </div>
+                        </div>
+
+                        <div className="bg-white/[0.02] p-3.5 min-[390px]:p-5 rounded-2xl min-[390px]:rounded-3xl border border-white/5 shadow-inner">
+                          <p className="text-[9px] text-gray-600 uppercase font-black mb-1.5 tracking-widest">
+                            Batas pendaftaran mandiri
+                          </p>
+                          <p className="text-sm font-bold text-white leading-snug">
+                            {selectedEvent.registrationCloseAt ? (
+                              <>
+                                {new Date(
+                                  selectedEvent.registrationCloseAt,
+                                ).toLocaleDateString("id-ID", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                                <span className="text-amber-500/90 tabular-nums">
+                                  {" "}
+                                  ·{" "}
+                                  {new Date(
+                                    selectedEvent.registrationCloseAt,
+                                  ).toLocaleTimeString("id-ID", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                Mengikuti jam mulai acara (
+                                {new Date(
+                                  selectedEvent.startDate,
+                                ).toLocaleString("id-ID", {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                })}
+                                )
+                              </>
+                            )}
+                          </p>
+                          <p className="text-[10px] text-gray-600 mt-2 leading-relaxed">
+                            Setelah batas ini, anggota tidak dapat mendaftar sendiri; pengurus
+                            tetap dapat mendaftarkan dari panel peserta.
+                          </p>
                         </div>
 
                         {/* Informasi Peserta */}
@@ -888,13 +998,59 @@ export default function EventsPage() {
                                 }
                               : {};
 
+                          const startIso = localDateTimeToIso(
+                            formData.startDate,
+                            formData.startTime,
+                          );
+                          const endIso = localDateTimeToIso(
+                            formData.endDate,
+                            formData.endTime,
+                          );
+                          if (new Date(endIso).getTime() < new Date(startIso).getTime()) {
+                            toast.error(
+                              "Tanggal/jam selesai harus setelah atau sama dengan mulai.",
+                            );
+                            setIsSubmitting(false);
+                            return;
+                          }
+
+                          const hasCloseD = formData.registrationCloseDate?.trim();
+                          const hasCloseT = formData.registrationCloseTime?.trim();
+                          if (
+                            (hasCloseD && !hasCloseT) ||
+                            (!hasCloseD && hasCloseT)
+                          ) {
+                            toast.error(
+                              "Lengkapi tanggal dan jam batas pendaftaran, atau kosongkan keduanya.",
+                            );
+                            setIsSubmitting(false);
+                            return;
+                          }
+
+                          let registrationCloseAt: string | null = null;
+                          if (hasCloseD && hasCloseT) {
+                            registrationCloseAt = localDateTimeToIso(
+                              formData.registrationCloseDate,
+                              formData.registrationCloseTime,
+                            );
+                            if (
+                              new Date(registrationCloseAt).getTime() >
+                              new Date(startIso).getTime()
+                            ) {
+                              toast.error(
+                                "Batas pendaftaran tidak boleh setelah waktu mulai agenda.",
+                              );
+                              setIsSubmitting(false);
+                              return;
+                            }
+                          }
+
                           const eventPayload = {
                             title: finalTitle,
                             description: formData.description,
-                            startDate: new Date(
-                              formData.startDate,
-                            ).toISOString(),
-                            endDate: new Date(formData.endDate).toISOString(),
+                            startDate: startIso,
+                            endDate: endIso,
+                            registrationCloseAt,
                             location: formData.location,
                             ...wilayahPart,
                           };
@@ -1188,7 +1344,15 @@ export default function EventsPage() {
                           </div>
                         </div>
 
-                        {/* Tanggal */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 text-amber-500 px-0.5">
+                            <Calendar size={14} className="shrink-0 opacity-90" aria-hidden />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                              Waktu pelaksanaan
+                            </span>
+                          </div>
+
+                        {/* Tanggal & jam pelaksanaan */}
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">
@@ -1203,6 +1367,23 @@ export default function EventsPage() {
                                 setFormData({
                                   ...formData,
                                   startDate: e.target.value,
+                                })
+                              }
+                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                              style={{ colorScheme: "dark" }}
+                            />
+                            <label className="text-[9px] font-bold uppercase text-gray-500 tracking-wider ml-1">
+                              Jam mulai
+                            </label>
+                            <input
+                              type="time"
+                              name="startTime"
+                              required
+                              value={formData.startTime}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  startTime: e.target.value,
                                 })
                               }
                               className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
@@ -1227,6 +1408,74 @@ export default function EventsPage() {
                               className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
                             />
+                            <label className="text-[9px] font-bold uppercase text-gray-500 tracking-wider ml-1">
+                              Jam selesai
+                            </label>
+                            <input
+                              type="time"
+                              name="endTime"
+                              required
+                              value={formData.endTime}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  endTime: e.target.value,
+                                })
+                              }
+                              className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                              style={{ colorScheme: "dark" }}
+                            />
+                          </div>
+                        </div>
+                        </div>
+
+                        <div className="space-y-3 pt-2 border-t border-white/5">
+                          <div className="flex items-center gap-2 text-amber-500 px-0.5">
+                            <Users size={14} className="shrink-0 opacity-90" aria-hidden />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                              Batas pendaftaran anggota (opsional)
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 leading-relaxed ml-0.5 -mt-1">
+                            Kosongkan untuk menutup pendaftaran mandiri otomatis saat acara dimulai (mengikuti jam mulai di atas). Pengurus tetap bisa mendaftarkan anggota dari panel peserta.
+                          </p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">
+                                Tanggal tutup
+                              </label>
+                              <input
+                                type="date"
+                                name="registrationCloseDate"
+                                value={formData.registrationCloseDate}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    registrationCloseDate: e.target.value,
+                                  })
+                                }
+                                className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                                style={{ colorScheme: "dark" }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] ml-1">
+                                Jam tutup
+                              </label>
+                              <input
+                                type="time"
+                                name="registrationCloseTime"
+                                value={formData.registrationCloseTime}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    registrationCloseTime: e.target.value,
+                                  })
+                                }
+                                className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
+                                style={{ colorScheme: "dark" }}
+                              />
+                            </div>
                           </div>
                         </div>
 

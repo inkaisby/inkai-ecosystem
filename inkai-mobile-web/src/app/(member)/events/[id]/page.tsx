@@ -20,11 +20,19 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const [userRegistration, setUserRegistration] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const [registrationNowMs, setRegistrationNowMs] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
     fetchEvent();
   }, [id]);
+
+  useEffect(() => {
+    const tick = () => setRegistrationNowMs(Date.now());
+    tick();
+    const interval = window.setInterval(tick, 20_000);
+    return () => window.clearInterval(interval);
+  }, [id, event?.registrationCloseAt, event?.startDate]);
 
   const fetchEvent = async () => {
     try {
@@ -99,6 +107,15 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     regStatus === 'APPROVED' || regStatus === 'SUCCESS';
   const isRegistered = !!userRegistration;
 
+  const effectiveRegistrationClose = event.registrationCloseAt
+    ? new Date(event.registrationCloseAt)
+    : new Date(event.startDate);
+  const isSelfRegistrationClosed =
+    registrationNowMs !== null &&
+    registrationNowMs > effectiveRegistrationClose.getTime();
+  const blockSelfRegister =
+    isSelfRegistrationClosed && !isRegistered;
+
   const registrationFooterLabel = isPaid
     ? "SUDAH TERDAFTAR (LUNAS)"
     : regStatus === "REJECTED"
@@ -107,7 +124,9 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
         ? "SUDAH TERDAFTAR (DISETUJUI)"
         : isRegistered
           ? "SUDAH TERDAFTAR (PENDING)"
-          : "DAFTAR SEKARANG";
+          : blockSelfRegister
+            ? "PENDAFTARAN DITUTUP"
+            : "DAFTAR SEKARANG";
 
   return (
     <div className={styles.container}>
@@ -128,9 +147,29 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           <div className={styles.infoRow}>
             <Calendar size={18} className={styles.infoIcon} />
             <div>
-              <p className={styles.infoLabel}>Tanggal</p>
+              <p className={styles.infoLabel}>Waktu mulai</p>
               <p className={styles.infoValue}>
-                {new Date(event.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
+                {new Date(event.startDate).toLocaleString("id-ID", {
+                  dateStyle: "long",
+                  timeStyle: "short",
+                })}
+              </p>
+            </div>
+          </div>
+          <div className={styles.infoRow}>
+            <Calendar size={18} className={styles.infoIcon} />
+            <div>
+              <p className={styles.infoLabel}>Batas pendaftaran mandiri</p>
+              <p className={styles.infoValue}>
+                {event.registrationCloseAt
+                  ? new Date(event.registrationCloseAt).toLocaleString("id-ID", {
+                      dateStyle: "long",
+                      timeStyle: "short",
+                    })
+                  : `Sama dengan waktu mulai (${new Date(event.startDate).toLocaleString("id-ID", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })})`}
               </p>
             </div>
           </div>
@@ -184,7 +223,12 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       <footer className={styles.footer}>
         <button 
           className={`${styles.registerBtn} ${isRegistered ? styles.registered : ''}`}
-          disabled={isRegistering || isPaid || (isRegistered && !isPaid)}
+          disabled={
+            isRegistering ||
+            isPaid ||
+            (isRegistered && !isPaid) ||
+            blockSelfRegister
+          }
           onClick={handleRegister}
         >
           {isRegistering ? (

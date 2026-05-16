@@ -210,6 +210,8 @@ model Event {
   description   String?
   startDate     DateTime
   endDate       DateTime
+  /// Kosong = pendaftaran mandiri ditutup otomatis saat acara dimulai (startDate).
+  registrationCloseAt DateTime?
   location      String?
   branchId      String?
   createdAt     DateTime            @default(now())

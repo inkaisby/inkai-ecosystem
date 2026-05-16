@@ -146,7 +146,8 @@ export const getEventById = async (req: Request, res: Response) => {
 
 export const createEvent = async (req: Request, res: Response) => {
   try {
-    const { title, description, startDate, endDate, location, categories } = req.body;
+    const { title, description, startDate, endDate, location, categories, registrationCloseAt } =
+      req.body;
     const { branchId: rawBranchFromBody } = req.body;
 
     const userId = (req as Request & { user?: JwtEventUser }).user?.userId;
@@ -167,12 +168,33 @@ export const createEvent = async (req: Request, res: Response) => {
           }))
         : [];
 
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    let regClose: Date | null = null;
+    if (
+      registrationCloseAt !== undefined &&
+      registrationCloseAt !== null &&
+      String(registrationCloseAt).trim() !== ''
+    ) {
+      regClose = new Date(registrationCloseAt as string);
+      if (Number.isNaN(regClose.getTime())) {
+        return res.status(400).json({ status: 'error', message: 'Batas pendaftaran tidak valid.' });
+      }
+      if (regClose.getTime() > start.getTime()) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Batas pendaftaran tidak boleh setelah waktu mulai agenda.',
+        });
+      }
+    }
+
     const event = await prisma.event.create({
       data: {
         title,
         description,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: start,
+        endDate: end,
+        registrationCloseAt: regClose,
         location,
         branchId,
         createdById: userId,
@@ -230,6 +252,18 @@ export const registerForEvent = async (req: Request, res: Response) => {
     });
     if (!eventRecord || eventRecord.isDeleted) {
       return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const nowMs = Date.now();
+    const effectiveCloseMs = eventRecord.registrationCloseAt
+      ? eventRecord.registrationCloseAt.getTime()
+      : eventRecord.startDate.getTime();
+    if (nowMs > effectiveCloseMs) {
+      return res.status(400).json({
+        status: 'error',
+        message:
+          'Batas waktu pendaftaran untuk agenda ini sudah lewat. Hubungi pengurus jika perlu pendaftaran khusus.',
+      });
     }
 
     if (eventRecord.branchId) {
@@ -752,7 +786,7 @@ async function resolveBranchIdForUpdate(args: {
 export const updateEvent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, description, startDate, endDate, location, categories, branchId: bodyBranchId } = req.body;
+    const { title, description, startDate, endDate, location, categories, branchId: bodyBranchId, registrationCloseAt } = req.body;
     const jwtUser = (req as Request & { user?: JwtEventUser }).user ?? {};
 
     const existingEvent = await prisma.event.findUnique({ where: { id } });
@@ -782,14 +816,35 @@ export const updateEvent = async (req: Request, res: Response) => {
       return res.status(400).json({ message: msg });
     }
 
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    let regClose: Date | null | undefined = undefined;
+    if (registrationCloseAt === null) {
+      regClose = null;
+    } else if (
+      registrationCloseAt !== undefined &&
+      String(registrationCloseAt).trim() !== ''
+    ) {
+      regClose = new Date(registrationCloseAt as string);
+      if (Number.isNaN(regClose.getTime())) {
+        return res.status(400).json({ message: 'Batas pendaftaran tidak valid.' });
+      }
+      if (regClose.getTime() > start.getTime()) {
+        return res.status(400).json({
+          message: 'Batas pendaftaran tidak boleh setelah waktu mulai agenda.',
+        });
+      }
+    }
+
     const event = await prisma.$transaction(async (tx) => {
       await tx.event.update({
         where: { id },
         data: {
           title,
           description,
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
+          startDate: start,
+          endDate: end,
+          ...(regClose !== undefined ? { registrationCloseAt: regClose } : {}),
           location,
           branchId: nextBranchId,
         },
