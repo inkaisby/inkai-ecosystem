@@ -304,6 +304,24 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     }
     return 0;
   })();
+  /** Fallback: beberapa pendaftaran backend tidak membawa categoryId/join category — satu kategori di event. */
+  const inferredParticipantFee =
+    categoryFee > 0
+      ? categoryFee
+      : event.categories?.length === 1
+        ? Number(event.categories[0]?.fee ?? 0)
+        : 0;
+
+  /** Agenda menyebut kategori dengan biaya > 0 (meski keanggotaan kita tidak terhubungkan ke salah satu cabangnya). */
+  const eventMayRequireFee = (event.categories ?? []).some(
+    (c) => Number(c?.fee ?? 0) > 0,
+  );
+
+  const effectiveFeeSignal =
+    inferredParticipantFee > 0 ||
+    Number(eventFeeBilling?.amount ?? 0) > 0 ||
+    (eventMayRequireFee && !eventFeeBilling);
+
   const isPendingMember = isRegistered && regNorm === "PENDING";
   const isRejected = regNorm === "REJECTED";
   const waitingPaymentVerify =
@@ -314,7 +332,10 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     isApprovedLike &&
     !isPaid &&
     billNorm === "PENDING" &&
-    (Number(eventFeeBilling?.amount ?? 0) > 0 || categoryFee > 0);
+    (Number(eventFeeBilling?.amount ?? 0) > 0 ||
+      categoryFee > 0 ||
+      inferredParticipantFee > 0 ||
+      eventMayRequireFee);
 
   /** Footer + kartu pembayaran: ada tagihan/pembelian biaya mandiri yang belum selesai. */
   const showStickyPayCta =
@@ -324,7 +345,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     !waitingPaymentVerify &&
     !isPendingMember &&
     !isRejected &&
-    (categoryFee > 0 || Number(eventFeeBilling?.amount ?? 0) > 0) &&
+    effectiveFeeSignal &&
     (!eventFeeBilling || billNorm === "PENDING");
 
   const effectiveRegistrationClose = event.registrationCloseAt
@@ -347,7 +368,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           : regNorm === "REJECTED"
           ? "PENDAFTARAN DITOLAK"
           : isApprovedLike
-            ? categoryFee > 0 && !eventFeeBilling
+            ? (inferredParticipantFee > 0 || eventMayRequireFee) && !eventFeeBilling
               ? "SUDAH TERDAFTAR (DISETUJUI) — CEK MENU PEMBAYARAN"
               : "SUDAH TERDAFTAR (DISETUJUI)"
             : isRegistered
@@ -511,18 +532,34 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
 
             {!needsPayRegistrationFee &&
             !waitingPaymentVerify &&
-            categoryFee > 0 &&
-            !eventFeeBilling ? (
+            !eventFeeBilling &&
+            (inferredParticipantFee > 0 || eventMayRequireFee) ? (
               <section className={styles.section}>
                 <div className={styles.paymentPendingBox}>
                   <p className={styles.paymentPendingTitle}>Tagihan belum tersedia</p>
                   <p>
-                    Kategori Anda mencantumkan biaya Rp{" "}
-                    {new Intl.NumberFormat("id-ID").format(categoryFee)}. Tagihan resmi
-                    (dengan kode unik) akan muncul di aplikasi setelah data disinkronkan.
-                    Silakan buka menu{" "}
-                    <strong className={styles.paymentPendingGold}>Pembayaran</strong>{" "}
-                    atau hubungi pengurus cabang/dojo.
+                    {inferredParticipantFee > 0 ? (
+                      <>
+                        Untuk peserta Anda, biaya kategori sekitar{" "}
+                        <strong className={styles.paymentPendingGold}>
+                          Rp {new Intl.NumberFormat("id-ID").format(inferredParticipantFee)}
+                        </strong>
+                        . Tagihan resmi (nominal tepat dengan kode unik) ada di aplikasi —
+                        buka menu{" "}
+                        <strong className={styles.paymentPendingGold}>Pembayaran</strong>.
+                      </>
+                    ) : (
+                      <>
+                        Agenda ini memiliki{" "}
+                        <strong className={styles.paymentPendingGold}>
+                          biaya kategori peserta
+                        </strong>
+                        . Buka menu{" "}
+                        <strong className={styles.paymentPendingGold}>Pembayaran</strong> untuk
+                        melihat tagihan Anda (konfirmasi & upload bukti dari sana atau di sini
+                        ketika tagihan sudah muncul).
+                      </>
+                    )}
                   </p>
                   <button
                     type="button"
@@ -543,9 +580,10 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
             <div className={styles.categoryList}>
               {event.categories
                 .filter((cat: { id: string }) => {
-                  if (isRegistered) {
-                    return cat.id === userRegistration.categoryId;
-                  }
+                  if (!isRegistered) return true;
+                  const cid = userRegistration.categoryId;
+                  if (cid) return cat.id === cid;
+                  /** Kategori tidak tercantum pada pendaftaran — tetap tampilkan daftar dari agenda agar ada nominal. */
                   return true;
                 })
                 .map((cat: { id: string; name: string; fee: number }) => {
