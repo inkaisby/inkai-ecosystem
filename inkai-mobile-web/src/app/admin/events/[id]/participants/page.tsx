@@ -141,7 +141,6 @@ function MemberAvatarRing({
   const initialFallback = compact ? 'text-[10px] leading-none' : 'text-xl';
 
   return (
-  return (
     <div
       className={`rounded-full shrink-0 flex-none box-border ${padClass} flex items-center justify-center overflow-hidden ${ringClassName ?? ''}`}
       style={{
