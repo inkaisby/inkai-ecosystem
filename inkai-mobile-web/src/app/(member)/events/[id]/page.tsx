@@ -66,10 +66,10 @@ function eventFeeBillingForRegistration(
   const list = reg?.member?.billings;
   if (!Array.isArray(list)) return null;
   return (
-    list.find(
-      (b) =>
-        b.registrationId === reg?.id && String(b.type) === "EVENT_FEE",
-    ) ?? null
+    list.find((b) => {
+      const t = String(b.type ?? "").toUpperCase().replace(/\s+/g, "_");
+      return b.registrationId === reg?.id && t === "EVENT_FEE";
+    }) ?? null
   );
 }
 
@@ -108,7 +108,8 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
         const row = payload.data.find((x) => {
           if (typeof x !== "object" || x === null) return false;
           const b = x as EventFeeBillingRow;
-          return b.registrationId === regId && String(b.type) === "EVENT_FEE";
+          const t = String(b.type ?? "").toUpperCase().replace(/\s+/g, "_");
+          return b.registrationId === regId && t === "EVENT_FEE";
         }) as EventFeeBillingRow | undefined;
         setFeeBillingFromApi(row ?? null);
       } catch {
@@ -286,13 +287,13 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   }
 
   const isUKT = event.title?.toUpperCase().includes('UKT') || event.title?.toUpperCase().includes('UJIAN');
-  const regStatus = userRegistration?.status as string | undefined;
-  const isPaid = regStatus === 'PAID';
-  const isApprovedLike =
-    regStatus === 'APPROVED' || regStatus === 'SUCCESS';
+  const regNorm = String(userRegistration?.status ?? "").trim().toUpperCase();
+  const isPaid = regNorm === "PAID";
+  const isApprovedLike = regNorm === "APPROVED" || regNorm === "SUCCESS";
   const isRegistered = !!userRegistration;
   const eventFeeBillingNested = eventFeeBillingForRegistration(userRegistration);
   const eventFeeBilling = eventFeeBillingNested ?? feeBillingFromApi;
+  const billNorm = String(eventFeeBilling?.status ?? "").trim().toUpperCase();
   const categoryFee = (() => {
     const fromReg = Number(userRegistration?.category?.fee ?? 0);
     if (fromReg > 0) return fromReg;
@@ -303,17 +304,28 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     }
     return 0;
   })();
-  const isPendingMember = isRegistered && regStatus === 'PENDING';
-  const isRejected = regStatus === 'REJECTED';
+  const isPendingMember = isRegistered && regNorm === "PENDING";
+  const isRejected = regNorm === "REJECTED";
   const waitingPaymentVerify =
     isApprovedLike &&
     !isPaid &&
-    eventFeeBilling?.status === 'WAITING_VERIFICATION';
+    billNorm === "WAITING_VERIFICATION";
   const needsPayRegistrationFee =
     isApprovedLike &&
     !isPaid &&
-    eventFeeBilling?.status === 'PENDING' &&
+    billNorm === "PENDING" &&
     (Number(eventFeeBilling?.amount ?? 0) > 0 || categoryFee > 0);
+
+  /** Footer + kartu pembayaran: ada tagihan/pembelian biaya mandiri yang belum selesai. */
+  const showStickyPayCta =
+    isRegistered &&
+    isApprovedLike &&
+    !isPaid &&
+    !waitingPaymentVerify &&
+    !isPendingMember &&
+    !isRejected &&
+    (categoryFee > 0 || Number(eventFeeBilling?.amount ?? 0) > 0) &&
+    (!eventFeeBilling || billNorm === "PENDING");
 
   const effectiveRegistrationClose = event.registrationCloseAt
     ? new Date(event.registrationCloseAt)
@@ -330,7 +342,9 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       ? "MENUNGGU VERIFIKASI PEMBAYARAN"
       : needsPayRegistrationFee
         ? "BAYAR BIAYA PENDAFTARAN"
-        : regStatus === "REJECTED"
+        : showStickyPayCta
+          ? "KONFIRMASI PEMBAYARAN & UPLOAD"
+          : regNorm === "REJECTED"
           ? "PENDAFTARAN DITOLAK"
           : isApprovedLike
             ? categoryFee > 0 && !eventFeeBilling
@@ -349,15 +363,20 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     !waitingPaymentVerify &&
     !isPendingMember &&
     !isRejected &&
-    ((!isRegistered && !blockSelfRegister) || needsPayRegistrationFee);
+    ((!isRegistered && !blockSelfRegister) || showStickyPayCta);
+
+  const footerMutedRegistered =
+    isPaid ||
+    (isRegistered &&
+      !showStickyPayCta &&
+      !waitingPaymentVerify &&
+      !needsPayRegistrationFee);
 
   const footerBtnClass = `${styles.registerBtn} ${
-    isPaid || (!needsPayRegistrationFee && isRegistered)
-      ? styles.registered
-      : ""
-  } ${
-    needsPayRegistrationFee ? styles.payReady : ""
-  } ${waitingPaymentVerify ? styles.waitingVerify : ""}`;
+    footerMutedRegistered ? styles.registered : ""
+  } ${showStickyPayCta ? styles.payReady : ""} ${
+    waitingPaymentVerify ? styles.waitingVerify : ""
+  }`;
 
   return (
     <div className={styles.container}>
@@ -419,36 +438,6 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
             {event.description || 'Tidak ada deskripsi tersedia untuk kegiatan ini.'}
           </p>
         </section>
-
-        {event.categories && event.categories.length > 0 && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>{isUKT ? 'Ujian Kenaikan Sabuk' : 'Kategori Lomba'}</h2>
-            <div className={styles.categoryList}>
-              {event.categories
-                .filter((cat: { id: string }) => {
-                  if (isRegistered) {
-                    return cat.id === userRegistration.categoryId;
-                  }
-                  return true;
-                })
-                .map((cat: { id: string; name: string; fee: number }) => {
-                  const isSelected = selectedCategoryId === cat.id;
-                  return (
-                    <div 
-                      key={cat.id} 
-                      className={`${styles.categoryItem} ${isSelected ? styles.selected : ''} ${isRegistered ? styles.disabled : ''}`}
-                      onClick={() => !isRegistered && setSelectedCategoryId(cat.id)}
-                    >
-                      <span className={styles.catName}>{cat.name}</span>
-                      <span className={styles.catFee}>
-                        Rp {new Intl.NumberFormat('id-ID').format(cat.fee)}
-                      </span>
-                    </div>
-                  );
-                })}
-            </div>
-          </section>
-        )}
 
         {isRegistered &&
         isApprovedLike &&
@@ -547,6 +536,36 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
             ) : null}
           </>
         ) : null}
+
+        {event.categories && event.categories.length > 0 && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>{isUKT ? 'Ujian Kenaikan Sabuk' : 'Kategori Lomba'}</h2>
+            <div className={styles.categoryList}>
+              {event.categories
+                .filter((cat: { id: string }) => {
+                  if (isRegistered) {
+                    return cat.id === userRegistration.categoryId;
+                  }
+                  return true;
+                })
+                .map((cat: { id: string; name: string; fee: number }) => {
+                  const isSelected = selectedCategoryId === cat.id;
+                  return (
+                    <div 
+                      key={cat.id} 
+                      className={`${styles.categoryItem} ${isSelected ? styles.selected : ''} ${isRegistered ? styles.disabled : ''}`}
+                      onClick={() => !isRegistered && setSelectedCategoryId(cat.id)}
+                    >
+                      <span className={styles.catName}>{cat.name}</span>
+                      <span className={styles.catFee}>
+                        Rp {new Intl.NumberFormat('id-ID').format(cat.fee)}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          </section>
+        )}
       </div>
 
       <footer className={styles.footer}>
@@ -555,8 +574,12 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           className={footerBtnClass}
           disabled={!canTapFooter}
           onClick={() => {
-            if (needsPayRegistrationFee) {
+            if (needsPayRegistrationFee && eventFeeBilling?.id) {
               setShowPaymentModal(true);
+              return;
+            }
+            if (needsPayRegistrationFee || showStickyPayCta) {
+              router.push("/billing");
               return;
             }
             void handleRegister();
@@ -574,11 +597,15 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
             <>
               <Wallet size={20} /> {registrationFooterLabel}
             </>
+          ) : showStickyPayCta ? (
+            <>
+              <Wallet size={20} /> {registrationFooterLabel}
+            </>
           ) : waitingPaymentVerify || isPendingMember ? (
             <>
               <CircleCheck size={20} /> {registrationFooterLabel}
             </>
-          ) : isApprovedLike && !needsPayRegistrationFee ? (
+          ) : isApprovedLike && !showStickyPayCta ? (
             <>
               <CircleCheck size={20} /> {registrationFooterLabel}
             </>
