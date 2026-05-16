@@ -259,10 +259,6 @@ export default function EventParticipantsPage() {
                   </div>
                 </div>
 
-                    </div>
-                  </div>
-                </div>
-
                 <div className="glass-card !bg-white/5 border-none p-4 rounded-2xl">
                   <p className="text-[10px] font-black uppercase text-gray-500 mb-3 tracking-widest">Organisasi</p>
                   <div className="space-y-3">
