@@ -16,6 +16,9 @@ import {
   Banknote,
   Check,
   Upload,
+  Copy,
+  Download,
+  X,
 } from "lucide-react";
 import styles from "./EventDetail.module.css";
 import { useRouter } from "next/navigation";
@@ -88,10 +91,29 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("VA");
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const handleFileChange = (file: File | null) => {
+    if (proofPreview) URL.revokeObjectURL(proofPreview);
+    setProofFile(file);
+    if (file && file.type.startsWith("image/")) {
+      setProofPreview(URL.createObjectURL(file));
+    } else {
+      setProofPreview(null);
+    }
+  };
   const categorySectionRef = useRef<HTMLDivElement>(null);
   /** Fallback jika `GET /events/:id` tidak menyertakan tagihan di `member.billings`. */
   const [feeBillingFromApi, setFeeBillingFromApi] = useState<EventFeeBillingRow | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   const syncFeeBillingFromApi = useCallback(
     async (regId: string | null | undefined) => {
@@ -687,23 +709,22 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
               <h3 className={styles.modalTitle}>Konfirmasi pembayaran</h3>
               <div className={styles.modalSummary}>
                 <span>Nominal tagihan</span>
-                <span className={styles.modalAmount}>
-                  Rp{" "}
-                  {new Intl.NumberFormat("id-ID").format(
-                    Number(eventFeeBilling.amount),
-                  )}
-                </span>
+                <div className={styles.modalAmountGroup}>
+                  <span className={styles.modalAmount}>
+                    Rp{" "}
+                    {new Intl.NumberFormat("id-ID").format(
+                      Number(eventFeeBilling.amount),
+                    )}
+                  </span>
+                  <button 
+                    className={styles.copyBtn} 
+                    onClick={() => handleCopy(Math.round(Number(eventFeeBilling.amount)).toString(), "amount")}
+                    title="Salin nominal"
+                  >
+                    {copiedKey === "amount" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
+                  </button>
+                </div>
               </div>
-              {typeof eventFeeBilling.baseFeeAmount === "number" &&
-                typeof eventFeeBilling.uniqueTail === "number" ? (
-                <p className={styles.uniqueFeeNote}>
-                  Biaya kategori Rp{" "}
-                  {new Intl.NumberFormat("id-ID").format(
-                    Math.round(eventFeeBilling.baseFeeAmount),
-                  )}{" "}
-                  + kode unik Rp {eventFeeBilling.uniqueTail} (total di atas — bayar persis agar mutasi bisa dilacak).
-                </p>
-              ) : null}
 
               <p className={styles.methodLabel}>Pilih metode pembayaran</p>
               <div className={styles.methods}>
@@ -738,50 +759,142 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                 ))}
               </div>
 
+               {selectedPaymentMethod === "VA" && (
+                <div className={styles.vaPanel}>
+                  <div className={styles.vaInfoBox}>
+                    <div className={styles.vaIconWrapper}>
+                      <Landmark size={32} />
+                    </div>
+                    <h4 className={styles.vaTitle}>Virtual Account Dojo</h4>
+                    <p className={styles.vaDescription}>
+                      Fitur Virtual Account otomatis akan tersedia setelah integrasi Payment Gateway selesai.
+                    </p>
+                    <div className={styles.vaNote}>
+                      <p>Untuk saat ini, silakan gunakan metode <strong>Transfer</strong> atau <strong>QRIS</strong> untuk konfirmasi instan, atau pilih <strong>Tunai</strong> untuk lapor ke Bendahara Dojo.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {selectedPaymentMethod === "QRIS" && (
                 <div className={styles.qrisPanel}>
-                  <p className={styles.qrisExactAmount}>
-                    Bayar tepat: Rp{" "}
-                    {new Intl.NumberFormat("id-ID").format(
-                      Number(eventFeeBilling.amount),
-                    )}
-                  </p>
-                  <Image
-                    src="/payments/qris-static.png"
-                    alt="QRIS INKAI STORES — satukan pembayaran"
-                    width={320}
-                    height={320}
-                    className={styles.qrisImage}
-                    priority
-                    sizes="(max-width: 500px) 90vw, 280px"
-                  />
-                  <p className={styles.qrisSteps}>
-                    Buka aplikasi e-wallet atau mobile banking berlogo QRIS, pindai kode ini, lalu masukkan nominal persis sama dengan yang tertera.
-                  </p>
+                  <div className={styles.qrisExactAmountGroup}>
+                    <p className={styles.qrisExactAmount}>
+                      Bayar tepat: Rp{" "}
+                      {new Intl.NumberFormat("id-ID").format(
+                        Number(eventFeeBilling.amount),
+                      )}
+                    </p>
+                    <button 
+                      className={styles.copyBtn} 
+                      onClick={() => handleCopy(Math.round(Number(eventFeeBilling.amount)).toString(), "amount")}
+                      title="Salin nominal"
+                    >
+                      {copiedKey === "amount" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                  <div className={styles.qrisImageWrapper}>
+                    <Image
+                      src="/payments/qris-static.png"
+                      alt="QRIS INKAI STORES — satukan pembayaran"
+                      width={320}
+                      height={320}
+                      className={styles.qrisImage}
+                      priority
+                      sizes="(max-width: 500px) 90vw, 280px"
+                    />
+                    <a 
+                      href="/payments/qris-static.png" 
+                      download="QRIS-INKAI.png" 
+                      className={styles.downloadBtn}
+                    >
+                      <Download size={16} />
+                      <span>Simpan QRIS</span>
+                    </a>
+                  </div>
                 </div>
               )}
 
               {selectedPaymentMethod === "TRANSFER" && (
-                <div className={styles.proofUpload}>
-                  <label className={styles.proofLabel} htmlFor="event-pay-proof">
-                    Bukti pembayaran (wajib)
-                  </label>
-                  <input
-                    id="event-pay-proof"
-                    type="file"
-                    className={styles.proofInput}
-                    accept="image/*,.pdf,application/pdf"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      setProofFile(f ?? null);
+                <div className={styles.transferPanel}>
+                  <div className={styles.bankCard}>
+                    <p className={styles.bankLabel}>Transfer ke Rekening Bendahara:</p>
+                    <div className={styles.bankInfo}>
+                      <div className={styles.bankMain}>
+                        <div className={styles.bankHeader}>
+                          <span className={styles.bankName}>Mandiri</span>
+                        </div>
+                        <div className={styles.accountNumberGroup}>
+                          <span className={styles.accountNumber}>1400024546344</span>
+                          <button 
+                            className={styles.copyBtn} 
+                            onClick={() => handleCopy("1400024546344", "account")}
+                            title="Salin nomor rekening"
+                          >
+                            {copiedKey === "account" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
+                          </button>
+                        </div>
+                        <span className={styles.accountName}>a/n Habibur Rahman</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div 
+                    className={`${styles.proofUpload} ${isDragging ? styles.proofUploadActive : ""}`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
                     }}
-                  />
-                  {proofFile ? (
-                    <p className={styles.proofName}>{proofFile.name}</p>
-                  ) : (
-                    <p className={styles.proofName}>Screenshot atau PDF bukti transfer.</p>
-                  )}
-                </div>
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) handleFileChange(f);
+                    }}
+                  >
+                    <label className={styles.proofLabel}>Bukti pembayaran (wajib)</label>
+                    
+                    {!proofFile ? (
+                      <div className={styles.dropZone} onClick={() => document.getElementById("event-pay-proof")?.click()}>
+                        <Upload size={24} className={styles.dropIcon} />
+                        <p className={styles.dropText}>Pilih file atau tarik ke sini</p>
+                        <p className={styles.dropSubtext}>PNG, JPG atau PDF (Maks. 5MB)</p>
+                      </div>
+                    ) : (
+                      <div className={styles.previewCard}>
+                        {proofPreview ? (
+                          <div className={styles.previewImageWrapper}>
+                            <img src={proofPreview} alt="Preview" className={styles.previewImage} />
+                          </div>
+                        ) : (
+                          <div className={styles.fileIconWrapper}>
+                            <Upload size={24} />
+                            <span className={styles.fileName}>{proofFile.name}</span>
+                          </div>
+                        )}
+                        <button 
+                          className={styles.removeProofBtn} 
+                          onClick={() => handleFileChange(null)}
+                          type="button"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+
+                    <input
+                      id="event-pay-proof"
+                      type="file"
+                      className={styles.proofInput}
+                      accept="image/*,.pdf,application/pdf"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        handleFileChange(f ?? null);
+                      }}
+                    />
+                  </div>
               )}
 
               <button

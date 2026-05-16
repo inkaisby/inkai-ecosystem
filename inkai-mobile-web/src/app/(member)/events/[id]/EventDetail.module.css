@@ -7,7 +7,7 @@
 
 .hero {
   padding: 20px 0 28px;
-  background: linear-gradient(to bottom, #1e1e24, #0a0a0c);
+  background: var(--gradient-dark);
   position: relative;
   min-height: 250px;
   display: flex;
@@ -18,11 +18,12 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--surface-row-bg);
+  border: 1px solid var(--surface-row-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--text-light);
   margin-bottom: 24px;
 }
 
@@ -43,7 +44,7 @@
 .title {
   font-size: 20px;
   font-weight: 800;
-  color: white;
+  color: var(--text-light);
 }
 
 .content {
@@ -107,8 +108,8 @@
 
 .categoryItem {
   padding: 16px;
-  background-color: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: var(--surface-row-bg);
+  border: 1px solid var(--surface-row-border);
   border-radius: 16px;
   display: flex;
   justify-content: space-between;
@@ -210,8 +211,8 @@
 .paymentPendingBox {
   margin-bottom: 24px;
   padding: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surface-row-bg);
+  border: 1px solid var(--border-light);
   border-radius: 18px;
   font-size: 13px;
   color: var(--text-muted);
@@ -254,7 +255,7 @@
   padding: 16px max(16px, env(safe-area-inset-right, 0px))
     calc(16px + env(safe-area-inset-bottom, 0px))
     max(16px, env(safe-area-inset-left, 0px));
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--glass-bg);
   backdrop-filter: blur(10px);
   position: sticky;
   bottom: 0;
@@ -281,9 +282,9 @@
 }
 
 .registerBtn.registered {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--surface-row-bg);
   color: var(--text-muted);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-row-border);
 }
 
 /** Tombol bayar biaya event (disetujui, tagihan pending) — tetap gold seperti CTA utama */
@@ -311,7 +312,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: #1e1e24;
+  background-color: var(--card-dark);
   border-radius: 24px 24px 0 0;
   padding: 32px max(16px, env(safe-area-inset-right))
     max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
@@ -329,16 +330,46 @@
 
 .modalSummary {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  gap: 8px;
+  margin-bottom: 24px;
   color: var(--text-muted);
   font-size: 14px;
 }
 
+.modalAmountGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .modalAmount {
   font-weight: bold;
-  color: white;
+  color: var(--text-light);
+}
+
+.copyBtn {
+  background: var(--surface-row-bg);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copyBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--primary-gold);
+}
+
+.copyIconCheck {
+  color: var(--primary-gold);
 }
 
 .uniqueFeeNote {
@@ -351,17 +382,30 @@
 .qrisPanel {
   margin-bottom: 24px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-row-bg);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-light);
+}
+
+.qrisExactAmountGroup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .qrisExactAmount {
   font-size: 15px;
   font-weight: 800;
   color: var(--primary-gold);
-  margin-bottom: 12px;
-  text-align: center;
+}
+
+.qrisImageWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .qrisImage {
@@ -370,7 +414,27 @@
   height: auto;
   border-radius: 12px;
   display: block;
-  margin: 0 auto;
+}
+
+.downloadBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--surface-row-bg);
+  border: 1px solid var(--border-light);
+  color: var(--text-light);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.downloadBtn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary-gold);
+  color: var(--primary-gold);
 }
 
 .qrisSteps {
@@ -397,9 +461,9 @@
 
 .methodItem {
   padding: 12px 16px;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--surface-row-bg);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-row-border);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -427,7 +491,7 @@
 }
 
 .methodSelected .methodText {
-  color: white;
+  color: var(--text-light);
   font-weight: bold;
 }
 
@@ -445,8 +509,174 @@
   border: none;
 }
 
+.transferPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.bankCard {
+  background: var(--surface-row-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.bankLabel {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.bankMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bankName {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.accountNumberGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.accountNumber {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-light);
+  letter-spacing: 0.02em;
+}
+
+.accountName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-gold);
+}
+
 .proofUpload {
   margin-bottom: 24px;
+  transition: all 0.2s;
+}
+
+.proofUploadActive {
+  transform: scale(1.01);
+}
+
+.dropZone {
+  width: 100%;
+  padding: 32px 16px;
+  background: var(--surface-row-bg);
+  border: 2px dashed var(--border-light);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.proofUploadActive .dropZone {
+  border-color: var(--primary-gold);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.dropZone:hover {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.dropIcon {
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.dropText {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 4px;
+}
+
+.dropSubtext {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.previewCard {
+  position: relative;
+  background: var(--surface-row-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.previewImageWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fileIconWrapper {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.fileName {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-light);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.removeProofBtn {
+  width: 28px;
+  height: 28px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.removeProofBtn:hover {
+  background: #ef4444;
+  color: white;
 }
 
 .proofLabel {
@@ -454,22 +684,56 @@
   font-size: 11px;
   font-weight: bold;
   color: var(--text-muted);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.proofInput {
-  width: 100%;
-  font-size: 12px;
-  color: var(--text-muted);
+.vaPanel {
+  margin-bottom: 24px;
 }
 
-.proofName {
-  margin-top: 8px;
-  font-size: 11px;
-  color: #a3a3a3;
-  word-break: break-all;
+.vaInfoBox {
+  padding: 24px;
+  background: var(--surface-row-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  text-align: center;
+}
+
+.vaIconWrapper {
+  width: 64px;
+  height: 64px;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--primary-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.vaTitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.vaDescription {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.vaNote {
+  padding: 12px;
+  background: rgba(245, 158, 11, 0.05);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--primary-gold);
+  line-height: 1.5;
 }
 
 .loadingContainer {

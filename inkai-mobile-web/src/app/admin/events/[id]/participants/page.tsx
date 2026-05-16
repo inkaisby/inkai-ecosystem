@@ -21,6 +21,7 @@ import {
   Trash2,
   Receipt,
   Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, getAssetUrl } from '@/lib/api';
@@ -1099,15 +1100,29 @@ export default function EventParticipantsPage() {
                 {/* Actions */}
                 <div className="pt-6 space-y-3">
                   {participantPaymentProofUrl ? (
-                    <a
-                      href={getAssetUrl(participantPaymentProofUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-500/35 bg-amber-500/[0.08] py-3.5 text-[10px] font-black uppercase tracking-widest text-amber-400 transition-colors hover:bg-amber-500/15"
-                    >
-                      <Receipt size={16} aria-hidden />
-                      Lihat bukti pembayaran
-                    </a>
+                    <div className="space-y-3">
+                      <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Bukti Pembayaran</p>
+                      <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40 group relative">
+                        <img 
+                          src={getAssetUrl(participantPaymentProofUrl)} 
+                          alt="Bukti Transfer" 
+                          className="w-full h-auto max-h-[300px] object-contain cursor-zoom-in"
+                          onClick={() => window.open(getAssetUrl(participantPaymentProofUrl), '_blank')}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <p className="text-white text-[10px] font-bold uppercase tracking-widest">Klik untuk Zoom</p>
+                        </div>
+                      </div>
+                      <a
+                        href={getAssetUrl(participantPaymentProofUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 transition-colors hover:bg-white/10"
+                      >
+                        <ExternalLink size={14} aria-hidden />
+                        Lihat Full Size
+                      </a>
+                    </div>
                   ) : null}
                   <button
                     type="button"
