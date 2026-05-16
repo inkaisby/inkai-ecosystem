@@ -182,10 +182,10 @@ export default function Billing() {
         </h2>
         <button 
           className={`${styles.payBtn} ${hasWaiting ? styles.waiting : ''}`}
-          disabled={totalUnpaid === 0 || hasWaiting || isProcessing}
+          disabled={(totalUnpaid === 0 && !hasWaiting) || isProcessing}
           onClick={() => setShowPaymentModal(true)}
         >
-          {hasWaiting ? "MENUNGGU VERIFIKASI" : "BAYAR SEKARANG"}
+          {hasWaiting ? "UPDATE BUKTI BAYAR" : "BAYAR SEKARANG"}
         </button>
       </div>
 

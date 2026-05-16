@@ -390,7 +390,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const registrationFooterLabel = isPaid
     ? "SUDAH TERDAFTAR (LUNAS)"
     : waitingPaymentVerify
-      ? "MENUNGGU VERIFIKASI PEMBAYARAN"
+      ? "UPDATE BUKTI PEMBAYARAN"
       : needsPayRegistrationFee
         ? "BAYAR BIAYA PENDAFTARAN"
         : showStickyPayCta
@@ -411,7 +411,6 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     !isRegistering &&
     !isProcessingPayment &&
     !isPaid &&
-    !waitingPaymentVerify &&
     !isPendingMember &&
     !isRejected &&
     ((!isRegistered && !blockSelfRegister) || showStickyPayCta);
@@ -426,7 +425,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const footerBtnClass = `${styles.registerBtn} ${
     footerMutedRegistered ? styles.registered : ""
   } ${showStickyPayCta ? styles.payReady : ""} ${
-    waitingPaymentVerify ? styles.waitingVerify : ""
+    waitingPaymentVerify ? styles.payReady : ""
   }`;
 
   return (
@@ -642,7 +641,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           className={footerBtnClass}
           disabled={!canTapFooter}
           onClick={() => {
-            if (needsPayRegistrationFee && eventFeeBilling?.id) {
+            if ((needsPayRegistrationFee || waitingPaymentVerify) && eventFeeBilling?.id) {
               setShowPaymentModal(true);
               return;
             }
