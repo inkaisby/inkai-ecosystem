@@ -171,15 +171,30 @@ function VerificationContent() {
                       {isOpenableProofUrl(item.proofUrl) ? item.proofUrl : item.proofUrl || 'Belum ada file / tidak tersedia'}
                     </p>
                     {isOpenableProofUrl(item.proofUrl) ? (
-                      <a
-                        href={item.proofUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-[10px] font-black uppercase text-black bg-amber-500 hover:bg-amber-400 px-4 py-2 rounded-lg transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Buka Dokumen
-                      </a>
+                      <div className="space-y-4">
+                        {/\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(item.proofUrl) && (
+                          <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 group relative">
+                            <img 
+                              src={item.proofUrl} 
+                              alt="Bukti Dokumen" 
+                              className="w-full h-auto max-h-[300px] object-contain cursor-zoom-in mx-auto"
+                              onClick={() => window.open(item.proofUrl, '_blank')}
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                              <p className="text-white text-[10px] font-bold uppercase tracking-widest">Klik untuk Zoom</p>
+                            </div>
+                          </div>
+                        )}
+                        <a
+                          href={item.proofUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block w-full text-[10px] font-black uppercase text-black bg-amber-500 hover:bg-amber-400 px-4 py-2.5 rounded-lg transition-colors text-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Buka Dokumen Asli
+                        </a>
+                      </div>
                     ) : (
                       <p className="text-[10px] text-gray-600 italic">Link dokumen akan tersedia jika anggota mengunggah sertifikat.</p>
                     )}

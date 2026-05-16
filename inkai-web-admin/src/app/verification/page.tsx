@@ -192,15 +192,30 @@ export default function VerificationPage() {
                   <p className="text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-2">Dokumen pendukung</p>
                   <p className="text-[10px] text-gray-500 break-all mb-3">{selectedClaim.proofUrl || '—'}</p>
                   {isOpenableProofUrl(selectedClaim.proofUrl) ? (
-                    <a
-                      href={selectedClaim.proofUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition-colors"
-                    >
-                      <ExternalLink size={14} />
-                      Buka dokumen
-                    </a>
+                    <div className="space-y-4">
+                      {/\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(selectedClaim.proofUrl) && (
+                        <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 group relative">
+                          <img 
+                            src={selectedClaim.proofUrl} 
+                            alt="Bukti Dokumen" 
+                            className="w-full h-auto max-h-[400px] object-contain cursor-zoom-in mx-auto"
+                            onClick={() => window.open(selectedClaim.proofUrl, '_blank')}
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <p className="text-white text-[10px] font-bold uppercase tracking-widest">Klik untuk Zoom</p>
+                          </div>
+                        </div>
+                      )}
+                      <a
+                        href={selectedClaim.proofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition-colors"
+                      >
+                        <ExternalLink size={14} />
+                        Buka dokumen asli
+                      </a>
+                    </div>
                   ) : (
                     <p className="text-[10px] text-gray-600 italic text-center">Tidak ada URL dokumen yang dapat dibuka.</p>
                   )}
