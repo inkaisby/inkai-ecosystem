@@ -347,25 +347,37 @@ export default function EventParticipantsPage() {
   };
 
   const fetchData = useCallback(async () => {
+    if (!id) return;
+    const eventId = Array.isArray(id) ? id[0] : id;
+    if (!eventId || eventId === 'undefined') return;
+
     setLoading(true);
     try {
-      const response = await api.events.getDetail(id as string);
-      if (response.status === 'success') {
-        setEvent(response.data);
-        setParticipants(response.data.registrations || []);
+      const response = await api.events.getDetail(eventId);
+      if (response && response.status === 'success') {
+        const eventData = response.data;
+        setEvent(eventData);
+        setParticipants(eventData.registrations || []);
         
-        // Update selected participant if it was open
+        // Update selected participant if it was open - use ID to avoid dependency loop
         if (selectedParticipant) {
-          const updated = response.data.registrations.find((p: any) => p.id === selectedParticipant.id);
-          if (updated) setSelectedParticipant(updated);
+          const updated = eventData.registrations.find((p: any) => p.id === selectedParticipant.id);
+          if (updated) {
+            // Only update if something actually changed to avoid unnecessary re-renders
+            setSelectedParticipant(updated);
+          }
         }
+      } else {
+        toast.error(response?.message || 'Gagal memuat daftar peserta');
       }
     } catch (err: any) {
-      toast.error('Gagal memuat daftar peserta');
+      console.error('Fetch participants error:', err);
+      const msg = err.response?.data?.message || 'Gagal memuat daftar peserta';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, [id, selectedParticipant]);
+  }, [id, selectedParticipant?.id]); // Only depend on the ID of selectedParticipant
 
   useEffect(() => {
     fetchData();
