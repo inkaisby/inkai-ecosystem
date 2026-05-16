@@ -8,7 +8,9 @@ import {
   Search, 
   Download, 
   UserCheck,
-  Loader2
+  Loader2,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -20,6 +22,17 @@ export default function EventParticipantsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
+  const [user] = useState<any>(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const isDojoAdmin = user?.roles?.includes('ADMIN_DOJO');
+  const managedDojoId = user?.managedDojoId;
 
   useEffect(() => {
     // This is a placeholder logic. 
@@ -48,8 +61,10 @@ export default function EventParticipantsPage() {
       p.member?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.member?.nia?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Only show participants with an assigned category
-    return matchesSearch && p.categoryId != null;
+    const matchesDojo = !isDojoAdmin || p.member?.dojoId === managedDojoId;
+    
+    // Only show participants with an assigned category and matches Dojo scope
+    return matchesSearch && p.categoryId != null && matchesDojo;
   });
 
   return (
@@ -244,6 +259,10 @@ export default function EventParticipantsPage() {
                   </div>
                 </div>
 
+                    </div>
+                  </div>
+                </div>
+
                 <div className="glass-card !bg-white/5 border-none p-4 rounded-2xl">
                   <p className="text-[10px] font-black uppercase text-gray-500 mb-3 tracking-widest">Organisasi</p>
                   <div className="space-y-3">
@@ -261,6 +280,33 @@ export default function EventParticipantsPage() {
                     </div>
                   </div>
                 </div>
+
+                {selectedParticipant.proofUrl && (
+                  <div className="glass-card !bg-white/5 border-none p-4 rounded-2xl">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Bukti Pembayaran</p>
+                      <a 
+                        href={selectedParticipant.proofUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-[10px] text-amber-500 font-bold flex items-center gap-1 hover:underline"
+                      >
+                        <ExternalLink size={10} /> Full Size
+                      </a>
+                    </div>
+                    <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 group relative">
+                      <img 
+                        src={selectedParticipant.proofUrl} 
+                        alt="Bukti Transfer" 
+                        className="w-full h-auto max-h-[300px] object-contain cursor-zoom-in"
+                        onClick={() => window.open(selectedParticipant.proofUrl, '_blank')}
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <p className="text-white text-[10px] font-bold uppercase tracking-widest">Klik untuk Zoom</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-8">
                   <button className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-lg shadow-amber-500/20">
