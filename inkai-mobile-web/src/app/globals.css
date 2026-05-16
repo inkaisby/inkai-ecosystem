@@ -336,6 +336,51 @@ html[data-clock-phase="day"] .mobile-content {
   overflow: hidden;
 }
 
+/**
+ * Panel dialog admin selalu gelap (#1e1e24). Di data-clock-phase=day, utility .text-white /
+ * .text-gray-* di globals diarahkan ke palet untuk permukaan terang; pulihkan kontras teks
+ * terang di dalam panel ini agar modal konsisten siang/malam.
+ */
+html[data-clock-phase="day"] .admin-modal-dialog-panel {
+  color: #e4e4e7;
+}
+
+html[data-clock-phase="day"] .admin-modal-dialog-panel .text-white {
+  color: #fafafa !important;
+}
+
+html[data-clock-phase="day"] .admin-modal-dialog-panel .text-gray-300 {
+  color: #d4d4d8 !important;
+}
+
+html[data-clock-phase="day"] .admin-modal-dialog-panel .text-gray-400 {
+  color: #a1a1aa !important;
+}
+
+html[data-clock-phase="day"] .admin-modal-dialog-panel .text-gray-500 {
+  color: #71717a !important;
+  font-weight: inherit;
+}
+
+html[data-clock-phase="day"] .admin-modal-dialog-panel .text-gray-600 {
+  color: #52525b !important;
+}
+
+/** Area input gelap admin (datetime di modal) */
+html[data-clock-phase="day"] .admin-modal-dialog-panel .adm-dark-field input {
+  color: #f4f4f5 !important;
+}
+
+html[data-clock-phase="day"] .admin-modal-dialog-panel .adm-dark-field input::-webkit-datetime-edit-fields-wrapper,
+html[data-clock-phase="day"] .admin-modal-dialog-panel .adm-dark-field input::-webkit-datetime-edit-text {
+  color: inherit;
+}
+
+/** Tombol sekunder di panel modal (bg putih transparan) tetap teks terang */
+html[data-clock-phase="day"] .admin-modal-dialog-panel button.text-gray-400 {
+  color: #a1a1aa !important;
+}
+
 /** Area klik tutup di atas backdrop gelap (bottom sheet) */
 .admin-modal-backdrop-hitbox {
   position: absolute;

@@ -214,7 +214,7 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      <div className="glass-card space-y-6 min-w-0 max-w-full overflow-hidden">
+      <div className="glass-card space-y-6 min-w-0 max-w-full">
         <div className="flex justify-between items-center flex-wrap gap-3 min-w-0">
           <h3 className="text-lg font-bold text-[var(--text-light)]">Daftar kehadiran</h3>
           <div className="relative w-full md:w-64">
@@ -237,21 +237,23 @@ export default function AttendancePage() {
           ) : error ? (
             <div className="p-8 text-center text-red-500">Error: {error}</div>
           ) : (
-            <div className="overflow-x-auto w-full max-w-full min-w-0 overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]">
-            <table className="w-full min-w-[560px] text-left text-sm">
+            <div className="overflow-x-auto w-full max-w-full min-w-0 overscroll-x-contain [-webkit-overflow-scrolling:touch] touch-pan-x pb-1">
+            <table className="w-full min-w-[620px] table-fixed text-left text-sm">
               <thead>
                 <tr className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
-                  <th className="pb-4 pl-2 font-medium min-w-0">Anggota</th>
-                  <th className="pb-4 font-medium min-w-0">Dojo</th>
-                  <th className="pb-4 font-medium min-w-0">Agenda</th>
-                  <th className="pb-4 font-medium min-w-0">Waktu</th>
-                  <th className="pb-4 font-medium min-w-0">Metode</th>
-                  <th className="pb-4 text-right pr-2 font-medium min-w-0">Aksi</th>
+                  <th className="pb-4 pl-2 font-medium min-w-0 w-[22%]">Anggota</th>
+                  <th className="pb-4 font-medium min-w-0 w-[14%]">Dojo</th>
+                  <th className="pb-4 font-medium min-w-0 w-[20%]">Agenda</th>
+                  <th className="pb-4 font-medium min-w-0 w-[18%]">Waktu</th>
+                  <th className="pb-4 font-medium min-w-0 w-[14%]">Metode</th>
+                  <th className="pb-4 text-right pr-2 pl-3 font-medium w-[100px] min-w-[100px] max-w-[100px] shadow-[-12px_0_14px_-10px_rgba(0,0,0,0.25)] bg-[var(--glass-bg)] backdrop-blur-md sticky right-0 z-30 border-l border-white/10 align-top">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filtered.map((log) => (
-                  <tr key={log.id} className="hover:bg-white/[0.02] transition-all align-top">
+                  <tr key={log.id} className="group hover:bg-white/[0.02] transition-colors align-top">
                     <td className="py-4 pl-2 min-w-0 align-top">
                       <p className="font-bold text-[var(--text-light)] break-words">{log.member?.fullName}</p>
                       <p className="text-[10px] text-gray-500 mt-0.5">{log.member?.nia}</p>
@@ -284,14 +286,14 @@ export default function AttendancePage() {
                         {log.method}
                       </span>
                     </td>
-                    <td className="py-4 text-right pr-2 min-w-0 align-top">
-                      <div className="flex justify-end gap-1 flex-wrap">
+                    <td className="py-4 text-right pr-2 pl-3 min-w-0 align-top w-[100px] min-w-[100px] max-w-[100px] shadow-[-12px_0_14px_-10px_rgba(0,0,0,0.2)] bg-[var(--glass-bg)] backdrop-blur-md sticky right-0 z-20 border-l border-white/10 group-hover:bg-white/[0.02]">
+                      <div className="flex justify-end gap-1 flex-nowrap relative z-10">
                         <button
                           type="button"
                           disabled={busyId !== null}
                           onClick={() => openEditModal(log)}
                           title="Koreksi waktu"
-                          className="p-2 rounded-lg border border-white/10 bg-white/5 text-amber-400 hover:bg-white/10 disabled:opacity-30"
+                          className="shrink-0 p-2 rounded-lg border border-white/10 bg-white/5 text-amber-400 hover:bg-white/10 disabled:opacity-30"
                         >
                           <Pencil size={14} aria-hidden />
                         </button>
@@ -302,7 +304,7 @@ export default function AttendancePage() {
                             openDeleteAttendancePrompt(log.id, log.member?.fullName || '')
                           }
                           title="Hapus dari laporan"
-                          className="p-2 rounded-lg border border-red-500/25 bg-red-500/10 text-red-400 hover:bg-red-500/15 disabled:opacity-30"
+                          className="shrink-0 p-2 rounded-lg border border-red-500/25 bg-red-500/10 text-red-400 hover:bg-red-500/15 disabled:opacity-30"
                         >
                           <Trash2 size={14} aria-hidden />
                         </button>
@@ -373,15 +375,15 @@ export default function AttendancePage() {
                 <div className="grid grid-cols-1 gap-3 text-xs">
                   <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Dojo</p>
-                    <p className="text-[var(--text-light)] break-words">{editModalLog.dojo?.name || '—'}</p>
+                    <p className="text-white break-words">{editModalLog.dojo?.name || '—'}</p>
                   </div>
                   <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Agenda</p>
-                    <p className="text-[var(--text-light)] break-words">{editModalLog.event?.title || '—'}</p>
+                    <p className="text-white break-words">{editModalLog.event?.title || '—'}</p>
                   </div>
                   <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Metode</p>
-                    <p className="text-[var(--text-light)]">{editModalLog.method || '—'}</p>
+                    <p className="text-white">{editModalLog.method || '—'}</p>
                   </div>
                 </div>
               </div>
