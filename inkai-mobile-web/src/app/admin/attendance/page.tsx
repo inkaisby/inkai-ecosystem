@@ -48,8 +48,8 @@ export default function AttendancePage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [reportDate, setReportDate] = useState(todayDateInputValue);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [editModalLog, setEditModalLog] = useState<AttendanceLog | null>(null);
+  const [editCheckInAt, setEditCheckInAt] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleteAttendancePrompt, setDeleteAttendancePrompt] = useState<{
     id: string;
@@ -93,7 +93,12 @@ export default function AttendancePage() {
   }, [reportDate]);
 
   useEffect(() => {
-    void fetchLogs();
+    // Defer fetch so setState inside fetchLogs does not run synchronously in the effect body
+    // (eslint react-hooks — avoid cascading renders).
+    const handle = globalThis.setTimeout(() => {
+      void fetchLogs();
+    }, 0);
+    return () => globalThis.clearTimeout(handle);
   }, [fetchLogs]);
 
   const filtered = logs.filter((log) => {
@@ -106,27 +111,29 @@ export default function AttendancePage() {
     return name.includes(q) || nia.includes(q) || dojo.includes(q) || agenda.includes(q);
   });
 
-  const startEdit = (log: AttendanceLog) => {
-    setEditingId(log.id);
-    setEditValue(toDatetimeLocalValue(log.checkInAt));
+  const openEditModal = (log: AttendanceLog) => {
+    setEditModalLog(log);
+    setEditCheckInAt(toDatetimeLocalValue(log.checkInAt));
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditValue('');
+  const closeEditModal = () => {
+    setEditModalLog(null);
+    setEditCheckInAt('');
   };
 
-  const saveEdit = async (id: string) => {
-    const dt = new Date(editValue);
+  const saveEditModal = async () => {
+    if (!editModalLog) return;
+    const dt = new Date(editCheckInAt);
     if (Number.isNaN(dt.getTime())) {
       toast.error('Waktu tidak valid');
       return;
     }
+    const id = editModalLog.id;
     setBusyId(id);
     try {
       await api.attendance.updateStaff(id, { checkInAt: dt.toISOString() });
       toast.success('Waktu absensi diperbarui');
-      cancelEdit();
+      closeEditModal();
       await fetchLogs();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
@@ -151,7 +158,7 @@ export default function AttendancePage() {
       await api.attendance.deleteStaff(id);
       toast.success('Catatan absensi dihapus');
       setDeleteAttendancePrompt(null);
-      cancelEdit();
+      closeEditModal();
       await fetchLogs();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
@@ -163,7 +170,7 @@ export default function AttendancePage() {
 
   return (
     <>
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 min-w-0 max-w-full">
       <div className="flex items-center gap-4">
         <button
           type="button"
@@ -177,7 +184,7 @@ export default function AttendancePage() {
             <ClipboardCheck size={14} />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Laporan pengurus</span>
           </div>
-          <h2 className="text-xl font-black uppercase text-white leading-tight">Absensi</h2>
+          <h2 className="text-xl font-black uppercase text-[var(--text-light)] leading-tight">Absensi</h2>
         </div>
       </div>
       <p className="text-[11px] text-gray-500 leading-relaxed">{scopeHint}</p>
@@ -186,28 +193,30 @@ export default function AttendancePage() {
         tidak dapat mengubah riwayat dari aplikasi.
       </p>
 
-      <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
-        <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap min-w-0">
+        <div className="space-y-1 w-full sm:w-auto max-w-full min-w-0 sm:max-w-xs">
           <label className="text-[10px] font-black uppercase text-amber-500/90 tracking-widest ml-0.5">
             Tanggal laporan
           </label>
-          <input
-            type="date"
-            value={reportDate}
-            onChange={(e) => setReportDate(e.target.value)}
-            className="bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
-            style={{ colorScheme: 'dark' }}
-          />
+          {/* adm-dark-field: teks datepicker terbaca di mode siang + malam (globals.css) */}
+          <div className="adm-dark-field rounded-xl border border-slate-600/35 bg-[#1e1e24] shadow-inner">
+            <input
+              type="date"
+              value={reportDate}
+              onChange={(e) => setReportDate(e.target.value)}
+              className="w-full min-h-[44px] rounded-xl px-4 py-3 text-sm bg-transparent border-0 focus:outline-none focus:ring-2 focus:ring-amber-500/45 focus:ring-inset"
+            />
+          </div>
         </div>
         <div className="glass-card px-4 py-3 flex-1 min-w-[140px] max-w-xs">
           <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Jumlah catatan</p>
-          <p className="text-2xl font-black text-white">{logs.length}</p>
+          <p className="text-2xl font-black text-[var(--text-light)]">{logs.length}</p>
         </div>
       </div>
 
-      <div className="glass-card space-y-6">
-        <div className="flex justify-between items-center flex-wrap gap-3">
-          <h3 className="text-lg font-bold">Daftar kehadiran</h3>
+      <div className="glass-card space-y-6 min-w-0 max-w-full overflow-hidden">
+        <div className="flex justify-between items-center flex-wrap gap-3 min-w-0">
+          <h3 className="text-lg font-bold text-[var(--text-light)]">Daftar kehadiran</h3>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
             <input
@@ -220,7 +229,7 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto relative min-h-[300px]">
+        <div className="relative min-h-[300px] w-full max-w-full min-w-0">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center adm-bg z-10 rounded-xl">
               <Loader2 className="animate-spin text-amber-500" size={40} />
@@ -228,112 +237,82 @@ export default function AttendancePage() {
           ) : error ? (
             <div className="p-8 text-center text-red-500">Error: {error}</div>
           ) : (
-            <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto w-full max-w-full min-w-0 overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]">
+            <table className="w-full min-w-[560px] text-left text-sm">
               <thead>
                 <tr className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
-                  <th className="pb-4 pl-2 font-medium">Anggota</th>
-                  <th className="pb-4 font-medium">Dojo</th>
-                  <th className="pb-4 font-medium">Agenda</th>
-                  <th className="pb-4 font-medium">Waktu</th>
-                  <th className="pb-4 font-medium">Metode</th>
-                  <th className="pb-4 text-right pr-2 font-medium">Aksi</th>
+                  <th className="pb-4 pl-2 font-medium min-w-0">Anggota</th>
+                  <th className="pb-4 font-medium min-w-0">Dojo</th>
+                  <th className="pb-4 font-medium min-w-0">Agenda</th>
+                  <th className="pb-4 font-medium min-w-0">Waktu</th>
+                  <th className="pb-4 font-medium min-w-0">Metode</th>
+                  <th className="pb-4 text-right pr-2 font-medium min-w-0">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filtered.map((log) => (
                   <tr key={log.id} className="hover:bg-white/[0.02] transition-all align-top">
-                    <td className="py-4 pl-2">
-                      <p className="font-bold text-white">{log.member?.fullName}</p>
+                    <td className="py-4 pl-2 min-w-0 align-top">
+                      <p className="font-bold text-[var(--text-light)] break-words">{log.member?.fullName}</p>
                       <p className="text-[10px] text-gray-500 mt-0.5">{log.member?.nia}</p>
                     </td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-gray-500 shrink-0" />
-                        <span className="text-xs">{log.dojo?.name}</span>
+                    <td className="py-4 min-w-0 align-top">
+                      <div className="flex items-start gap-2 min-w-0">
+                        <MapPin size={14} className="text-gray-500 shrink-0 mt-0.5" />
+                        <span className="text-xs break-words">{log.dojo?.name}</span>
                       </div>
                     </td>
-                    <td className="py-4">
-                      <div className="flex items-start gap-2 text-xs text-gray-300">
+                    <td className="py-4 min-w-0 align-top">
+                      <div className="flex items-start gap-2 text-xs text-gray-300 min-w-0">
                         <Calendar size={14} className="text-gray-500 shrink-0 mt-0.5" />
-                        <span>{log.event?.title || '—'}</span>
+                        <span className="break-words min-w-0">{log.event?.title || '—'}</span>
                       </div>
                     </td>
-                    <td className="py-4">
-                      {editingId === log.id ? (
-                        <input
-                          type="datetime-local"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="bg-black/40 border border-white/15 rounded-lg px-2 py-1 text-[11px] text-white max-w-[11rem]"
-                        />
-                      ) : (
-                        <div className="flex items-center gap-2 text-gray-400">
-                          <Clock size={14} />
-                          <span className="text-xs">
-                            {new Date(log.checkInAt).toLocaleString('id-ID', {
-                              dateStyle: 'short',
-                              timeStyle: 'short',
-                            })}
-                          </span>
-                        </div>
-                      )}
+                    <td className="py-4 min-w-0 align-top">
+                      <div className="flex items-start gap-2 text-gray-400 min-w-0">
+                        <Clock size={14} className="shrink-0 mt-0.5" />
+                        <span className="text-xs break-words min-w-0">
+                          {new Date(log.checkInAt).toLocaleString('id-ID', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          })}
+                        </span>
+                      </div>
                     </td>
-                    <td className="py-4">
-                      <span className="text-[10px] px-2 py-0.5 bg-white/5 rounded-full border border-white/10 text-gray-500">
+                    <td className="py-4 min-w-0 align-top">
+                      <span className="text-[10px] px-2 py-0.5 bg-white/5 rounded-full border border-white/10 text-gray-500 break-all inline-block max-w-full">
                         {log.method}
                       </span>
                     </td>
-                    <td className="py-4 text-right pr-2">
+                    <td className="py-4 text-right pr-2 min-w-0 align-top">
                       <div className="flex justify-end gap-1 flex-wrap">
-                        {editingId === log.id ? (
-                          <>
-                            <button
-                              type="button"
-                              disabled={busyId === log.id}
-                              onClick={() => void saveEdit(log.id)}
-                              className="text-[10px] font-black uppercase px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 disabled:opacity-40"
-                            >
-                              Simpan
-                            </button>
-                            <button
-                              type="button"
-                              disabled={busyId === log.id}
-                              onClick={cancelEdit}
-                              className="text-[10px] font-black uppercase px-2 py-1 rounded-lg bg-white/5 text-gray-400 border border-white/10"
-                            >
-                              Batal
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              disabled={busyId !== null}
-                              onClick={() => startEdit(log)}
-                              title="Ubah waktu"
-                              className="p-2 rounded-lg border border-white/10 bg-white/5 text-amber-400 hover:bg-white/10 disabled:opacity-30"
-                            >
-                              <Pencil size={14} aria-hidden />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={busyId !== null}
-                              onClick={() =>
-                                openDeleteAttendancePrompt(log.id, log.member?.fullName || '')
-                              }
-                              title="Hapus dari laporan"
-                              className="p-2 rounded-lg border border-red-500/25 bg-red-500/10 text-red-400 hover:bg-red-500/15 disabled:opacity-30"
-                            >
-                              <Trash2 size={14} aria-hidden />
-                            </button>
-                          </>
-                        )}
+                        <button
+                          type="button"
+                          disabled={busyId !== null}
+                          onClick={() => openEditModal(log)}
+                          title="Koreksi waktu"
+                          className="p-2 rounded-lg border border-white/10 bg-white/5 text-amber-400 hover:bg-white/10 disabled:opacity-30"
+                        >
+                          <Pencil size={14} aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busyId !== null}
+                          onClick={() =>
+                            openDeleteAttendancePrompt(log.id, log.member?.fullName || '')
+                          }
+                          title="Hapus dari laporan"
+                          className="p-2 rounded-lg border border-red-500/25 bg-red-500/10 text-red-400 hover:bg-red-500/15 disabled:opacity-30"
+                        >
+                          <Trash2 size={14} aria-hidden />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
           {filtered.length === 0 && !loading && (
@@ -349,6 +328,97 @@ export default function AttendancePage() {
 
     <AdminModalPortal>
       <AnimatePresence>
+        {editModalLog && (
+          <motion.div
+            key="edit-attendance-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="admin-modal-overlay admin-modal-overlay--dialog admin-modal-overlay--stack"
+            role="presentation"
+            onClick={() => {
+              if (busyId === null) closeEditModal();
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 16 }}
+              className="admin-modal-dialog-panel relative max-h-[90vh] overflow-y-auto"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-att-title"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/5 blur-3xl" />
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-500/25 bg-amber-500/10 text-amber-500 shadow-lg shadow-amber-500/10">
+                <Pencil size={28} aria-hidden />
+              </div>
+              <h3
+                id="edit-att-title"
+                className="mb-1 text-xl font-black uppercase tracking-tight text-white text-center"
+              >
+                Koreksi absensi
+              </h3>
+              <p className="mb-6 text-center text-[11px] text-gray-500 leading-relaxed">
+                Ubah waktu pencatatan jika ada kesalahan. Semua field di bawah hanya untuk referensi.
+              </p>
+
+              <div className="space-y-4 mb-6 text-left">
+                <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3 space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Anggota</p>
+                  <p className="text-sm font-bold text-white break-words">{editModalLog.member?.fullName}</p>
+                  <p className="text-xs text-gray-500 font-mono">{editModalLog.member?.nia || '—'}</p>
+                </div>
+                <div className="grid grid-cols-1 gap-3 text-xs">
+                  <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Dojo</p>
+                    <p className="text-[var(--text-light)] break-words">{editModalLog.dojo?.name || '—'}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Agenda</p>
+                    <p className="text-[var(--text-light)] break-words">{editModalLog.event?.title || '—'}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1">Metode</p>
+                    <p className="text-[var(--text-light)]">{editModalLog.method || '—'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <label className="block text-[10px] font-black uppercase tracking-widest text-amber-500/90 mb-2 ml-0.5">
+                Waktu absensi
+              </label>
+              <div className="adm-dark-field rounded-xl border border-slate-600/35 bg-[#1e1e24] shadow-inner mb-6">
+                <input
+                  type="datetime-local"
+                  value={editCheckInAt}
+                  onChange={(e) => setEditCheckInAt(e.target.value)}
+                  className="w-full min-h-[48px] rounded-xl px-4 py-3 text-sm bg-transparent border-0 focus:outline-none focus:ring-2 focus:ring-amber-500/45 focus:ring-inset"
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => void saveEditModal()}
+                  disabled={busyId === editModalLog.id}
+                  className="w-full rounded-2xl bg-amber-500 py-4 text-xs font-black uppercase tracking-[0.2em] text-black shadow-xl shadow-amber-500/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {busyId === editModalLog.id ? 'Menyimpan...' : 'Simpan perubahan'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === editModalLog.id}
+                  onClick={closeEditModal}
+                  className="w-full rounded-2xl border border-white/5 bg-white/5 py-4 text-xs font-bold uppercase tracking-[0.2em] text-gray-400 transition-all active:scale-95 disabled:opacity-40"
+                >
+                  Batal
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
         {deleteAttendancePrompt && (
           <motion.div
             key="delete-attendance-confirm"
