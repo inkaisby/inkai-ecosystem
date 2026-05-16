@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Wallet, Loader2, Check, Clock, ShieldAlert, Trash2, ChevronRight, Landmark, QrCode, Banknote, Upload } from "lucide-react";
+import { ArrowLeft, Wallet, Loader2, Check, Clock, ShieldAlert, Trash2, ChevronRight, Landmark, QrCode, Banknote, Upload, Copy, X, Download } from "lucide-react";
 import styles from "./Billing.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,9 @@ export default function Billing() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState('VA');
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [confirmModal, setConfirmModal] = useState({ show: false, id: '', title: '', message: '' });
@@ -105,6 +108,22 @@ export default function Billing() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleFileChange = (file: File | null) => {
+    if (proofPreview) URL.revokeObjectURL(proofPreview);
+    setProofFile(file);
+    if (file && file.type.startsWith("image/")) {
+      setProofPreview(URL.createObjectURL(file));
+    } else {
+      setProofPreview(null);
+    }
+  };
+
+  const handleCopy = (text: string, key: string) => {
+    void navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
 
   const confirmDelete = (id: string) => {
@@ -217,16 +236,16 @@ export default function Billing() {
       <AnimatePresence>
         {showPaymentModal && (
           <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className={styles.modalOverlay}
-              onClick={() => {
-                setShowPaymentModal(false);
-                setProofFile(null);
-              }}
-            />
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className={styles.modalOverlay}
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  handleFileChange(null);
+                }}
+              />
             <motion.div 
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -259,7 +278,7 @@ export default function Billing() {
                     className={`${styles.methodItem} ${selectedMethod === method.id ? styles.methodSelected : ''}`}
                     onClick={() => {
                       setSelectedMethod(method.id);
-                      if (method.id !== 'TRANSFER') setProofFile(null);
+                      if (method.id !== 'TRANSFER') handleFileChange(null);
                     }}
                   >
                     <div className={styles.methodIcon}>{method.icon}</div>
@@ -268,6 +287,23 @@ export default function Billing() {
                   </div>
                 ))}
               </div>
+
+              {selectedMethod === 'VA' && (
+                <div className={styles.vaPanel}>
+                  <div className={styles.vaInfoBox}>
+                    <div className={styles.vaIconWrapper}>
+                      <Landmark size={32} />
+                    </div>
+                    <h4 className={styles.vaTitle}>Virtual Account Dojo</h4>
+                    <p className={styles.vaDescription}>
+                      Fitur Virtual Account otomatis akan tersedia setelah integrasi Payment Gateway selesai.
+                    </p>
+                    <div className={styles.vaNote}>
+                      <p>Untuk saat ini, silakan gunakan metode <strong>Transfer</strong> atau <strong>QRIS</strong> untuk konfirmasi instan, atau pilih <strong>Tunai</strong> untuk lapor ke Bendahara Dojo.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {selectedMethod === 'QRIS' && (
                 <div className={styles.qrisPanel}>
@@ -283,6 +319,16 @@ export default function Billing() {
                     priority
                     sizes="(max-width: 500px) 90vw, 280px"
                   />
+                  <div className={styles.qrisActions}>
+                    <a 
+                      href="/payments/qris-static.png" 
+                      download="QRIS-INKAI.png" 
+                      className={styles.downloadBtn}
+                    >
+                      <Download size={16} />
+                      <span>Simpan QRIS</span>
+                    </a>
+                  </div>
                   <p className={styles.qrisSteps}>
                     Buka aplikasi e-wallet atau mobile banking berlogo QRIS, pindai kode ini, lalu masukkan nominal persis sama dengan yang tertera (QR statis tidak menyematkan jumlah otomatis).
                   </p>
@@ -290,25 +336,85 @@ export default function Billing() {
               )}
 
               {selectedMethod === 'TRANSFER' && (
-                <div className={styles.proofUpload}>
-                  <label className={styles.proofLabel} htmlFor="billing-proof-file">
-                    Bukti pembayaran (wajib)
-                  </label>
-                  <input
-                    id="billing-proof-file"
-                    type="file"
-                    className={styles.proofInput}
-                    accept="image/*,.pdf,application/pdf"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      setProofFile(f ?? null);
+                <div className={styles.transferPanel}>
+                  <div className={styles.bankCard}>
+                    <p className={styles.bankLabel}>Transfer ke Rekening Bendahara:</p>
+                    <div className={styles.bankInfo}>
+                      <div className={styles.bankMain}>
+                        <div className={styles.bankHeader}>
+                          <span className={styles.bankName}>Mandiri</span>
+                        </div>
+                        <div className={styles.accountNumberGroup}>
+                          <span className={styles.accountNumber}>1400024546344</span>
+                          <button 
+                            className={styles.copyBtn} 
+                            onClick={() => handleCopy("1400024546344", "account")}
+                            type="button"
+                          >
+                            {copiedKey === "account" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
+                          </button>
+                        </div>
+                        <span className={styles.accountName}>a/n Habibur Rahman</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div 
+                    className={`${styles.proofUpload} ${isDragging ? styles.proofUploadActive : ""}`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
                     }}
-                  />
-                  {proofFile ? (
-                    <p className={styles.proofName}>{proofFile.name}</p>
-                  ) : (
-                    <p className={styles.proofName}>Screenshot atau PDF bukti transfer.</p>
-                  )}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) handleFileChange(f);
+                    }}
+                  >
+                    <label className={styles.proofLabel}>Bukti pembayaran (wajib)</label>
+                    
+                    {!proofFile ? (
+                      <div className={styles.dropZone} onClick={() => document.getElementById("billing-proof-file")?.click()}>
+                        <Upload size={24} className={styles.dropIcon} />
+                        <p className={styles.dropText}>Pilih file atau tarik ke sini</p>
+                        <p className={styles.dropSubtext}>PNG, JPG atau PDF (Maks. 5MB)</p>
+                      </div>
+                    ) : (
+                      <div className={styles.previewCard}>
+                        {proofPreview ? (
+                          <div className={styles.previewImageWrapper}>
+                            <img src={proofPreview} alt="Preview" className={styles.previewImage} />
+                          </div>
+                        ) : (
+                          <div className={styles.fileIconWrapper}>
+                            <Upload size={24} />
+                            <span className={styles.fileName}>{proofFile.name}</span>
+                          </div>
+                        )}
+                        <button 
+                          className={styles.removeProofBtn} 
+                          onClick={() => handleFileChange(null)}
+                          type="button"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+
+                    <input
+                      id="billing-proof-file"
+                      type="file"
+                      className={styles.proofInput}
+                      accept="image/*,.pdf,application/pdf"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        handleFileChange(f ?? null);
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 

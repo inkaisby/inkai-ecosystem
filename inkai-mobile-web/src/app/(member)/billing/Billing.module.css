@@ -284,29 +284,275 @@
 
 .proofUpload {
   margin-bottom: 24px;
+  transition: all 0.2s;
 }
 
-.proofLabel {
-  display: block;
+.proofUploadActive {
+  transform: scale(1.01);
+}
+
+.dropZone {
+  width: 100%;
+  padding: 32px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.proofUploadActive .dropZone {
+  border-color: var(--primary-gold);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.dropZone:hover {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.dropIcon {
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.dropText {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.dropSubtext {
   font-size: 11px;
+  color: var(--text-muted);
+}
+
+.previewCard {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.previewImageWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fileIconWrapper {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.fileName {
+  flex: 1;
+  font-size: 13px;
+  color: white;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.removeProofBtn {
+  width: 28px;
+  height: 28px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.removeProofBtn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.vaPanel {
+  margin-bottom: 24px;
+}
+
+.vaInfoBox {
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  text-align: center;
+}
+
+.vaIconWrapper {
+  width: 64px;
+  height: 64px;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--primary-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.vaTitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.vaDescription {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.vaNote {
+  padding: 12px;
+  background: rgba(245, 158, 11, 0.05);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--primary-gold);
+  line-height: 1.5;
+}
+
+.transferPanel {
+  margin-bottom: 24px;
+}
+
+.bankCard {
+  background: linear-gradient(135deg, #2a2a32, #1a1a20);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.bankLabel {
+  font-size: 10px;
   font-weight: bold;
   color: var(--text-muted);
-  margin-bottom: 8px;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+}
+
+.bankInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bankMain {
+  flex: 1;
+}
+
+.bankHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.bankName {
+  font-size: 16px;
+  font-weight: 800;
+  color: white;
+}
+
+.accountNumberGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.accountNumber {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--primary-gold);
   letter-spacing: 0.05em;
 }
 
-.proofInput {
-  width: 100%;
-  font-size: 12px;
+.copyBtn {
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-muted);
+  transition: all 0.2s;
 }
 
-.proofName {
-  margin-top: 8px;
-  font-size: 11px;
-  color: #a3a3a3;
-  word-break: break-all;
+.copyBtn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--primary-gold);
+}
+
+.copyIconCheck {
+  color: #22c55e;
+}
+
+.accountName {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.qrisActions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.downloadBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  transition: all 0.2s;
+}
+
+.downloadBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .loadingContainer {
