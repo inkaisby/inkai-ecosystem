@@ -51,6 +51,75 @@ function adminMembershipCardHeadline(roleList: string[]): {
 
 type RegistrationBadgeVariant = "paid" | "approved" | "pending" | "rejected";
 
+/** Kegiatan saya: sembunyikan jika tanggal event sudah lewat (pakai endDate bila ada). */
+function isMyEventStillVisible(event: {
+  startDate?: string;
+  endDate?: string;
+}): boolean {
+  const now = Date.now();
+  if (event.endDate) {
+    return new Date(event.endDate).getTime() >= now;
+  }
+  if (event.startDate) {
+    const start = new Date(event.startDate);
+    const today = new Date();
+    const todayStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+    const eventDayStart = new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate(),
+    );
+    return eventDayStart.getTime() >= todayStart.getTime();
+  }
+  return true;
+}
+
+/** Tanggal pelaksanaan untuk meta kartu: satu hari "15 Mei 2026", rentang "15 - 16 Mei 2026". */
+function formatEventPelaksanaan(
+  startIso: string | undefined,
+  endIso?: string | null,
+): string {
+  if (!startIso) return "";
+  const start = new Date(startIso);
+  const end =
+    endIso != null && String(endIso).trim() !== "" ? new Date(endIso) : start;
+
+  const sameCalendarDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  if (sameCalendarDay(start, end)) {
+    return start.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  const d = (x: Date, o: Intl.DateTimeFormatOptions) =>
+    x.toLocaleDateString("id-ID", o);
+
+  if (start.getFullYear() === end.getFullYear()) {
+    if (start.getMonth() === end.getMonth()) {
+      return `${start.getDate()} - ${end.getDate()} ${d(end, { month: "short" })} ${end.getFullYear()}`;
+    }
+    return `${d(start, { day: "numeric", month: "short" })} - ${d(end, {
+      day: "numeric",
+      month: "short",
+    })} ${end.getFullYear()}`;
+  }
+
+  return `${d(start, { day: "numeric", month: "short", year: "numeric" })} - ${d(
+    end,
+    { day: "numeric", month: "short", year: "numeric" },
+  )}`;
+}
+
 function registrationStatusPresentation(
   status: string | undefined,
 ): { label: string; variant: RegistrationBadgeVariant } | null {
@@ -213,10 +282,7 @@ export default function Dashboard() {
         <div className={styles.eventInfo}>
           <h3 className={styles.eventTitle}>{event.title}</h3>
           <p className={styles.eventMeta}>
-            {new Date(event.startDate).toLocaleDateString("id-ID", {
-              day: "2-digit",
-              month: "short",
-            })}{" "}
+            {formatEventPelaksanaan(event.startDate, event.endDate)}{" "}
             |{" "}
             {event.branch?.name ||
               event.branch?.city ||
@@ -251,6 +317,8 @@ export default function Dashboard() {
     if (firstRank) return firstRank;
     return "Belum tercatat";
   })();
+
+  const visibleMyEvents = myEvents.filter(isMyEventStillVisible);
 
   return (
     <div className={styles.container}>
@@ -408,13 +476,13 @@ export default function Dashboard() {
       </section>
 
       {/* Kegiatan Saya / Riwayat UKT (Only if exists) */}
-      {myEvents.length > 0 && (
+      {visibleMyEvents.length > 0 && (
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Kegiatan Saya</h2>
           </div>
           <div className={styles.eventList}>
-            {myEvents.map((event) => renderEventItem(event, true))}
+            {visibleMyEvents.map((event) => renderEventItem(event, true))}
           </div>
         </section>
       )}

@@ -25,13 +25,34 @@ import BottomNav from "@/components/BottomNav/BottomNav";
 import dashStyles from "../dashboard/Dashboard.module.css";
 
 function registrationAllowsAttendance(status: string | undefined): boolean {
-  return status === "APPROVED" || status === "SUCCESS" || status === "PAID";
+  const s = status?.trim().toUpperCase();
+  return s === "APPROVED" || s === "SUCCESS" || s === "PAID";
 }
 
-function eventWindowActive(ev: { startDate: string; endDate: string }): boolean {
-  const t = Date.now();
+/**
+ * Agenda dianggap berjalan pada hari kalender dari tanggal mulai sampai tanggal selesai (zona lokal).
+ * Menghindari jendela 0 detik saat startDate === endDate, dan selaras dengan absensi maks. 1x per hari.
+ */
+function eventWindowActive(ev: { startDate: string; endDate?: string | null }): boolean {
+  const now = new Date();
+  const start = new Date(ev.startDate);
+  const endCandidate =
+    ev.endDate != null && String(ev.endDate).trim() !== ""
+      ? new Date(ev.endDate)
+      : start;
+  const end = endCandidate.getTime() < start.getTime() ? start : endCandidate;
+
+  const startOfLocalDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const endOfLocalDay = (d: Date) => {
+    const s = startOfLocalDay(d);
+    return new Date(s.getTime() + 24 * 60 * 60 * 1000 - 1);
+  };
+
+  const t = now.getTime();
   return (
-    t >= new Date(ev.startDate).getTime() && t <= new Date(ev.endDate).getTime()
+    t >= startOfLocalDay(start).getTime() &&
+    t <= endOfLocalDay(end).getTime()
   );
 }
 
