@@ -66,6 +66,40 @@ function localDateTimeToIso(dateYmd: string, timeHm: string): string {
   return new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
 }
 
+/** Label singkat untuk toast / bantuan error validasi waktu. */
+function formatLocalDateTimeShort(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("id-ID", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+/**
+ * Jika tanggal tutup sama dengan tanggal mulai, jam tutup tidak boleh lebih lambat dari jam mulai.
+ */
+function clampRegistrationCloseToStart<
+  T extends {
+    registrationCloseDate: string;
+    registrationCloseTime: string;
+    startDate: string;
+    startTime: string;
+  },
+>(fd: T): T {
+  const d = fd.registrationCloseDate?.trim();
+  const t = fd.registrationCloseTime?.trim();
+  const sd = fd.startDate?.trim();
+  const st = fd.startTime?.trim();
+  if (!d || !t || !sd || !st || d !== sd) return fd;
+  const closeMs = new Date(localDateTimeToIso(d, t)).getTime();
+  const startMs = new Date(localDateTimeToIso(sd, st)).getTime();
+  if (closeMs <= startMs) return fd;
+  return { ...fd, registrationCloseTime: st };
+}
+
 export default function EventsPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -1038,7 +1072,7 @@ export default function EventsPage() {
                               new Date(startIso).getTime()
                             ) {
                               toast.error(
-                                "Batas pendaftaran tidak boleh setelah waktu mulai agenda.",
+                                `Batas pendaftaran (${formatLocalDateTimeShort(registrationCloseAt)}) harus sebelum atau sama dengan waktu mulai (${formatLocalDateTimeShort(startIso)}). Pada hari yang sama dengan acara, jam tutup tidak boleh setelah jam mulai.`,
                               );
                               setIsSubmitting(false);
                               return;
@@ -1364,10 +1398,12 @@ export default function EventsPage() {
                               required
                               value={formData.startDate}
                               onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  startDate: e.target.value,
-                                })
+                                setFormData((prev) =>
+                                  clampRegistrationCloseToStart({
+                                    ...prev,
+                                    startDate: e.target.value,
+                                  }),
+                                )
                               }
                               className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
@@ -1381,10 +1417,12 @@ export default function EventsPage() {
                               required
                               value={formData.startTime}
                               onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  startTime: e.target.value,
-                                })
+                                setFormData((prev) =>
+                                  clampRegistrationCloseToStart({
+                                    ...prev,
+                                    startTime: e.target.value,
+                                  }),
+                                )
                               }
                               className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                               style={{ colorScheme: "dark" }}
@@ -1448,11 +1486,14 @@ export default function EventsPage() {
                                 type="date"
                                 name="registrationCloseDate"
                                 value={formData.registrationCloseDate}
+                                max={formData.startDate || undefined}
                                 onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    registrationCloseDate: e.target.value,
-                                  })
+                                  setFormData((prev) =>
+                                    clampRegistrationCloseToStart({
+                                      ...prev,
+                                      registrationCloseDate: e.target.value,
+                                    }),
+                                  )
                                 }
                                 className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                                 style={{ colorScheme: "dark" }}
@@ -1466,17 +1507,39 @@ export default function EventsPage() {
                                 type="time"
                                 name="registrationCloseTime"
                                 value={formData.registrationCloseTime}
+                                max={
+                                  formData.registrationCloseDate &&
+                                  formData.startDate &&
+                                  formData.registrationCloseDate ===
+                                    formData.startDate &&
+                                  formData.startTime
+                                    ? formData.startTime
+                                    : undefined
+                                }
                                 onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    registrationCloseTime: e.target.value,
-                                  })
+                                  setFormData((prev) =>
+                                    clampRegistrationCloseToStart({
+                                      ...prev,
+                                      registrationCloseTime: e.target.value,
+                                    }),
+                                  )
                                 }
                                 className="w-full !bg-[#1e1e24] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-white shadow-inner"
                                 style={{ colorScheme: "dark" }}
                               />
                             </div>
                           </div>
+                          {formData.startDate &&
+                            formData.startTime &&
+                            formData.registrationCloseDate &&
+                            formData.registrationCloseTime &&
+                            formData.registrationCloseDate ===
+                              formData.startDate && (
+                              <p className="text-[10px] text-gray-500 leading-relaxed -mt-1">
+                                Tanggal tutup sama dengan hari mulai acara: jam tutup paling lambat sama
+                                dengan jam mulai ({formData.startTime.slice(0, 5)}).
+                              </p>
+                            )}
                         </div>
 
                         {/* Deskripsi */}
