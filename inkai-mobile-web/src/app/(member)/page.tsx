@@ -101,13 +101,15 @@ export default function Login() {
       </div>
 
       <div
-        className="flex flex-col py-8"
+        className="flex flex-col"
         style={{
           position: "relative",
           zIndex: 1,
           width: "100%",
           maxWidth: "480px",
           margin: "0 auto",
+          paddingTop: "2.5rem",
+          paddingBottom: "2rem",
           flex: 1,
         }}
       >

@@ -640,7 +640,7 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
           if (email && email !== currentMember.user?.email) {
             // Check if email is already taken by ANOTHER user
             const existingUser = await tx.user.findUnique({ where: { email } });
-            if (existingUser) throw new Error('Email sudah terdaftar di akun lain');
+            if (existingUser && existingUser.id !== userId) throw new Error('Email sudah terdaftar di akun lain');
             userData.email = email;
           }
           if (password) userData.passwordHash = await bcrypt.hash(password, 12);
