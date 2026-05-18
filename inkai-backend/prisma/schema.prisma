@@ -131,6 +131,7 @@ model Member {
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   isDeleted           Boolean             @default(false)
+  allowEventWithoutDues Boolean           @default(false)
   parentUserId        String?
   birthCertificateUrl String?
   bpjsCardUrl         String?

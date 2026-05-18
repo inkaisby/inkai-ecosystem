@@ -584,7 +584,8 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       nia,
       email,
       password,
-      status
+      status,
+      allowEventWithoutDues
     } = req.body;
 
     const adminRoles = jwtRoleNames(req.user);
@@ -692,6 +693,7 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
         memberUpdateData.nia =
           nia && String(nia).trim() !== '' ? String(nia).trim() : null;
       }
+      if (allowEventWithoutDues !== undefined) memberUpdateData.allowEventWithoutDues = allowEventWithoutDues;
       if (userId !== currentMember.userId) memberUpdateData.userId = userId;
 
       return await tx.member.update({

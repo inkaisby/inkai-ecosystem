@@ -19,6 +19,7 @@ import {
   Copy,
   Download,
   X,
+  ScrollText,
 } from "lucide-react";
 import styles from "./EventDetail.module.css";
 import { useRouter } from "next/navigation";
@@ -94,6 +95,8 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [allBillings, setAllBillings] = useState<any[]>([]);
+  const [hasAcceptedPolicy, setHasAcceptedPolicy] = useState(false);
 
   const handleFileChange = (file: File | null) => {
     if (proofPreview) URL.revokeObjectURL(proofPreview);
@@ -144,10 +147,18 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
 
   const fetchEvent = useCallback(async () => {
     try {
-      const response = await eventApi.getEvent(id);
+      const [response, billingsRes] = await Promise.all([
+        eventApi.getEvent(id),
+        billingApi.getMyBillings().catch(() => ({ data: { status: "error", data: [] } })),
+      ]);
+
       if (response.data.status === "success") {
         const eventData = response.data.data as EventDetailData;
         setEvent(eventData);
+
+        if (billingsRes?.data?.status === "success") {
+          setAllBillings(billingsRes.data.data || []);
+        }
 
         const memberId = user?.member?.id ?? user?.id;
         if (memberId && eventData.registrations) {
@@ -206,6 +217,27 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       });
       return;
     }
+
+    if (hasUnpaidDuesForEvent && regDate && event?.startDate) {
+      const regMonthStr = regDate.toLocaleString("id-ID", { month: "long", year: "numeric" });
+      const eventMonthStr = new Date(event.startDate).toLocaleString("id-ID", { month: "long", year: "numeric" });
+      setToast({
+        show: true,
+        message: `Pendaftaran diblokir. Anda wajib melunasi iuran bulanan dari bulan ${regMonthStr} sampai ${eventMonthStr} terlebih dahulu.`,
+        type: 'error',
+      });
+      return;
+    }
+
+    if (!hasAcceptedPolicy) {
+      setToast({
+        show: true,
+        message: "Silakan setujui kebijakan Ketua Ranting terlebih dahulu.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!selectedCategoryId && event?.categories && event.categories.length > 0) {
       setToast({ show: true, message: "Silakan pilih kategori terlebih dahulu.", type: 'error' });
       categorySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -324,6 +356,38 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const eventFeeBillingNested = eventFeeBillingForRegistration(userRegistration);
   const eventFeeBilling = eventFeeBillingNested ?? feeBillingFromApi;
   const billNorm = String(eventFeeBilling?.status ?? "").trim().toUpperCase();
+
+  const isAdmin = user?.roles?.some((r: any) => {
+    const name = typeof r === "string" ? r : r.name;
+    return name && name.includes("ADMIN");
+  });
+
+  const rawRegDate = user?.createdAt || user?.member?.createdAt || user?.member?.joinedAt;
+  const regDate = rawRegDate ? new Date(rawRegDate) : null;
+
+  const hasRealUnpaidDues = (() => {
+    if (!regDate || !event?.startDate) return false;
+    
+    const startOfRegMonth = new Date(regDate.getFullYear(), regDate.getMonth(), 1);
+    const eventDateObj = new Date(event.startDate);
+    const startOfEventMonth = new Date(eventDateObj.getFullYear(), eventDateObj.getMonth(), 1);
+    
+    const relativeMonthlyIurans = allBillings.filter((b: any) => {
+      if (b.type !== "MONTHLY_IURAN") return false;
+      const billDate = new Date(b.dueDate);
+      const startOfBillMonth = new Date(billDate.getFullYear(), billDate.getMonth(), 1);
+      
+      return (
+        startOfBillMonth.getTime() >= startOfRegMonth.getTime() &&
+        startOfBillMonth.getTime() <= startOfEventMonth.getTime()
+      );
+    });
+    
+    return relativeMonthlyIurans.length > 0 && relativeMonthlyIurans.some((b: any) => b.status !== "PAID");
+  })();
+
+  const hasUnpaidDuesForEvent = !isAdmin && !user?.member?.allowEventWithoutDues && hasRealUnpaidDues;
+
   const categoryFee = (() => {
     const fromReg = Number(userRegistration?.category?.fee ?? 0);
     if (fromReg > 0) return fromReg;
@@ -387,44 +451,50 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
   const blockSelfRegister =
     isSelfRegistrationClosed && !isRegistered;
 
-  const registrationFooterLabel = isPaid
-    ? "SUDAH TERDAFTAR (LUNAS)"
-    : waitingPaymentVerify
-      ? "UPDATE BUKTI PEMBAYARAN"
-      : needsPayRegistrationFee
-        ? "BAYAR BIAYA PENDAFTARAN"
-        : showStickyPayCta
-          ? "KONFIRMASI PEMBAYARAN & UPLOAD"
-          : regNorm === "REJECTED"
-          ? "PENDAFTARAN DITOLAK"
-          : isApprovedLike
-            ? (inferredParticipantFee > 0 || eventMayRequireFee) && !eventFeeBilling
-              ? "SUDAH TERDAFTAR (DISETUJUI) — CEK MENU PEMBAYARAN"
-              : "SUDAH TERDAFTAR (DISETUJUI)"
-            : isRegistered
-              ? "SUDAH TERDAFTAR (PENDING)"
-              : blockSelfRegister
-                ? "PENDAFTARAN DITUTUP"
-                : "DAFTAR SEKARANG";
+  const registrationFooterLabel = hasUnpaidDuesForEvent
+    ? "LUNASI IURAN BULANAN"
+    : isPaid
+      ? "SUDAH TERDAFTAR (LUNAS)"
+      : waitingPaymentVerify
+        ? "UPDATE BUKTI PEMBAYARAN"
+        : needsPayRegistrationFee
+          ? "BAYAR BIAYA PENDAFTARAN"
+          : showStickyPayCta
+            ? "KONFIRMASI PEMBAYARAN & UPLOAD"
+            : regNorm === "REJECTED"
+            ? "PENDAFTARAN DITOLAK"
+            : isApprovedLike
+              ? (inferredParticipantFee > 0 || eventMayRequireFee) && !eventFeeBilling
+                ? "SUDAH TERDAFTAR (DISETUJUI) — CEK MENU PEMBAYARAN"
+                : "SUDAH TERDAFTAR (DISETUJUI)"
+              : isRegistered
+                ? "SUDAH TERDAFTAR (PENDING)"
+                : blockSelfRegister
+                  ? "PENDAFTARAN DITUTUP"
+                  : "DAFTAR SEKARANG";
 
   const canTapFooter =
-    !isRegistering &&
-    !isProcessingPayment &&
-    !isPaid &&
-    !isPendingMember &&
-    !isRejected &&
-    ((!isRegistered && !blockSelfRegister) || showStickyPayCta || waitingPaymentVerify);
+    hasUnpaidDuesForEvent || (
+      !isRegistering &&
+      !isProcessingPayment &&
+      !isPaid &&
+      !isPendingMember &&
+      !isRejected &&
+      ((!isRegistered && !blockSelfRegister) || showStickyPayCta || waitingPaymentVerify)
+    );
 
   const footerMutedRegistered =
-    isPaid ||
-    (isRegistered &&
-      !showStickyPayCta &&
-      !waitingPaymentVerify &&
-      !needsPayRegistrationFee);
+    !hasUnpaidDuesForEvent && (
+      isPaid ||
+      (isRegistered &&
+        !showStickyPayCta &&
+        !waitingPaymentVerify &&
+        !needsPayRegistrationFee)
+    );
 
   const footerBtnClass = `${styles.registerBtn} ${
     footerMutedRegistered ? styles.registered : ""
-  } ${showStickyPayCta ? styles.payReady : ""} ${
+  } ${showStickyPayCta || hasUnpaidDuesForEvent ? styles.payReady : ""} ${
     waitingPaymentVerify ? styles.payReady : ""
   }`;
 
@@ -443,6 +513,34 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
       </div>
 
       <div className={styles.content}>
+        {hasUnpaidDuesForEvent && regDate && event?.startDate && (
+          <div className={styles.paymentPendingBox} style={{ borderColor: "rgba(239, 68, 68, 0.3)", background: "rgba(239, 68, 68, 0.05)", marginBottom: "24px" }}>
+            <p className={styles.paymentPendingTitle} style={{ color: "#f87171" }}>Iuran Bulanan Belum Lengkap</p>
+            <p style={{ color: "#fca5a5", fontSize: "13px", lineHeight: "1.5" }}>
+              Anda terdaftar sebagai anggota pada tanggal <strong>{new Date(regDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong>.
+              <br />
+              Untuk dapat mengikuti event ini (<strong>{new Date(event.startDate).toLocaleDateString("id-ID", { month: "long", year: "numeric" })}</strong>), Anda wajib melunasi iuran bulanan dari bulan <strong>{regDate.toLocaleString("id-ID", { month: "long", year: "numeric" })}</strong> sampai <strong>{new Date(event.startDate).toLocaleString("id-ID", { month: "long", year: "numeric" })}</strong>.
+            </p>
+            <button
+              type="button"
+              className={`${styles.paymentCardBtn} ${styles.paymentCardBtnSecondary}`}
+              style={{ marginTop: "14px", color: "#fca5a5", borderColor: "rgba(239, 68, 68, 0.4)", background: "transparent" }}
+              onClick={() => router.push("/billing")}
+            >
+              Bayar Iuran Bulanan Sekarang
+            </button>
+          </div>
+        )}
+
+        {user?.member?.allowEventWithoutDues && hasRealUnpaidDues && (
+          <div className={styles.paymentPendingBox} style={{ borderColor: "rgba(245, 158, 11, 0.3)", background: "rgba(245, 158, 11, 0.05)", marginBottom: "24px" }}>
+            <p className={styles.paymentPendingTitle} style={{ color: "var(--primary-gold)" }}>Dispensasi Ketua Ranting Aktif</p>
+            <p style={{ color: "#fef3c7", fontSize: "13px", lineHeight: "1.5" }}>
+              Anda memiliki tunggakan iuran bulanan, namun <strong>Ketua Ranting Anda telah memberikan dispensasi khusus</strong> agar Anda tetap diperbolehkan mendaftar dan mengikuti event ini.
+            </p>
+          </div>
+        )}
+
         <div className={styles.infoGrid}>
           <div className={styles.infoRow}>
             <Calendar size={18} className={styles.infoIcon} />
@@ -633,6 +731,35 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
             </div>
           </section>
         )}
+
+        {!isRegistered && !hasUnpaidDuesForEvent && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Kebijakan Ketua Ranting</h2>
+            <div className={styles.policyCard}>
+              <div className={styles.policyHeader}>
+                <ScrollText className={styles.policyIcon} size={20} />
+                <span className={styles.policyHeaderText}>Syarat & Persetujuan Kegiatan</span>
+              </div>
+              <ul className={styles.policyList}>
+                <li>Setiap anggota <strong>wajib mendapatkan izin resmi</strong> dari Ketua Ranting atau Dojo masing-masing sebelum mendaftar.</li>
+                <li>Pendaftaran mandiri melalui aplikasi ini akan berstatus <strong>PENDING</strong> (Menunggu Verifikasi) hingga dikonfirmasi oleh Ketua Ranting.</li>
+                <li>Anggota bersedia mematuhi seluruh tata tertib dan regulasi kegiatan yang ditetapkan oleh pengurus Ranting INKAI.</li>
+              </ul>
+              
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={hasAcceptedPolicy}
+                  onChange={(e) => setHasAcceptedPolicy(e.target.checked)}
+                  className={styles.checkboxInput}
+                />
+                <span className={styles.checkboxText}>
+                  Saya menyatakan telah berkoordinasi dan mendapatkan persetujuan dari Ketua Ranting/Dojo untuk mengikuti kegiatan ini.
+                </span>
+              </label>
+            </div>
+          </section>
+        )}
       </div>
 
       <footer className={styles.footer}>
@@ -641,6 +768,10 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
           className={footerBtnClass}
           disabled={!canTapFooter}
           onClick={() => {
+            if (hasUnpaidDuesForEvent) {
+              router.push("/billing");
+              return;
+            }
             if ((needsPayRegistrationFee || waitingPaymentVerify) && eventFeeBilling?.id) {
               setShowPaymentModal(true);
               return;

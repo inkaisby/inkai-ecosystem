@@ -1467,6 +1467,43 @@ function MembersContent() {
                   )}
                 </div>
 
+                <div className="mt-8 p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-1">
+                      Kebijakan & Dispensasi
+                    </p>
+                    <p className="text-xs text-gray-300 font-bold mb-1">
+                      Dispensasi Tunggakan Iuran
+                    </p>
+                    <p className="text-[10px] text-gray-500 leading-relaxed">
+                      Izinkan anggota ini mendaftar event meskipun memiliki tunggakan iuran bulanan.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={listSavingId === selectedMember.id}
+                    onClick={async () => {
+                      const nextVal = !selectedMember.allowEventWithoutDues;
+                      await patchMemberInline(selectedMember.id, {
+                        allowEventWithoutDues: nextVal
+                      } as any);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-[0.98] border ${
+                      selectedMember.allowEventWithoutDues
+                        ? "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20"
+                        : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
+                    }`}
+                  >
+                    {listSavingId === selectedMember.id ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : selectedMember.allowEventWithoutDues ? (
+                      "AKTIF"
+                    ) : (
+                      "MATI"
+                    )}
+                  </button>
+                </div>
+
                 <div className="mt-10 border-t border-white/10 pt-8">
                   <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-4">
                     Riwayat kenaikan tingkat

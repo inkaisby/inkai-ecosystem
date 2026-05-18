@@ -19,6 +19,7 @@ import {
   Loader2,
   Lock,
   ScrollText,
+  X,
 } from "lucide-react";
 import styles from "./Dashboard.module.css";
 import MemberCard from "@/components/MemberCard/MemberCard";
@@ -27,7 +28,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventApi, getAssetUrl, api } from "@/lib/api";
+import { eventApi, getAssetUrl, api, billingApi } from "@/lib/api";
 import { formatEventPelaksanaan } from "@/lib/formatEventPelaksanaan";
 
 function roleNames(userRoles: unknown): string[] {
@@ -114,16 +115,31 @@ export default function Dashboard() {
   const [isEventsLoading, setIsEventsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [billings, setBillings] = useState<any[]>([]);
+  const [showIuranLock, setShowIuranLock] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const rawRegDate = user?.createdAt || user?.member?.createdAt || user?.member?.joinedAt;
+  const regDate = rawRegDate ? new Date(rawRegDate) : new Date();
+
+  const monthlyIurans = billings.filter((b: any) => {
+    if (b.type !== "MONTHLY_IURAN") return false;
+    const billDate = new Date(b.dueDate);
+    const startOfBillMonth = new Date(billDate.getFullYear(), billDate.getMonth(), 1);
+    const startOfRegMonth = new Date(regDate.getFullYear(), regDate.getMonth(), 1);
+    return startOfBillMonth.getTime() >= startOfRegMonth.getTime();
+  });
+  const hasNoPaidIuran = !isAdmin && !user?.member?.allowEventWithoutDues && monthlyIurans.length > 0 && !monthlyIurans.some((b: any) => b.status === "PAID");
+
   const fetchEvents = useCallback(async () => {
     try {
-      const [upcomingRes, myEventsRes] = await Promise.all([
+      const [upcomingRes, myEventsRes, billingsRes] = await Promise.all([
         eventApi.getEvents(),
         eventApi.getMyEvents(),
+        billingApi.getMyBillings().catch(() => ({ data: { status: "error", data: [] } })),
       ]);
 
       if (upcomingRes.data.status === "success") {
@@ -155,6 +171,9 @@ export default function Dashboard() {
       }
       if (myEventsRes.data.status === "success") {
         setMyEvents(myEventsRes.data.data || []);
+      }
+      if (billingsRes?.data?.status === "success") {
+        setBillings(billingsRes.data.data || []);
       }
     } catch (error) {
       console.error("Fetch events error:", error);
@@ -231,7 +250,13 @@ export default function Dashboard() {
       <div
         key={event.id}
         className={styles.eventItem}
-        onClick={() => router.push(`/events/${event.id}`)}
+        onClick={() => {
+          if (!isHistory && hasNoPaidIuran) {
+            setShowIuranLock(true);
+            return;
+          }
+          router.push(`/events/${event.id}`);
+        }}
       >
         <div
           className={`${styles.eventIcon} ${isUKT ? styles.ukt : styles.tourney}`}
@@ -425,7 +450,13 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              onClick={() => router.push(action.path)}
+              onClick={() => {
+                if (action.label === "Event" && hasNoPaidIuran) {
+                  setShowIuranLock(true);
+                  return;
+                }
+                router.push(action.path);
+              }}
             >
               <div className={styles.actionIcon}>{action.icon}</div>
               <span className={styles.actionLabel}>{action.label}</span>
@@ -451,7 +482,13 @@ export default function Dashboard() {
           <h2 className={styles.sectionTitle}>Event Terdekat</h2>
           <button
             className={styles.seeAll}
-            onClick={() => router.push("/events")}
+            onClick={() => {
+              if (hasNoPaidIuran) {
+                setShowIuranLock(true);
+                return;
+              }
+              router.push("/events");
+            }}
           >
             Lihat Semua
           </button>
@@ -464,6 +501,19 @@ export default function Dashboard() {
                 Event terdekat belum dapat diakses.
                 <br />
                 Tunggu sampai <b>NIA</b> Anda aktif untuk dapat mendaftar.
+              </p>
+            </div>
+          ) : hasNoPaidIuran ? (
+            <div
+              className={styles.lockedState}
+              style={{ cursor: "pointer" }}
+              onClick={() => setShowIuranLock(true)}
+            >
+              <Lock size={32} className={styles.lockedIcon} />
+              <p className={styles.lockedText}>
+                Event terdekat belum dapat diakses.
+                <br />
+                Silakan lakukan <b>pembayaran iuran bulanan</b> Anda terlebih dahulu.
               </p>
             </div>
           ) : isEventsLoading ? (
@@ -499,6 +549,50 @@ export default function Dashboard() {
 
       <div style={{ height: "100px" }} />
       <BottomNav />
+
+      {showIuranLock && (
+        <div className={styles.profileLockOverlay}>
+          <div className={styles.profileLockContent}>
+            <div
+              style={{
+                alignSelf: "flex-end",
+                cursor: "pointer",
+                color: "#ccc",
+                marginBottom: "8px",
+              }}
+              onClick={() => setShowIuranLock(false)}
+            >
+              <X size={20} />
+            </div>
+            <Lock size={48} color="#ffc107" style={{ marginBottom: "16px" }} />
+            <h2
+              style={{
+                fontSize: "20px",
+                marginBottom: "8px",
+                fontWeight: "600",
+              }}
+            >
+              Iuran Bulanan Belum Lunas
+            </h2>
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#ccc",
+                marginBottom: "24px",
+                lineHeight: "1.5",
+              }}
+            >
+              Anda memiliki tagihan iuran bulanan yang wajib diselesaikan. Silakan lakukan pembayaran iuran bulanan Anda terlebih dahulu untuk dapat mengakses fitur event.
+            </p>
+            <button
+              className={styles.primaryBtn}
+              onClick={() => router.push("/billing")}
+            >
+              Bayar Iuran Sekarang
+            </button>
+          </div>
+        </div>
+      )}
 
       {(!isProfileComplete || !isDocumentComplete) && (
         <div className={styles.profileLockOverlay}>

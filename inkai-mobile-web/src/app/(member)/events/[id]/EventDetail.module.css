@@ -751,3 +751,92 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.policyCard {
+  padding: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.08),
+    rgba(245, 158, 11, 0.02)
+  );
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 18px;
+  margin-top: 12px;
+}
+
+.policyHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.policyIcon {
+  color: var(--primary-gold);
+}
+
+.policyHeaderText {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.policyList {
+  list-style-type: none;
+  padding: 0;
+  margin: 0 0 18px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.policyList li {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  position: relative;
+  padding-left: 18px;
+}
+
+.policyList li::before {
+  content: "•";
+  color: var(--primary-gold);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.checkboxLabel:hover {
+  background: rgba(245, 158, 11, 0.04);
+  border-color: rgba(245, 158, 11, 0.15);
+}
+
+.checkboxInput {
+  margin-top: 3px;
+  accent-color: var(--primary-gold);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.checkboxText {
+  font-size: 12px;
+  color: var(--text-light);
+  line-height: 1.45;
+  font-weight: 500;
+}

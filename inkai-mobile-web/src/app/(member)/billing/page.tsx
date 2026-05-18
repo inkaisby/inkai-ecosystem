@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
-import { ArrowLeft, Wallet, Loader2, Check, Clock, ShieldAlert, Trash2, ChevronRight, Landmark, QrCode, Banknote, Upload, Copy, X, Download } from "lucide-react";
+import { ArrowLeft, Wallet, Loader2, Check, Clock, ShieldAlert, Trash2, ChevronRight, Landmark, QrCode, Banknote, Upload, Copy, X, Download, Search } from "lucide-react";
 import styles from "./Billing.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import { useRouter } from "next/navigation";
@@ -28,6 +28,37 @@ export default function Billing() {
   const [mounted, setMounted] = useState(false);
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   const [confirmModal, setConfirmModal] = useState({ show: false, id: '', title: '', message: '' });
+
+  // States untuk Filter & Riwayat
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedYear, setSelectedYear] = useState("ALL");
+  const [selectedMonth, setSelectedMonth] = useState("ALL");
+  const [activeTab, setActiveTab] = useState("ALL");
+
+  // Logika Filter Iuran & Tagihan Real-Time
+  const filteredBillings = useMemo(() => {
+    return billings.filter((bill) => {
+      // 1. Pencarian Kata Kunci
+      const desc = (bill.description || "").toLowerCase();
+      const typeLabel = bill.type === 'MONTHLY_IURAN' ? 'iuran bulanan' : 'biaya event';
+      const query = searchQuery.toLowerCase();
+      if (query && !desc.includes(query) && !typeLabel.includes(query)) return false;
+
+      // 2. Filter Status Tab
+      if (activeTab === "PAID" && bill.status !== "PAID") return false;
+      if (activeTab === "PENDING" && bill.status !== "WAITING_VERIFICATION") return false;
+      if (activeTab === "UNPAID" && bill.status !== "UNPAID" && bill.status !== "REJECTED") return false;
+
+      // 3. Filter Tahun & Bulan berdasarkan dueDate
+      if (bill.dueDate) {
+        const billDate = new Date(bill.dueDate);
+        if (selectedYear !== "ALL" && billDate.getFullYear().toString() !== selectedYear) return false;
+        if (selectedMonth !== "ALL" && (billDate.getMonth() + 1).toString() !== selectedMonth) return false;
+      }
+
+      return true;
+    });
+  }, [billings, searchQuery, activeTab, selectedYear, selectedMonth]);
 
   useEffect(() => {
     setMounted(true);
@@ -191,9 +222,79 @@ export default function Billing() {
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Riwayat Tagihan</h2>
+
+        {/* Filter & History Controls Premium */}
+        <div className={styles.filterContainer}>
+          <div className={styles.searchBox}>
+            <Search className={styles.searchIcon} size={16} />
+            <input
+              type="text"
+              placeholder="Cari bulan, deskripsi atau jenis tagihan..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
+
+          <div className={styles.dropdownsGroup}>
+            <div className={styles.dropdownSelectWrapper}>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className={styles.dropdownSelect}
+              >
+                <option value="ALL">Semua Tahun</option>
+                <option value="2026">Tahun 2026</option>
+                <option value="2025">Tahun 2025</option>
+                <option value="2024">Tahun 2024</option>
+              </select>
+            </div>
+
+            <div className={styles.dropdownSelectWrapper}>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className={styles.dropdownSelect}
+              >
+                <option value="ALL">Semua Bulan</option>
+                <option value="1">Januari</option>
+                <option value="2">Februari</option>
+                <option value="3">Maret</option>
+                <option value="4">April</option>
+                <option value="5">Mei</option>
+                <option value="6">Juni</option>
+                <option value="7">Juli</option>
+                <option value="8">Agustus</option>
+                <option value="9">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Desember</option>
+              </select>
+            </div>
+          </div>
+
+          <div className={styles.tabsScroll}>
+            {[
+              { id: "ALL", label: "Semua" },
+              { id: "PAID", label: "Lunas" },
+              { id: "PENDING", label: "Tinjau" },
+              { id: "UNPAID", label: "Belum Bayar" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`${styles.tabItem} ${activeTab === tab.id ? styles.tabActive : ""}`}
+                type="button"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className={styles.list}>
-          {billings.length > 0 ? (
-            billings.map((bill) => {
+          {filteredBillings.length > 0 ? (
+            filteredBillings.map((bill) => {
               const isPaid = bill.status === 'PAID';
               const isWaiting = bill.status === 'WAITING_VERIFICATION';
               return (
@@ -227,7 +328,7 @@ export default function Billing() {
               );
             })
           ) : (
-            <div className={styles.emptyState}>Tidak ada tagihan.</div>
+            <div className={styles.emptyState}>Tidak ada tagihan yang cocok dengan filter.</div>
           )}
         </div>
       </section>

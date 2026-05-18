@@ -115,6 +115,7 @@ export interface Member {
     id: string;
     name: string;
   };
+  allowEventWithoutDues?: boolean;
 }
 
 export interface EventCategory {
