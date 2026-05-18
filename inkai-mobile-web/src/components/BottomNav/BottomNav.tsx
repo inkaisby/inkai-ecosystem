@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, User, Award, ShieldCheck, ClipboardCheck } from "lucide-react";
+import { Home, User, Award, ShieldCheck, ClipboardCheck, Wallet } from "lucide-react";
 import styles from "./BottomNav.module.css";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -19,6 +19,8 @@ export default function BottomNav() {
     { icon: <User size={20} />, label: "Profil", path: "/profile" },
   ] : [
     { icon: <Home size={20} />, label: "Home", path: "/dashboard" },
+    { icon: <Award size={20} />, label: "Event", path: "/events" },
+    { icon: <Wallet size={20} />, label: "Iuran", path: "/billing" },
     { icon: <User size={20} />, label: "Profil", path: "/profile" },
   ];
 
