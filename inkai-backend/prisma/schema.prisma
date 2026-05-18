@@ -132,6 +132,7 @@ model Member {
   updatedAt           DateTime            @updatedAt
   isDeleted           Boolean             @default(false)
   allowEventWithoutDues Boolean           @default(false)
+  monthlyDuesAmount   Float               @default(50000)
   parentUserId        String?
   birthCertificateUrl String?
   bpjsCardUrl         String?

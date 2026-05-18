@@ -18,11 +18,26 @@ export const getMemberBillings = async (req: Request, res: Response) => {
 export const createBilling = async (req: Request, res: Response) => {
   try {
     const { memberId, type, amount, dueDate } = req.body;
+    
+    let finalAmount = amount;
+    if (type === 'MONTHLY_IURAN' && (amount === undefined || amount === null)) {
+      const member = await prisma.member.findUnique({
+        where: { id: memberId }
+      });
+      if (member) {
+        finalAmount = member.monthlyDuesAmount;
+      } else {
+        finalAmount = 50000;
+      }
+    } else if (amount === undefined || amount === null) {
+      finalAmount = 50000;
+    }
+
     const billing = await prisma.billing.create({
       data: {
         memberId,
         type,
-        amount,
+        amount: finalAmount,
         dueDate: new Date(dueDate),
         status: 'PENDING'
       }
