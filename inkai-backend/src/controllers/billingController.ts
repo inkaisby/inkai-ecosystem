@@ -206,9 +206,9 @@ export const deleteBilling = async (req: Request, res: Response) => {
         throw new Error('Only pending bills can be deleted');
       }
 
-      // 2. If has registrationId, delete the registration first (due to FK if any, though usually we just want both gone)
+      // 2. If has registrationId, delete the registration first (safely using deleteMany to prevent crash if already deleted)
       if (billing.registrationId) {
-        await tx.eventRegistration.delete({
+        await tx.eventRegistration.deleteMany({
           where: { id: billing.registrationId }
         });
       }
