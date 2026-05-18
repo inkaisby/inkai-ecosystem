@@ -116,6 +116,7 @@ export interface Member {
     name: string;
   };
   allowEventWithoutDues?: boolean;
+  monthlyDuesAmount?: number;
 }
 
 export interface EventCategory {

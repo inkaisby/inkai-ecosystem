@@ -366,7 +366,7 @@ function MembersContent() {
   const patchMemberInline = useCallback(
     async (
       memberId: string,
-      body: Partial<{ nia: string; currentRank: string }>,
+      body: any,
     ): Promise<boolean> => {
       setListSavingId(memberId);
       try {
@@ -1502,6 +1502,50 @@ function MembersContent() {
                       "MATI"
                     )}
                   </button>
+                </div>
+
+                <div className="mt-4 p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">
+                      Pengaturan Keuangan
+                    </p>
+                    <p className="text-xs text-gray-300 font-bold mb-1">
+                      Nominal Iuran Bulanan
+                    </p>
+                    <p className="text-[10px] text-gray-500 leading-relaxed">
+                      Atur besaran nominal iuran bulanan kustom khusus untuk anggota ini.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">Rp</span>
+                      <input
+                        type="number"
+                        defaultValue={selectedMember.monthlyDuesAmount ?? 50000}
+                        id={`dues-amount-${selectedMember.id}`}
+                        placeholder="50000"
+                        className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs font-bold text-white bg-white/5 border border-white/10 focus:border-amber-500/50 focus:outline-none transition-all"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      disabled={listSavingId === selectedMember.id}
+                      onClick={async () => {
+                        const inputEl = document.getElementById(`dues-amount-${selectedMember.id}`) as HTMLInputElement;
+                        const newAmount = inputEl ? Number(inputEl.value) : 50000;
+                        await patchMemberInline(selectedMember.id, {
+                          monthlyDuesAmount: newAmount
+                        } as any);
+                      }}
+                      className="px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-500 text-black hover:bg-amber-400 transition-all active:scale-[0.98] disabled:opacity-40"
+                    >
+                      {listSavingId === selectedMember.id ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        "SIMPAN"
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-10 border-t border-white/10 pt-8">

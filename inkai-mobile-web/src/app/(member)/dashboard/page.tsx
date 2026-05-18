@@ -20,6 +20,7 @@ import {
   Lock,
   ScrollText,
   X,
+  Wallet,
 } from "lucide-react";
 import styles from "./Dashboard.module.css";
 import MemberCard from "@/components/MemberCard/MemberCard";
@@ -364,6 +365,14 @@ export default function Dashboard() {
           </div>
         </div>
         <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            onClick={() => router.push("/billing")}
+            aria-label="Iuran"
+          >
+            <Wallet size={20} />
+          </button>
           <button
             type="button"
             className={styles.iconBtn}
