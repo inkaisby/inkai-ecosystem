@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import styles from "./ConfirmationModal.module.css";
 
@@ -24,7 +26,16 @@ export default function ConfirmationModal({
   onCancel,
   isDangerous = false
 }: ConfirmationModalProps) {
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isVisible && (
         <>
@@ -55,6 +66,7 @@ export default function ConfirmationModal({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

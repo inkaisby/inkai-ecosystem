@@ -1,12 +1,15 @@
 .overlay {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
-  z-index: 1100;
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 11000;
 }
 
 .modal {
@@ -14,22 +17,25 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: rgba(30, 30, 36, 0.8);
+  background-color: var(--card-dark);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 24px;
   padding: 32px;
   width: calc(100% - 48px);
   max-width: 400px;
-  z-index: 1101;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 11001;
+  border: 1px solid var(--border-light);
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  color: var(--text-light);
 }
 
 .title {
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 12px;
+  color: var(--text-light);
 }
 
 .message {
@@ -49,9 +55,10 @@
   padding: 14px;
   border-radius: 12px;
   background-color: rgba(255, 255, 255, 0.05);
-  color: white;
+  color: var(--text-light);
   font-size: 13px;
   font-weight: bold;
+  border: 1px solid var(--border-light);
 }
 
 .confirmBtn {
