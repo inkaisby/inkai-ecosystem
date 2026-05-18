@@ -1516,15 +1516,16 @@ function MembersContent() {
                       Atur besaran nominal iuran bulanan kustom khusus untuk anggota ini.
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">Rp</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '12px', fontWeight: 'bold', color: '#9ca3af', pointerEvents: 'none' }}>Rp</span>
                       <input
                         type="number"
                         defaultValue={selectedMember.monthlyDuesAmount ?? 50000}
                         id={`dues-amount-${selectedMember.id}`}
                         placeholder="50000"
-                        className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs font-bold text-white bg-white/5 border border-white/10 focus:border-amber-500/50 focus:outline-none transition-all"
+                        className="glass-input"
+                        style={{ width: '100%', paddingLeft: '40px', paddingRight: '12px', height: '42px', fontSize: '13px', fontWeight: 'bold' }}
                       />
                     </div>
                     <button
@@ -1537,7 +1538,8 @@ function MembersContent() {
                           monthlyDuesAmount: newAmount
                         } as any);
                       }}
-                      className="px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-500 text-black hover:bg-amber-400 transition-all active:scale-[0.98] disabled:opacity-40"
+                      className="btn-primary"
+                      style={{ padding: '0 24px', height: '42px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       {listSavingId === selectedMember.id ? (
                         <Loader2 size={12} className="animate-spin" />
