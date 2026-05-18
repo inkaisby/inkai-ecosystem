@@ -1284,7 +1284,10 @@ function MembersContent() {
       {showDetailModal && selectedMember && (
         <AdminModalPortal>
           <div className="admin-modal-overlay admin-modal-overlay--dialog animate-in fade-in">
-            <div className="glass-card-opaque w-full max-w-2xl p-0 overflow-hidden animate-in">
+            <div 
+              className="glass-card-opaque w-full max-w-2xl p-0 animate-in"
+              style={{ maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px' }}
+            >
               {/* Modal Header/Banner */}
               <div className="h-32 bg-amber-500 relative">
                 <button
