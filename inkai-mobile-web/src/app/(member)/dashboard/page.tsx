@@ -217,6 +217,7 @@ export default function Dashboard() {
 
   const quickActions = [
     { icon: <QrCode />, label: "Absensi", path: "/absensi" },
+    { icon: <Wallet />, label: "Iuran", path: "/billing" },
     { icon: <BookOpen />, label: "Materi", path: "/library" },
     { icon: <ShoppingBag />, label: "Store", path: "/store" },
     { icon: <Award />, label: "Sabuk", path: "/achievement?tab=Sabuk" },
@@ -365,14 +366,6 @@ export default function Dashboard() {
           </div>
         </div>
         <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            onClick={() => router.push("/billing")}
-            aria-label="Iuran"
-          >
-            <Wallet size={20} />
-          </button>
           <button
             type="button"
             className={styles.iconBtn}
