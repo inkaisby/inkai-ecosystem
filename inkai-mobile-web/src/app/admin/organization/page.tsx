@@ -104,6 +104,35 @@ function OrganizationContent() {
   const initData = async () => {
     setLoading(true);
     try {
+      const userData = localStorage.getItem('user');
+      let currentUser = null;
+      if (userData) {
+        currentUser = JSON.parse(userData);
+        setUser(currentUser);
+      }
+
+      if (currentUser?.managedDojoId) {
+        setViewState('dojos');
+        const dojoRes = await api.org.getDojos('all');
+        setDojos(dojoRes.data);
+        
+        // Fetch province and branch metadata in parallel without blocking the Dojo listing load
+        api.org.getProvinces().then((res: any) => {
+          setProvinces(res.data);
+          const prov = res.data[0];
+          if (prov) {
+            setSelectedProvince(prov);
+            api.org.getBranches(prov.id).then((bRes: any) => {
+              setBranches(bRes.data);
+              const branch = bRes.data[0];
+              if (branch) setSelectedBranch(branch);
+            }).catch(console.error);
+          }
+        }).catch(console.error);
+
+        return;
+      }
+
       const response = await api.org.getProvinces();
       setProvinces(response.data);
       
@@ -111,25 +140,8 @@ function OrganizationContent() {
       const bId = searchParams.get('branchId');
 
       // 1. Regional Admin Auto-Navigation (Priority)
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const currentUser = JSON.parse(userData);
-        setUser(currentUser);
-        if (currentUser.managedDojoId) {
-          const prov = response.data[0];
-          if (prov) {
-            setSelectedProvince(prov);
-            const branchRes = await api.org.getBranches(prov.id);
-            setBranches(branchRes.data);
-            const branch = branchRes.data[0];
-            if (branch) {
-              setSelectedBranch(branch);
-              setViewState('dojos');
-              await fetchDojos(branch.id);
-              return;
-            }
-          }
-        } else if (currentUser.managedBranchId) {
+      if (currentUser) {
+        if (currentUser.managedBranchId) {
           const prov = response.data[0];
           if (prov) {
             setSelectedProvince(prov);
