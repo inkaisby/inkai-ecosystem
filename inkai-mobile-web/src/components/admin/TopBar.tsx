@@ -117,7 +117,7 @@ export default function TopBar() {
   };
 
   return (
-    <header className="admin-topbar-fixed relative flex items-center overflow-visible touch-manipulation">
+    <header className="admin-topbar-fixed flex items-center overflow-visible touch-manipulation">
       {/* Blur hanya di lapisan ini agar backdrop sheet (fixed) tidak terikat ke kotak header. */}
       <div
         className="pointer-events-none absolute inset-0 -z-10 border-b border-white/5 adm-chrome-soft backdrop-blur-xl"
