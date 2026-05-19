@@ -56,6 +56,9 @@ model Dojo {
   latitude      Float?
   longitude     Float?
   geofenceRadius Int         @default(50) // Default 50 meters
+  bankName          String?
+  bankAccountNumber String?
+  bankAccountName   String?
   attendances   Attendance[]
   branch        Branch       @relation(fields: [branchId], references: [id])
   members       Member[]

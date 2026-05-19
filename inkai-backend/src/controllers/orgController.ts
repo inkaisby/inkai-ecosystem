@@ -261,14 +261,27 @@ export const createBranch = async (req: Request, res: Response) => {
 
 export const createDojo = async (req: Request, res: Response) => {
   try {
-    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, branchId, adminEmail, adminPassword } = req.body;
+    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, branchId, adminEmail, adminPassword, bankName, bankAccountNumber, bankAccountName } = req.body;
     
     if (!adminEmail) {
       return res.status(400).json({ status: 'error', message: 'Email Admin dojo wajib diisi' });
     }
 
     const dojo = await prisma.dojo.create({
-      data: { name, contactPerson, headName: headName || contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule, branchId },
+      data: { 
+        name, 
+        contactPerson, 
+        headName: headName || contactPerson, 
+        address, 
+        kecamatan, 
+        tempatLatihan, 
+        phoneNumber, 
+        schedule, 
+        branchId,
+        bankName,
+        bankAccountNumber,
+        bankAccountName
+      },
       include: { branch: true }
     });
 
@@ -429,10 +442,10 @@ export const updateBranch = async (req: Request, res: Response) => {
 export const updateDojo = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, adminEmail, adminPassword } = req.body;
+    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, adminEmail, adminPassword, bankName, bankAccountNumber, bankAccountName } = req.body;
     const dojo = await prisma.dojo.update({
       where: { id },
-      data: { name, contactPerson, headName: headName || contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule }
+      data: { name, contactPerson, headName: headName || contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule, bankName, bankAccountNumber, bankAccountName }
     });
 
     // Invalidate cache
