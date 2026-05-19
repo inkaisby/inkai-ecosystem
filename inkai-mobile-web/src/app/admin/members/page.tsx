@@ -735,11 +735,21 @@ function MembersContent() {
                 <Users size={14} />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate">
                   {searchParams.get("title") ||
-                    (dojoId ? `Dojo ${dojoName}` : "Database Nasional")}
+                    (dojoId ? `Dojo ${dojoName}` : 
+                     user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Database Nasional' :
+                     user?.roles?.[0] === 'ADMIN_PROVINCE' ? `Database Provinsi ${user?.managedProvinceName || ''}` :
+                     user?.roles?.[0] === 'ADMIN_BRANCH' ? `Database Cabang ${user?.managedBranchName || ''}` :
+                     user?.roles?.[0] === 'ADMIN_DOJO' ? `Database Dojo ${user?.managedDojoName || ''}` :
+                     'Database Anggota')}
                 </span>
               </div>
               <h2 className="text-xl font-black uppercase text-white truncate leading-tight">
-                {dojoId ? dojoName : "Anggota"}
+                {dojoId ? dojoName : 
+                 user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Seluruh Anggota' :
+                 user?.roles?.[0] === 'ADMIN_PROVINCE' ? `Anggota Provinsi` :
+                 user?.roles?.[0] === 'ADMIN_BRANCH' ? `Anggota Cabang` :
+                 user?.roles?.[0] === 'ADMIN_DOJO' ? `Anggota Dojo` :
+                 'Daftar Anggota'}
               </h2>
             </div>
             <button className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all">

@@ -239,14 +239,40 @@ function OrganizationContent() {
   };
 
   const handleBack = () => {
+    if (user?.managedDojoId) {
+      router.push('/admin');
+      return;
+    }
+    if (user?.managedBranchId) {
+      if (viewState === 'dojos') {
+        router.push('/admin');
+      } else {
+        setViewState('dojos');
+      }
+      return;
+    }
+    if (user?.managedProvinceId) {
+      if (viewState === 'branches') {
+        router.push('/admin');
+      } else if (viewState === 'dojos') {
+        setViewState('branches');
+        setSelectedBranch(null);
+        setDojos([]);
+      }
+      return;
+    }
+
+    // Default Super Admin navigation
     if (viewState === 'dojos') {
       setViewState('branches');
       setSelectedBranch(null);
       setDojos([]);
-    } else {
+    } else if (viewState === 'branches') {
       setViewState('provinces');
       setSelectedProvince(null);
       setBranches([]);
+    } else {
+      router.push('/admin');
     }
   };
 
@@ -527,16 +553,18 @@ function OrganizationContent() {
               </div>
             </div>
           </div>
-          <button 
-            onClick={() => {
-              if (viewState === 'provinces') setShowAddModal(true);
-              else if (viewState === 'branches') setShowAddBranchModal(true);
-              else if (viewState === 'dojos') setShowAddDojoModal(true);
-            }}
-            className="p-2.5 rounded-xl bg-amber-500 text-black hover:bg-amber-400 transition-all active:scale-90 shadow-lg shadow-amber-500/20"
-          >
-            <Plus size={20} />
-          </button>
+          {!user?.managedDojoId && (
+            <button 
+              onClick={() => {
+                if (viewState === 'provinces') setShowAddModal(true);
+                else if (viewState === 'branches') setShowAddBranchModal(true);
+                else if (viewState === 'dojos') setShowAddDojoModal(true);
+              }}
+              className="p-2.5 rounded-xl bg-amber-500 text-black hover:bg-amber-400 transition-all active:scale-90 shadow-lg shadow-amber-500/20"
+            >
+              <Plus size={20} />
+            </button>
+          )}
         </div>
 
         {/* Search Bar */}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Users,
   MapPin,
+  Map,
   Clock,
   Search,
   AlertCircle,
@@ -250,6 +251,29 @@ export default function Dashboard() {
               </h4>
               <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">
                 Cabang & ranting: koreksi waktu, hapus catatan salah
+              </p>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-gray-600 shrink-0" />
+        </button>
+        <button
+          onClick={() => router.push("/admin/organization")}
+          className="w-full glass-card p-4 flex items-center justify-between border-amber-500/15 bg-amber-500/[0.04] hover:bg-amber-500/10 active:scale-[0.99] transition-all text-left"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-500 border border-amber-500/25 shrink-0">
+              <Map size={22} strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-xs font-black text-white uppercase tracking-wide">
+                Kelola Organisasi & Ranting
+              </h4>
+              <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">
+                {!user ? 'Mengatur unit wilayah, cabang, dan ranting latihan' :
+                 user.roles?.[0] === 'ADMINISTRATOR' || user.roles?.[0] === 'ADMIN_PUSAT' ? 'Mengatur unit wilayah, cabang, dan ranting latihan se-Nasional' :
+                 user.roles?.[0] === 'ADMIN_PROVINCE' ? `Mengatur cabang & ranting latihan di ${user.managedProvinceName || 'Provinsi'}` :
+                 user.roles?.[0] === 'ADMIN_BRANCH' ? `Mengatur ranting/dojo latihan di ${user.managedBranchName || 'Cabang'}` :
+                 `Kelola Ranting / Dojo ${user.managedDojoName || ''}`}
               </p>
             </div>
           </div>
