@@ -22,6 +22,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 import AdminModalPortal from '@/components/admin/AdminModalPortal';
+import { useAuth } from '@/context/AuthContext';
 
 function OrganizationContent() {
   const router = useRouter();
@@ -94,22 +95,20 @@ function OrganizationContent() {
   // Admin Account states
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState<any>(null);
-  
 
   useEffect(() => {
-    initData();
-  }, [searchParams]);
+    if (authUser) {
+      initData();
+    }
+  }, [searchParams, authUser]);
 
   const initData = async () => {
     setLoading(true);
     try {
-      const userData = localStorage.getItem('user');
-      let currentUser = null;
-      if (userData) {
-        currentUser = JSON.parse(userData);
-        setUser(currentUser);
-      }
+      const currentUser = authUser;
+      setUser(currentUser);
 
       if (currentUser?.managedDojoId) {
         setViewState('dojos');
