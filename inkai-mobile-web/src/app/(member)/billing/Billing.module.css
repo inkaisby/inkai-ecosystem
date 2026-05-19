@@ -95,9 +95,20 @@
   justify-content: center;
 }
 
-.paid { background-color: rgba(34, 197, 94, 0.1); color: #22c55e; }
-.waitingIcon { background-color: rgba(168, 85, 247, 0.1); color: #a855f7; }
-.pending { background-color: rgba(234, 179, 8, 0.1); color: #eab308; }
+.paid {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.waitingIcon {
+  background-color: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.pending {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: #eab308;
+}
 
 .billInfo {
   flex: 1;
@@ -114,8 +125,13 @@
   color: var(--text-muted);
 }
 
-.metaPaid { color: #4ade80; }
-.metaWaiting { color: #c084fc; }
+.metaPaid {
+  color: #4ade80;
+}
+
+.metaWaiting {
+  color: #c084fc;
+}
 
 .billRight {
   display: flex;
@@ -574,8 +590,13 @@
 }
 
 @keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Search & Filter bar premium */
@@ -695,4 +716,3 @@ html[data-clock-phase="day"] .dropdownSelect option {
   background-color: #ffffff;
   color: #0f172a;
 }
-

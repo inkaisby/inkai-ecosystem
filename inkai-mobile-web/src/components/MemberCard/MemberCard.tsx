@@ -34,7 +34,6 @@ export default function MemberCard({ nia, name, dojo, highestBelt, qrValue }: Me
             <h1 className={styles.name}>{name}</h1>
             <h2 className={styles.nia}>{nia}</h2>
             <p className={styles.beltRow}>
-              <span className={styles.beltLabel}>Sabuk tertinggi</span>
               <span className={styles.beltValue}>{highestBelt?.trim() || "—"}</span>
             </p>
             <p className={styles.dojo}>{dojo}</p>

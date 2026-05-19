@@ -2,7 +2,28 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
-import { ArrowLeft, Wallet, Loader2, Check, Clock, ShieldAlert, Trash2, ChevronRight, Landmark, QrCode, Banknote, Upload, Copy, X, Download, Search } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Wallet, 
+  Loader2, 
+  Check, 
+  Clock, 
+  ShieldAlert, 
+  Trash2, 
+  ChevronRight, 
+  Landmark, 
+  QrCode, 
+  Banknote, 
+  Upload, 
+  Copy, 
+  X, 
+  Download, 
+  Search, 
+  MapPin, 
+  UserCheck, 
+  AlertCircle, 
+  Info 
+} from "lucide-react";
 import styles from "./Billing.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import { useRouter } from "next/navigation";
@@ -35,6 +56,9 @@ export default function Billing() {
   const [selectedMonth, setSelectedMonth] = useState("ALL");
   const [activeTab, setActiveTab] = useState("ALL");
 
+  // State untuk Checklist Dues yang Dipilih
+  const [selectedBillIds, setSelectedBillIds] = useState<string[]>([]);
+
   // Logika Filter Iuran & Tagihan Real-Time
   const filteredBillings = useMemo(() => {
     return billings.filter((bill) => {
@@ -47,7 +71,7 @@ export default function Billing() {
       // 2. Filter Status Tab
       if (activeTab === "PAID" && bill.status !== "PAID") return false;
       if (activeTab === "PENDING" && bill.status !== "WAITING_VERIFICATION") return false;
-      if (activeTab === "UNPAID" && bill.status !== "UNPAID" && bill.status !== "REJECTED") return false;
+      if (activeTab === "UNPAID" && bill.status !== "PENDING" && bill.status !== "UNPAID" && bill.status !== "REJECTED") return false;
 
       // 3. Filter Tahun & Bulan berdasarkan dueDate
       if (bill.dueDate) {
@@ -78,9 +102,26 @@ export default function Billing() {
     }
   };
 
+  const handleOpenPaymentModal = () => {
+    const pendingBillings = billings.filter(b => b.status === 'PENDING' || b.status === 'UNPAID');
+    if (pendingBillings.length > 0) {
+      setSelectedBillIds(pendingBillings.map(b => b.id));
+    } else {
+      const waitingBillings = billings.filter(b => b.status === 'WAITING_VERIFICATION');
+      setSelectedBillIds(waitingBillings.map(b => b.id));
+    }
+    setShowPaymentModal(true);
+  };
+
   const handlePayment = async () => {
-    const pendingBillings = billings.filter(b => b.status === 'PENDING');
-    if (pendingBillings.length === 0) return;
+    const targetBillings = billings.filter(
+      b => (b.status === 'PENDING' || b.status === 'UNPAID' || b.status === 'WAITING_VERIFICATION') && selectedBillIds.includes(b.id)
+    );
+
+    if (targetBillings.length === 0) {
+      setToast({ show: true, message: 'Silakan pilih minimal satu tagihan untuk dibayar.', type: 'error' });
+      return;
+    }
 
     if (selectedMethod === 'TRANSFER' && !proofFile) {
       setToast({ show: true, message: 'Unggah bukti transfer (screenshot atau PDF) terlebih dahulu.', type: 'error' });
@@ -113,7 +154,7 @@ export default function Billing() {
         proofUrl = url;
       }
 
-      for (const billing of pendingBillings) {
+      for (const billing of targetBillings) {
         await billingApi.processPayment({
           billingId: billing.id,
           paymentMethod: selectedMethod,
@@ -132,6 +173,7 @@ export default function Billing() {
       setToast({ show: true, message, type: 'success' });
       setShowPaymentModal(false);
       setProofFile(null);
+      setProofPreview(null);
       fetchBillings();
     } catch (error: unknown) {
       const ax = error as { response?: { data?: { message?: string } }; message?: string };
@@ -188,11 +230,15 @@ export default function Billing() {
   }
 
   const totalUnpaid = billings
-    .filter(b => b.status === 'PENDING')
+    .filter(b => b.status === 'PENDING' || b.status === 'UNPAID')
+    .reduce((sum, b) => sum + Number(b.amount), 0);
+
+  const selectedTotal = billings
+    .filter(b => selectedBillIds.includes(b.id))
     .reduce((sum, b) => sum + Number(b.amount), 0);
 
   const pendingHasUniqueTail = billings.some(
-    (b) => b.status === 'PENDING' && typeof b.uniqueTail === 'number',
+    (b) => (b.status === 'PENDING' || b.status === 'UNPAID') && typeof b.uniqueTail === 'number',
   );
 
   const hasWaiting = billings.some(b => b.status === 'WAITING_VERIFICATION');
@@ -203,25 +249,42 @@ export default function Billing() {
         <button onClick={() => router.back()} className={styles.backBtn}>
           <ArrowLeft size={20} />
         </button>
-        <h1 className={styles.title}>Pembayaran</h1>
+        <h1 className={styles.title}>Iuran Bulanan</h1>
       </header>
 
+      {/* Member Identity Card (Wireframe Premium) */}
+      <div className={styles.memberCard}>
+        <div className={styles.memberDojoBadge}>
+          <MapPin size={10} style={{ marginRight: '4px' }} />
+          {user.dojo?.name || "Dojo Pusat Jakarta"}
+        </div>
+        <h3 className={styles.memberName}>{user.fullName || "Anggota"}</h3>
+        <p className={styles.memberNia}>NIA: {user.nia || "MEMPROSES NIA..."}</p>
+        <div className={styles.memberLeaderInfo}>
+          <UserCheck size={12} style={{ marginRight: '6px' }} />
+          Konfirmasi Ketua Ranting: <strong>Sensei Ahmad</strong>
+        </div>
+      </div>
+
       <div className={styles.summaryCard}>
-        <p className={styles.summaryLabel}>Total Belum Dibayar</p>
+        <p className={styles.summaryLabel}>Tagihan Menunggak</p>
         <h2 className={styles.totalAmount}>
           Rp {new Intl.NumberFormat('id-ID').format(totalUnpaid)}
         </h2>
         <button 
           className={`${styles.payBtn} ${hasWaiting ? styles.waiting : ''}`}
           disabled={(totalUnpaid === 0 && !hasWaiting) || isProcessing}
-          onClick={() => setShowPaymentModal(true)}
+          onClick={handleOpenPaymentModal}
         >
           {hasWaiting ? "UPDATE BUKTI BAYAR" : "BAYAR SEKARANG"}
         </button>
       </div>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Riwayat Tagihan</h2>
+        <div className={styles.historySectionHeader}>
+          <h2 className={styles.sectionTitle}>Riwayat Pembayaran</h2>
+          <ChevronRight size={16} className={styles.historyIcon} />
+        </div>
 
         {/* Filter & History Controls Premium */}
         <div className={styles.filterContainer}>
@@ -229,7 +292,7 @@ export default function Billing() {
             <Search className={styles.searchIcon} size={16} />
             <input
               type="text"
-              placeholder="Cari bulan, deskripsi atau jenis tagihan..."
+              placeholder="Cari iuran (contoh: April)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
@@ -277,7 +340,7 @@ export default function Billing() {
             {[
               { id: "ALL", label: "Semua" },
               { id: "PAID", label: "Lunas" },
-              { id: "PENDING", label: "Tinjau" },
+              { id: "PENDING", label: "Menunggu" },
               { id: "UNPAID", label: "Belum Bayar" },
             ].map((tab) => (
               <button
@@ -300,14 +363,17 @@ export default function Billing() {
               return (
                 <div key={bill.id} className={styles.billItem}>
                   <div className={`${styles.statusIcon} ${isPaid ? styles.paid : isWaiting ? styles.waitingIcon : styles.pending}`}>
-                    {isPaid ? <Check size={16} /> : isWaiting ? <ShieldAlert size={16} /> : <Clock size={16} />}
+                    {isPaid ? <Check size={16} /> : isWaiting ? <ShieldAlert size={16} /> : <AlertCircle size={16} />}
                   </div>
                   <div className={styles.billInfo}>
                     <h3 className={styles.billTitle}>{bill.description || (bill.type === 'MONTHLY_IURAN' ? 'Iuran Bulanan' : 'Biaya Event')}</h3>
                     <p className={`${styles.billMeta} ${isPaid ? styles.metaPaid : isWaiting ? styles.metaWaiting : ''}`}>
                       {isPaid ? `Lunas pada: ${new Date(bill.updatedAt).toLocaleDateString('id-ID')}` : 
-                       isWaiting ? "Menunggu Verifikasi" : `Jatuh tempo: ${new Date(bill.dueDate).toLocaleDateString('id-ID')}`}
+                       isWaiting ? "Tinjau bukti oleh Ranting" : `Jatuh tempo: Akhir Bulan`}
                     </p>
+                    {bill.rejectReason ? (
+                      <span className={styles.rejectReasonText}>❌ Ditolak: "{bill.rejectReason}"</span>
+                    ) : null}
                     {!isPaid && !isWaiting && bill.type === 'EVENT_FEE' && typeof bill.uniqueTail === 'number' ? (
                       <p className={styles.billMeta}>
                         Kode unik +{bill.uniqueTail} · bayar tepat sesuai nominal
@@ -337,16 +403,16 @@ export default function Billing() {
       <AnimatePresence>
         {showPaymentModal && (
           <>
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className={styles.modalOverlay}
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  handleFileChange(null);
-                }}
-              />
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={styles.modalOverlay}
+              onClick={() => {
+                setShowPaymentModal(false);
+                handleFileChange(null);
+              }}
+            />
             <motion.div 
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -355,24 +421,61 @@ export default function Billing() {
               className={styles.modal}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className={styles.modalTitle}>Konfirmasi Pembayaran</h3>
-              <div className={styles.modalSummary}>
-                <span>Total Tagihan</span>
-                <span className={styles.modalAmount}>Rp {new Intl.NumberFormat('id-ID').format(totalUnpaid)}</span>
+              <div className={styles.sheetHandle}></div>
+              <div className={styles.sheetHeader}>
+                <h3 className={styles.modalTitle}>Pilih Pembayaran Iuran</h3>
+                <button 
+                  className={styles.sheetCloseBtn}
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    handleFileChange(null);
+                  }}
+                >
+                  <X size={20} />
+                </button>
               </div>
-              {pendingHasUniqueTail ? (
-                <p className={styles.uniqueFeeNote}>
-                  Nominal di atas sudah termasuk kode unik per tagihan event — bayar <strong>tepat</strong> total tersebut (scan QR hanya membuka aplikasi; masukkan nominal manual bila diminta).
-                </p>
-              ) : null}
-              
+
+              {/* Dues Checkbox Selector */}
+              <p className={styles.modalSublabel}>PILIH BULAN YANG INGIN DIBAYAR:</p>
+              <div className={styles.duesSelectorGrid}>
+                {billings.filter(b => b.status === 'PENDING' || b.status === 'UNPAID' || b.status === 'WAITING_VERIFICATION').map((bill) => {
+                  const isChecked = selectedBillIds.includes(bill.id);
+                  return (
+                    <div 
+                      key={bill.id} 
+                      className={`${styles.duesSelectItem} ${isChecked ? styles.duesChecked : ''}`}
+                      onClick={() => {
+                        if (isChecked) {
+                          setSelectedBillIds(prev => prev.filter(id => id !== bill.id));
+                        } else {
+                          setSelectedBillIds(prev => [...prev, bill.id]);
+                        }
+                      }}
+                    >
+                      <div className={styles.duesSelectLeft}>
+                        <input 
+                          type="checkbox" 
+                          className={styles.duesCheckbox}
+                          checked={isChecked}
+                          onChange={() => {}} // click handler on card
+                        />
+                        <span>{bill.description || (bill.type === 'MONTHLY_IURAN' ? 'Iuran Bulanan' : 'Biaya Event')}</span>
+                      </div>
+                      <span className={styles.duesSelectAmount}>
+                        Rp {new Intl.NumberFormat('id-ID').format(bill.amount)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
               <p className={styles.methodLabel}>Pilih Metode Pembayaran:</p>
               <div className={styles.methods}>
                 {[
-                  { id: 'VA', label: 'Virtual Account (Dojo)', icon: <Landmark size={20} /> },
-                  { id: 'QRIS', label: 'QRIS / E-Wallet', icon: <QrCode size={20} /> },
-                  { id: 'TRANSFER', label: 'Transfer bank / e-wallet (upload bukti)', icon: <Upload size={20} /> },
-                  { id: 'CASH', label: 'Tunai ke Bendahara Dojo', icon: <Banknote size={20} /> },
+                  { id: 'VA', label: 'Virtual Account (Instan)', sub: 'BNI, Mandiri, BRI, BCA', icon: <Landmark size={20} /> },
+                  { id: 'QRIS', label: 'QRIS / E-Wallet', sub: 'Gopay, OVO, Dana, LinkAja', icon: <QrCode size={20} /> },
+                  { id: 'TRANSFER', label: 'Transfer Bank (Manual)', sub: 'Upload bukti transfer & verifikasi Ranting', icon: <Upload size={20} /> },
+                  { id: 'CASH', label: 'Tunai ke Dojo / Ranting', sub: 'Lapor bayar langsung ke Sensei Ahmad', icon: <Banknote size={20} /> },
                 ].map(method => (
                   <div 
                     key={method.id} 
@@ -383,43 +486,55 @@ export default function Billing() {
                     }}
                   >
                     <div className={styles.methodIcon}>{method.icon}</div>
-                    <span className={styles.methodText}>{method.label}</span>
-                    {selectedMethod === method.id && <Check size={14} className={styles.checkIcon} />}
+                    <div className={styles.methodTextGroup}>
+                      <span className={styles.methodText}>{method.label}</span>
+                      <span className={styles.methodSubtext}>{method.sub}</span>
+                    </div>
+                    <div className={styles.methodRadio}>
+                      {selectedMethod === method.id && <div className={styles.methodRadioInner} />}
+                    </div>
                   </div>
                 ))}
               </div>
 
+              {pendingHasUniqueTail ? (
+                <p className={styles.uniqueFeeNote}>
+                  Nominal di atas sudah termasuk kode unik per tagihan event — bayar <strong>tepat</strong> total tersebut.
+                </p>
+              ) : null}
+
+              {/* Expandable Panels */}
               {selectedMethod === 'VA' && (
                 <div className={styles.vaPanel}>
-                  <div className={styles.vaInfoBox}>
-                    <div className={styles.vaIconWrapper}>
-                      <Landmark size={32} />
-                    </div>
-                    <h4 className={styles.vaTitle}>Virtual Account Dojo</h4>
-                    <p className={styles.vaDescription}>
-                      Fitur Virtual Account otomatis akan tersedia setelah integrasi Payment Gateway selesai.
-                    </p>
-                    <div className={styles.vaNote}>
-                      <p>Untuk saat ini, silakan gunakan metode <strong>Transfer</strong> atau <strong>QRIS</strong> untuk konfirmasi instan, atau pilih <strong>Tunai</strong> untuk lapor ke Bendahara Dojo.</p>
-                    </div>
+                  <p className={styles.modalSublabel}>KODE BAYAR VIRTUAL ACCOUNT:</p>
+                  <div className={styles.vaCodeBox}>
+                    <span>8820 {user.nia || '19284820'}</span>
+                    <button 
+                      className={styles.btnCopy} 
+                      onClick={() => handleCopy(`8820${user.nia || '19284820'}`, "va")}
+                      type="button"
+                    >
+                      {copiedKey === "va" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
+                    </button>
                   </div>
+                  <p className={styles.vaHelpText}>
+                    *Pembayaran via Virtual Account terverifikasi otomatis. Status iuran akan langsung di-update menjadi <strong>Lunas</strong>.
+                  </p>
                 </div>
               )}
 
               {selectedMethod === 'QRIS' && (
                 <div className={styles.qrisPanel}>
                   <p className={styles.qrisExactAmount}>
-                    Bayar tepat: Rp {new Intl.NumberFormat('id-ID').format(totalUnpaid)}
+                    Bayar tepat: Rp {new Intl.NumberFormat('id-ID').format(selectedTotal)}
                   </p>
-                  <Image
-                    src="/payments/qris-static.png"
-                    alt="QRIS INKAI STORES — satukan pembayaran"
-                    width={320}
-                    height={320}
-                    className={styles.qrisImage}
-                    priority
-                    sizes="(max-width: 500px) 90vw, 280px"
-                  />
+                  <div className={styles.qrisContainer}>
+                    <div className={styles.qrisCodeImg}>
+                      <QrCode size={100} style={{ color: 'black' }} />
+                      <div className={styles.qrisLogo}>QRIS</div>
+                    </div>
+                    <p className={styles.qrisHelpText}>Scan kode QRIS di atas melalui Aplikasi Mobile Banking atau E-Wallet Anda.</p>
+                  </div>
                   <div className={styles.qrisActions}>
                     <a 
                       href="/payments/qris-static.png" 
@@ -430,9 +545,6 @@ export default function Billing() {
                       <span>Simpan QRIS</span>
                     </a>
                   </div>
-                  <p className={styles.qrisSteps}>
-                    Buka aplikasi e-wallet atau mobile banking berlogo QRIS, pindai kode ini, lalu masukkan nominal persis sama dengan yang tertera (QR statis tidak menyematkan jumlah otomatis).
-                  </p>
                 </div>
               )}
 
@@ -455,7 +567,7 @@ export default function Billing() {
                             {copiedKey === "account" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
                           </button>
                         </div>
-                        <span className={styles.accountName}>a/n Habibur Rahman</span>
+                        <span className={styles.accountName}>a/n Habibur Rahman (Bendahara Ranting)</span>
                       </div>
                     </div>
                   </div>
@@ -519,12 +631,33 @@ export default function Billing() {
                 </div>
               )}
 
+              {selectedMethod === 'CASH' && (
+                <div className={styles.cashPanel}>
+                  <div className={styles.cashNoteContainer}>
+                    <Info size={20} className={styles.cashNoteIcon} />
+                    <div className={styles.cashNoteText}>
+                      <strong>Pembayaran Tunai Ranting</strong>
+                      <p>Silakan lakukan penyerahan dana sebesar tagihan ke <strong>Sensei Ahmad</strong> secara langsung pada jadwal latihan berikutnya. Ketua Ranting akan mengkonfirmasi status tagihan secara manual.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button 
                 className={styles.confirmBtn}
-                disabled={isProcessing}
+                disabled={isProcessing || selectedTotal === 0}
                 onClick={() => void handlePayment()}
               >
-                {isProcessing ? <Loader2 className={styles.spinner} size={20} /> : "LANJUTKAN PEMBAYARAN"}
+                {isProcessing ? (
+                  <Loader2 className={styles.spinner} size={20} />
+                ) : (
+                  `KONFIRMASI & BAYAR Rp ${new Intl.NumberFormat('id-ID').format(selectedTotal)} (${
+                    selectedMethod === 'VA' ? 'Virtual Account' :
+                    selectedMethod === 'QRIS' ? 'QRIS' :
+                    selectedMethod === 'TRANSFER' ? 'Transfer Bank' :
+                    'Tunai ke Dojo'
+                  })`
+                )}
               </button>
             </motion.div>
           </>
