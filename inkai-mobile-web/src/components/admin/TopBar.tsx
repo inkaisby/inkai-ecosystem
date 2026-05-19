@@ -137,7 +137,7 @@ export default function TopBar() {
             <span className="text-[9px] font-black uppercase text-amber-500 truncate w-full leading-tight">
               {user.fullName || user.email?.split('@')[0]}
             </span>
-            <span className="text-[8px] font-bold text-white/50 truncate w-full leading-none">
+            <span className="text-white/50 font-bold leading-none" style={{ fontSize: '7px', whiteSpace: 'nowrap' }}>
               {user.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
                user.roles?.[0] === 'ADMIN_PUSAT' ? 'Admin Pusat' :
                user.roles?.[0] === 'ADMIN_PROVINCE' ? `Admin Provinsi ${user.managedProvinceName || ''}`.trim() :
