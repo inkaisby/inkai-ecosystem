@@ -133,16 +133,16 @@ export default function TopBar() {
 
       <div className="flex items-center gap-2 ml-auto shrink-0 pointer-events-auto">
         {user && (
-          <div className="flex flex-col items-end min-w-0 text-right mr-1.5" style={{ maxWidth: '90px' }}>
+          <div className="flex flex-col items-end min-w-0 text-right mr-1.5" style={{ maxWidth: '160px' }}>
             <span className="text-[9px] font-black uppercase text-amber-500 truncate w-full leading-tight">
               {user.fullName || user.email?.split('@')[0]}
             </span>
             <span className="text-[8px] font-bold text-white/50 truncate w-full leading-none">
               {user.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
                user.roles?.[0] === 'ADMIN_PUSAT' ? 'Admin Pusat' :
-               user.roles?.[0] === 'ADMIN_PROVINCE' ? 'Admin Provinsi' :
-               user.roles?.[0] === 'ADMIN_BRANCH' ? 'Admin Cabang' :
-               user.roles?.[0] === 'ADMIN_DOJO' ? 'Admin Ranting' :
+               user.roles?.[0] === 'ADMIN_PROVINCE' ? `Admin Provinsi ${user.managedProvinceName || ''}`.trim() :
+               user.roles?.[0] === 'ADMIN_BRANCH' ? `Admin Cabang ${user.managedBranchName || ''}`.trim() :
+               user.roles?.[0] === 'ADMIN_DOJO' ? `Admin Ranting ${user.managedDojoName || ''}`.trim() :
                'Admin'}
             </span>
           </div>
