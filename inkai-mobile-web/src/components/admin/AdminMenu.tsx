@@ -29,6 +29,7 @@ import styles from './AdminMenu.module.css';
 const adminItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
   { icon: Users, label: 'Anggota', path: '/admin/members' },
+  { icon: Wallet, label: 'Iuran Anggota', path: '/admin/billing' },
   { icon: Map, label: 'Organisasi', path: '/admin/organization' },
   { icon: ShieldCheck, label: 'Antrean Kerja', path: '/admin/verification' },
   { icon: Calendar, label: 'Event', path: '/admin/events' },

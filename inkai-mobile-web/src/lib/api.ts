@@ -237,7 +237,7 @@ export const api = Object.assign(apiInstance, {
   },
   billing: {
     getAll: (params?: any) => apiInstance.get('/billing', { params }).then(res => res.data),
-    verify: (data: { billingId: string; adminNotes?: string }) => apiInstance.post('/billing/verify', data).then(res => res.data),
+    verify: (data: { billingId: string; status?: string; adminNotes?: string }) => apiInstance.post('/billing/verify', data).then(res => res.data),
     delete: (id: string) => apiInstance.delete(`/billing/${id}`).then(res => res.data),
     getMy: () => apiInstance.get('/billing/my').then(res => res.data),
     pay: (data: { billingId: string; paymentMethod: string; externalId?: string; proofUrl?: string }) => apiInstance.post('/billing/pay', data).then(res => res.data),

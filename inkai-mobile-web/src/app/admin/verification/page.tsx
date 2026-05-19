@@ -29,9 +29,19 @@ function VerificationContent() {
   const [adminNotes, setAdminNotes] = useState('');
   const [processingAction, setProcessingAction] = useState<'APPROVED' | 'REJECTED' | null>(null);
 
+  // States for Iuran Bulanan verification
+  const [activeTab, setActiveTab] = useState<'DOKUMEN' | 'IURAN'>('DOKUMEN');
+  const [billings, setBillings] = useState<any[]>([]);
+  const [selectedBilling, setSelectedBilling] = useState<any>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+
   useEffect(() => {
-    fetchClaims();
-  }, []);
+    if (activeTab === 'IURAN') {
+      fetchPendingBillings();
+    } else {
+      fetchClaims();
+    }
+  }, [activeTab]);
 
   const fetchClaims = async () => {
     setLoading(true);
@@ -50,6 +60,18 @@ function VerificationContent() {
       toast.error('Gagal memuat antrean verifikasi');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingBillings = async () => {
+    setBillingLoading(true);
+    try {
+      const response = await api.billing.getAll({ status: 'WAITING_VERIFICATION' });
+      setBillings(response.data || []);
+    } catch (err) {
+      toast.error('Gagal memuat antrean iuran');
+    } finally {
+      setBillingLoading(false);
     }
   };
 
@@ -101,7 +123,214 @@ function VerificationContent() {
         </div>
       </div>
 
-      {loading ? (
+      {/* Segmented Tab Control */}
+      <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 gap-1">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('DOKUMEN');
+            setSelectedBilling(null);
+            setSelectedClaim(null);
+          }}
+          className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
+            activeTab === 'DOKUMEN'
+              ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          Dokumen & Sabuk
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('IURAN');
+            setSelectedBilling(null);
+            setSelectedClaim(null);
+          }}
+          className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
+            activeTab === 'IURAN'
+              ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          Iuran Bulanan
+        </button>
+      </div>
+
+      {activeTab === 'IURAN' ? (
+        billingLoading ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <Loader2 className="animate-spin text-amber-500" size={32} />
+            <p className="text-gray-500 text-xs animate-pulse">Memuat antrean iuran...</p>
+          </div>
+        ) : billings.length > 0 ? (
+          <div className="space-y-4">
+            {billings.map((bill) => (
+              <div 
+                key={bill.id} 
+                onClick={() => setSelectedBilling(bill)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedBilling(bill);
+                  }
+                }}
+                className={`glass-card p-5 border-white/5 space-y-4 transition-all ${selectedBilling?.id === bill.id ? 'border-amber-500/30 bg-amber-500/5' : ''}`}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-amber-500">
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white uppercase">{bill.member?.fullName}</h4>
+                      <p className="text-[10px] text-gray-500 font-mono">Dojo: {bill.member?.dojo?.name || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-amber-500">
+                      Rp {new Intl.NumberFormat('id-ID').format(bill.amount)}
+                    </p>
+                    <p className="text-[8px] text-gray-500 font-mono mt-0.5">UNPAID</p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-[8px] uppercase font-black text-gray-500">Deskripsi Tagihan</p>
+                      <p className="text-xs font-bold text-white mt-0.5">{bill.description || (bill.type === 'MONTHLY_IURAN' ? 'Iuran Bulanan' : 'Biaya Event')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] uppercase font-black text-gray-500">Metode Bayar</p>
+                      <p className="text-xs font-bold text-white mt-0.5">{bill.payment?.paymentMethod || 'Manual Transfer'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedBilling?.id === bill.id && (
+                  <div className="pt-4 border-t border-white/5 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                    <div className="p-4 bg-black-40 rounded-xl border border-white/5 text-center">
+                      <p className="text-[10px] text-amber-500 font-bold uppercase tracking-widest mb-2">Bukti Pembayaran</p>
+                      {bill.payment?.proofUrl ? (
+                        <div className="space-y-4">
+                          {/\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(bill.payment.proofUrl) && (
+                            <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 group relative">
+                              <img 
+                                src={bill.payment.proofUrl} 
+                                alt="Bukti Pembayaran" 
+                                className="w-full h-auto max-h-[300px] object-contain cursor-zoom-in mx-auto"
+                                onClick={() => window.open(bill.payment.proofUrl, '_blank')}
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                <p className="text-white text-[10px] font-bold uppercase tracking-widest">Klik untuk Zoom</p>
+                              </div>
+                            </div>
+                          )}
+                          <a
+                            href={bill.payment.proofUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block w-full text-[10px] font-black uppercase text-black bg-amber-500 hover:bg-amber-400 px-4 py-2.5 rounded-lg transition-colors text-center"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Buka Bukti Asli
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-gray-600 italic">Belum ada file bukti transfer yang diunggah.</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <textarea 
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white focus:outline-none"
+                        placeholder="Tambahkan catatan admin (misal alasan ditolak)..."
+                        rows={2}
+                      />
+                      <div className="flex gap-3">
+                        <button 
+                          type="button"
+                          disabled={processingAction !== null}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (processingAction) return;
+                            setProcessingAction('REJECTED');
+                            try {
+                              await api.billing.verify({
+                                billingId: bill.id,
+                                status: 'REJECTED',
+                                adminNotes: adminNotes.trim()
+                              });
+                              toast.success('Bukti pembayaran ditolak & tagihan di-reset.');
+                              setSelectedBilling(null);
+                              setAdminNotes('');
+                              fetchPendingBillings();
+                            } catch (err) {
+                              toast.error('Gagal menolak pembayaran');
+                            } finally {
+                              setProcessingAction(null);
+                            }
+                          }}
+                          className="flex-1 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold text-[10px] uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {processingAction === 'REJECTED' ? (
+                            <Loader2 className="animate-spin mx-auto" size={14} />
+                          ) : (
+                            'Tolak Bukti'
+                          )}
+                        </button>
+                        <button 
+                          type="button"
+                          disabled={processingAction !== null}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (processingAction) return;
+                            setProcessingAction('APPROVED');
+                            try {
+                              await api.billing.verify({
+                                billingId: bill.id,
+                                status: 'APPROVED',
+                                adminNotes: adminNotes.trim()
+                              });
+                              toast.success('Pembayaran iuran berhasil disetujui!');
+                              setSelectedBilling(null);
+                              setAdminNotes('');
+                              fetchPendingBillings();
+                            } catch (err) {
+                              toast.error('Gagal menyetujui pembayaran');
+                            } finally {
+                              setProcessingAction(null);
+                            }
+                          }}
+                          className="flex-1 py-3 bg-amber-500 text-black rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {processingAction === 'APPROVED' ? (
+                            <Loader2 className="animate-spin mx-auto" size={14} />
+                          ) : (
+                            'Setujui Pembayaran'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="glass-card p-12 text-center space-y-4 border-white/5">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto opacity-20">
+              <ShieldCheck size={32} />
+            </div>
+            <p className="text-gray-500 text-xs italic">Semua tagihan iuran sudah terverifikasi.</p>
+          </div>
+        )
+      ) : loading ? (
         <div className="flex flex-col items-center justify-center py-32 gap-4">
           <Loader2 className="animate-spin text-amber-500" size={32} />
           <p className="text-gray-500 text-xs animate-pulse">Memuat antrean...</p>

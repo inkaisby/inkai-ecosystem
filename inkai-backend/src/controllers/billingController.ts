@@ -194,37 +194,52 @@ export const getAllBillings = async (req: any, res: Response) => {
 
 export const verifyPayment = async (req: any, res: Response) => {
   try {
-    const { billingId, adminNotes } = req.body;
+    const { billingId, status = 'APPROVED', adminNotes } = req.body;
     const adminId = req.user.userId;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Update billing status
-      const billing = await tx.billing.update({
-        where: { id: billingId },
-        data: { 
-          status: 'PAID'
-        }
-      });
-
-      // 2. Update payment record (set paidAt and record verifier)
-      await tx.payment.updateMany({
-        where: { billingId: billingId },
-        data: { 
-          paidAt: new Date(),
-          // Note: Add metadata to notes for audit trail
-          externalId: `Verified by Admin ${adminId}` 
-        }
-      });
-
-      // 3. If has registrationId, update registration status
-      if (billing.registrationId) {
-        await tx.eventRegistration.update({
-          where: { id: billing.registrationId },
-          data: { status: 'PAID' }
+      if (status === 'REJECTED') {
+        // Reset billing status to PENDING
+        const billing = await tx.billing.update({
+          where: { id: billingId },
+          data: { status: 'PENDING' }
         });
-      }
 
-      return billing;
+        // Delete payment proof record so member can upload a new proof
+        await tx.payment.deleteMany({
+          where: { billingId }
+        });
+
+        return billing;
+      } else {
+        // 1. Update billing status to PAID
+        const billing = await tx.billing.update({
+          where: { id: billingId },
+          data: { 
+            status: 'PAID'
+          }
+        });
+
+        // 2. Update payment record (set paidAt and record verifier)
+        await tx.payment.updateMany({
+          where: { billingId: billingId },
+          data: { 
+            paidAt: new Date(),
+            // Note: Add metadata to notes for audit trail
+            externalId: `Verified by Admin ${adminId}` + (adminNotes ? `: ${adminNotes}` : '')
+          }
+        });
+
+        // 3. If has registrationId, update registration status
+        if (billing.registrationId) {
+          await tx.eventRegistration.update({
+            where: { id: billing.registrationId },
+            data: { status: 'PAID' }
+          });
+        }
+
+        return billing;
+      }
     });
 
     res.json({ status: 'success', data: result });
