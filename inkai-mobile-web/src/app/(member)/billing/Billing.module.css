@@ -546,6 +546,17 @@
   font-weight: 500;
 }
 
+.transferHelpNote {
+  font-size: 11px;
+  color: var(--primary-gold);
+  line-height: 1.55;
+  margin: 16px 0 24px;
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px dashed rgba(245, 158, 11, 0.25);
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
 .qrisActions {
   display: flex;
   justify-content: center;
@@ -1128,4 +1139,10 @@ html[data-clock-phase="day"] .downloadBtn {
 
 html[data-clock-phase="day"] .downloadBtn:hover {
   background: #f1f5f9;
+}
+
+html[data-clock-phase="day"] .transferHelpNote {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: var(--primary-gold-hover);
 }

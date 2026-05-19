@@ -555,26 +555,29 @@ export default function Billing() {
               {selectedMethod === 'TRANSFER' && (
                 <div className={styles.transferPanel}>
                   <div className={styles.bankCard}>
-                    <p className={styles.bankLabel}>Transfer ke Rekening Bendahara:</p>
+                    <p className={styles.bankLabel}>Transfer ke Rekening Ketua Ranting:</p>
                     <div className={styles.bankInfo}>
                       <div className={styles.bankMain}>
                         <div className={styles.bankHeader}>
                           <span className={styles.bankName}>Mandiri</span>
                         </div>
                         <div className={styles.accountNumberGroup}>
-                          <span className={styles.accountNumber}>1400024546344</span>
+                          <span className={styles.accountNumber}>1420088209284</span>
                           <button 
                             className={styles.copyBtn} 
-                            onClick={() => handleCopy("1400024546344", "account")}
+                            onClick={() => handleCopy("1420088209284", "account")}
                             type="button"
                           >
                             {copiedKey === "account" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
                           </button>
                         </div>
-                        <span className={styles.accountName}>a/n Habibur Rahman (Bendahara Ranting)</span>
+                        <span className={styles.accountName}>a/n Sensei Ahmad (Ketua Ranting)</span>
                       </div>
                     </div>
                   </div>
+                  <p className={styles.transferHelpNote}>
+                    *Penting: Untuk iuran bulanan, transfer ditujukan langsung ke rekening Ketua Ranting masing-masing (Sensei Ahmad), bukan ke rekening cabang.
+                  </p>
 
                   <div 
                     className={`${styles.proofUpload} ${isDragging ? styles.proofUploadActive : ""}`}
