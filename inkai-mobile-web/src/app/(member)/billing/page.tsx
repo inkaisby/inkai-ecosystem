@@ -22,7 +22,8 @@ import {
   MapPin, 
   UserCheck, 
   AlertCircle, 
-  Info 
+  Info,
+  Eye
 } from "lucide-react";
 import styles from "./Billing.module.css";
 import BottomNav from "@/components/BottomNav/BottomNav";
@@ -375,6 +376,32 @@ export default function Billing() {
                       {isPaid ? `Lunas pada: ${new Date(bill.updatedAt).toLocaleDateString('id-ID')}` : 
                        isWaiting ? "Tinjau bukti oleh Ranting" : `Jatuh tempo: Akhir Bulan`}
                     </p>
+                    {bill.payment?.proofUrl ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                        <span style={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', color: 'rgba(245, 158, 11, 0.8)', letterSpacing: '0.05em' }}>Bukti:</span>
+                        <a 
+                          href={bill.payment.proofUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ 
+                            fontSize: '9px', 
+                            fontWeight: 'bold', 
+                            color: '#f59e0b', 
+                            textDecoration: 'underline', 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '4px', 
+                            backgroundColor: 'rgba(245, 158, 11, 0.05)', 
+                            padding: '2px 8px', 
+                            borderRadius: '6px', 
+                            border: '1px solid rgba(245, 158, 11, 0.2)',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <Eye size={10} /> LIHAT BUKTI BAYAR
+                        </a>
+                      </div>
+                    ) : null}
                     {bill.rejectReason ? (
                       <span className={styles.rejectReasonText}>❌ Ditolak: "{bill.rejectReason}"</span>
                     ) : null}
