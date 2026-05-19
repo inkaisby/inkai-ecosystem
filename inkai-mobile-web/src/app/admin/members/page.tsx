@@ -535,9 +535,13 @@ function MembersContent() {
   };
 
   const handleBack = () => {
+    if (user?.managedDojoId) {
+      router.push("/admin");
+      return;
+    }
     if (branchId && provinceId) {
       router.push(
-        `/organization?branchId=${branchId}&provinceId=${provinceId}`,
+        `/admin/organization?branchId=${branchId}&provinceId=${provinceId}`,
       );
     } else {
       router.push("/admin/organization");
@@ -555,7 +559,7 @@ function MembersContent() {
       nia: member.nia || "",
       email: member.user?.email || "",
       password: "",
-      dojoId: member.dojoId || "",
+      dojoId: member.dojoId || user?.managedDojoId || "",
     });
 
     // Pre-fill hierarchy for editing
@@ -581,7 +585,7 @@ function MembersContent() {
       nia: "",
       email: "",
       password: "",
-      dojoId: dojoId || "",
+      dojoId: dojoId || user?.managedDojoId || "",
     });
     setDateInput("");
     setIsEdit(false);
@@ -1143,7 +1147,18 @@ function MembersContent() {
                     </div>
                   </div>
 
-                  {!dojoId || isEdit ? (
+                  {user?.managedDojoId ? (
+                    <div className="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/10 space-y-4">
+                      <div>
+                        <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-1.5">
+                          Dojo Sekarang
+                        </p>
+                        <p className="text-sm font-black text-amber-500 uppercase leading-none">
+                          {user.managedDojoName}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (!dojoId || isEdit ? (
                     <div className="space-y-4 pt-5 border-t border-white-5">
                       <label className="text-10 font-black uppercase text-gray-500 tracking-widest block ml-1 opacity-80">
                         Penempatan Dojo
@@ -1224,7 +1239,7 @@ function MembersContent() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 bg-amber-500-10 rounded-2xl border border-amber-500-10 space-y-4">
+                    <div className="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/10 space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-10 font-black uppercase text-gray-500 tracking-widest mb-1.5">
@@ -1256,7 +1271,7 @@ function MembersContent() {
                         </p>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
 
                 <div className="flex gap-3 pt-6">

@@ -286,11 +286,12 @@ function OrganizationContent() {
     branch.headName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredDojos = dojos.filter(dojo => 
-    dojo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dojo.contactPerson?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dojo.address?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDojos = dojos.filter(dojo => {
+    if (user?.managedDojoId && dojo.id !== user.managedDojoId) return false;
+    return dojo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      dojo.contactPerson?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      dojo.address?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const handleAddProvince = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -568,21 +569,23 @@ function OrganizationContent() {
         </div>
 
         {/* Search Bar */}
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-amber-500 transition-colors">
-            <Search size={16} />
+        {!user?.managedDojoId && (
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-amber-500 transition-colors">
+              <Search size={16} />
+            </div>
+            <input 
+              type="text" 
+              placeholder={
+                viewState === 'provinces' ? "Cari wilayah..." : 
+                viewState === 'branches' ? "Cari cabang..." : "Cari dojo..."
+              }
+              className="glass-input w-full py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-white placeholder:text-gray-600 font-medium"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <input 
-            type="text" 
-            placeholder={
-              viewState === 'provinces' ? "Cari wilayah..." : 
-              viewState === 'branches' ? "Cari cabang..." : "Cari dojo..."
-            }
-            className="glass-input w-full py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-white placeholder:text-gray-600 font-medium"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        )}
       </div>
 
       {loading ? (
