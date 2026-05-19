@@ -961,7 +961,7 @@ function OrganizationContent() {
                     <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Nama Pemilik Rekening (Atas Nama)</label>
                     <input 
                       type="text"
-                      placeholder="Contoh: Sensei Ahmad"
+                      placeholder="Contoh: Budi Santoso"
                       className="glass-input w-full px-4 py-3 text-sm focus-outline-none uppercase font-bold tracking-tight"
                       value={editDojoBankAccountName}
                       onChange={(e) => setEditDojoBankAccountName(e.target.value.toUpperCase())}
@@ -1123,7 +1123,7 @@ function OrganizationContent() {
                   <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nama Pemilik (Atas Nama)</label>
                   <input 
                     type="text"
-                    placeholder="Contoh: Sensei Ahmad"
+                    placeholder="Contoh: Budi Santoso"
                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white uppercase focus:border-amber-500/50"
                     value={newDojoBankAccountName}
                     onChange={(e) => setNewDojoBankAccountName(e.target.value.toUpperCase())}

@@ -104,7 +104,7 @@ Antarmuka berfokus pada kemudahan akses tagihan aktif, visualisasi opsi pembayar
 |  | Rp 50.000                       |  |
 |  |                                 |  |
 |  | [🔒] Konfirmasi Verifikasi Oleh:|  |
-|  | Sensei Ahmad (Ketua Ranting)    |  |
+|  | Sensei Budi (Ketua Ranting)     |  |
 |  +---------------------------------+  |
 |  [      BAYAR SEKARANG / LAPOR      ]  |
 |                                       |
@@ -171,7 +171,7 @@ Ketua Ranting/Dojo bertindak sebagai verifikator tingkat pertama. Mereka diberik
 ### 4.1 Halaman Verifikasi Pembayaran (Ranting Leader Dashboard)
 ```text
 +-----------------------------------------------------------------------------------+
-|  LOGO INKAI    [PORTAL KETUA RANTING]                Dojo Pusat Jakarta  [Sensei Ahmad v]|
+|  LOGO INKAI    [PORTAL KETUA RANTING]                Dojo Pusat Jakarta  [Sensei Budi v] |
 +-----------------------------------------------------------------------------------+
 |  [👥 Anggota]  [💰 Iuran & Keuangan]  [🏆 Absensi Ujian]  [*📩 Verifikasi Iuran* (1)]      |
 +-----------------------------------------------------------------------------------+

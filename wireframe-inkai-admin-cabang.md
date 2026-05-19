@@ -49,7 +49,7 @@ Melihat daftar Dojo/Ranting yang masuk dalam wilayah Cabang ini.
 |  [ Cari Nama Dojo...              [Q] ]|
 |                                       |
 |  1. Dojo Pusat Jakarta                |
-|     Ketua: Sensei Ahmad               |
+|     Ketua: Sensei Budi                |
 |     Anggota: 85 | [ Lihat Anggota ]   |
 |                                       |
 |  2. Dojo GOR Ciracas                  |

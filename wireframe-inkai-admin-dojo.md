@@ -11,7 +11,7 @@ Halaman utama yang memberikan ringkasan kondisi Dojo saat ini.
 ```text
 +---------------------------------------+
 |  LOGO INKAI    [Dojo Pusat Jakarta]   |
-|  Halo, Sensei Ahmad (Ketua Dojo)      |
+|  Halo, Sensei Budi (Ketua Dojo)       |
 |---------------------------------------|
 |  RINGKASAN DOJO:                      |
 |  +-------------------+----------------+
@@ -145,13 +145,13 @@ Ketua Dojo menyetujui anggota yang ingin masuk ke dojonya atau keluar dari dojon
 
 ## 6. Profil Pribadi & Keanggotaan (Role: Anggota)
 
-Sebagai Ketua Dojo, Sensei Ahmad juga memiliki profil keanggotaan pribadi.
+Sebagai Ketua Dojo, Sensei Budi juga memiliki profil keanggotaan pribadi.
 
 ```text
 +---------------------------------------+
 |  Profil Ketua & Keanggotaan           |
 |---------------------------------------|
-|  [ Foto Profil ]  Sensei Ahmad         |
+|  [ Foto Profil ]  Sensei Budi          |
 |  Jabatan: Ketua Dojo Pusat Jakarta    |
 |  NIA: 887766 | Sabuk: Hitam (DAN 3)   |
 |                                       |

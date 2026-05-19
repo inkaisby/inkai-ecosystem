@@ -262,7 +262,7 @@ export default function Billing() {
         <p className={styles.memberNia}>NIA: {user.nia || "MEMPROSES NIA..."}</p>
         <div className={styles.memberLeaderInfo}>
           <UserCheck size={12} style={{ marginRight: '6px' }} />
-          Konfirmasi Ketua Ranting: <strong>Sensei Ahmad</strong>
+          Konfirmasi Ketua Ranting: <strong>{user?.dojo?.bankAccountName || "Ketua Ranting"}</strong>
         </div>
       </div>
 
@@ -479,7 +479,7 @@ export default function Billing() {
                   { id: 'VA', label: 'Virtual Account (Instan)', sub: 'BNI, Mandiri, BRI, BCA', icon: <Landmark size={20} /> },
                   { id: 'QRIS', label: 'QRIS / E-Wallet', sub: 'Gopay, OVO, Dana, LinkAja', icon: <QrCode size={20} /> },
                   { id: 'TRANSFER', label: 'Transfer Bank (Manual)', sub: 'Upload bukti transfer & verifikasi Ranting', icon: <Upload size={20} /> },
-                  { id: 'CASH', label: 'Tunai ke Dojo / Ranting', sub: 'Lapor bayar langsung ke Sensei Ahmad', icon: <Banknote size={20} /> },
+                  { id: 'CASH', label: 'Tunai ke Dojo / Ranting', sub: 'Lapor bayar langsung ke Ranting', icon: <Banknote size={20} /> },
                 ].map(method => (
                   <div 
                     key={method.id} 
@@ -571,12 +571,12 @@ export default function Billing() {
                             {copiedKey === "account" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
                           </button>
                         </div>
-                        <span className={styles.accountName}>a/n {user?.dojo?.bankAccountName || "Sensei Ahmad (Ketua Ranting)"}</span>
+                        <span className={styles.accountName}>a/n {user?.dojo?.bankAccountName || "(Ketua Ranting)"}</span>
                       </div>
                     </div>
                   </div>
                   <p className={styles.transferHelpNote}>
-                    *Penting: Untuk iuran bulanan, transfer ditujukan langsung ke rekening Ketua Ranting masing-masing ({user?.dojo?.bankAccountName || "Sensei Ahmad"}), bukan ke rekening cabang.
+                    *Penting: Untuk iuran bulanan, transfer ditujukan langsung ke rekening Ketua Ranting masing-masing ({user?.dojo?.bankAccountName || "Ketua Ranting"}), bukan ke rekening cabang.
                   </p>
 
                   <div 
@@ -644,7 +644,7 @@ export default function Billing() {
                     <Info size={20} className={styles.cashNoteIcon} />
                     <div className={styles.cashNoteText}>
                       <strong>Pembayaran Tunai Ranting</strong>
-                      <p>Silakan lakukan penyerahan dana sebesar tagihan ke <strong>{user?.dojo?.bankAccountName || "Sensei Ahmad"}</strong> secara langsung pada jadwal latihan berikutnya. Ketua Ranting akan mengkonfirmasi status tagihan secara manual.</p>
+                      <p>Silakan lakukan penyerahan dana sebesar tagihan ke <strong>{user?.dojo?.bankAccountName || "Ketua Ranting"}</strong> secara langsung pada jadwal latihan berikutnya. Ketua Ranting akan mengkonfirmasi status tagihan secara manual.</p>
                     </div>
                   </div>
                 </div>

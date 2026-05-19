@@ -80,7 +80,7 @@ Melihat seluruh Dojo di provinsi dengan filter per Cabang.
 |  Filter Cabang: [ Semua Cabang  [v] ] |
 |                                       |
 |  1. Dojo Pusat Bandung (Kota Bandung) |
-|     Ketua: Sensei Ahmad               |
+|     Ketua: Sensei Budi                |
 |     Anggota: 120 | [ Lihat Detail ]   |
 |                                       |
 |  2. Dojo Cibinong (Kab. Bogor)        |
