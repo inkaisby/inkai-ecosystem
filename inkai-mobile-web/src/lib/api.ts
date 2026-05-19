@@ -189,8 +189,8 @@ export const api = Object.assign(apiInstance, {
     updateProvince: (id: string, data: { name?: string; headName?: string; adminEmail?: string; adminPassword?: string; code?: string }) => apiInstance.patch(`/org/provinces/${id}`, data).then(res => res.data),
     createBranch: (data: { name: string; provinceId: string; headName?: string; adminEmail?: string; adminPassword?: string; code?: string }) => apiInstance.post('/org/branches', data).then(res => res.data),
     updateBranch: (id: string, data: { name?: string; provinceId?: string; headName?: string; adminEmail?: string; adminPassword?: string; code?: string }) => apiInstance.patch(`/org/branches/${id}`, data).then(res => res.data),
-    createDojo: (data: { name: string; branchId: string; address?: string; contactPerson?: string; kecamatan?: string; tempatLatihan?: string; phoneNumber?: string; schedule?: string; adminEmail?: string; adminPassword?: string }) => apiInstance.post('/org/dojos', data).then(res => res.data),
-    updateDojo: (id: string, data: { name?: string; branchId?: string; address?: string; contactPerson?: string; kecamatan?: string; tempatLatihan?: string; phoneNumber?: string; schedule?: string; adminEmail?: string; adminPassword?: string }) => apiInstance.patch(`/org/dojos/${id}`, data).then(res => res.data),
+    createDojo: (data: { name: string; branchId: string; address?: string; contactPerson?: string; kecamatan?: string; tempatLatihan?: string; phoneNumber?: string; schedule?: string; adminEmail?: string; adminPassword?: string; bankName?: string; bankAccountNumber?: string; bankAccountName?: string }) => apiInstance.post('/org/dojos', data).then(res => res.data),
+    updateDojo: (id: string, data: { name?: string; branchId?: string; address?: string; contactPerson?: string; kecamatan?: string; tempatLatihan?: string; phoneNumber?: string; schedule?: string; adminEmail?: string; adminPassword?: string; bankName?: string; bankAccountNumber?: string; bankAccountName?: string }) => apiInstance.patch(`/org/dojos/${id}`, data).then(res => res.data),
   },
   dashboard: {
     getStats: () => apiInstance.get('/dashboard/stats').then(res => res.data),

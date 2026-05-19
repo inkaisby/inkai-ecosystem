@@ -559,24 +559,24 @@ export default function Billing() {
                     <div className={styles.bankInfo}>
                       <div className={styles.bankMain}>
                         <div className={styles.bankHeader}>
-                          <span className={styles.bankName}>Mandiri</span>
+                          <span className={styles.bankName}>{user?.dojo?.bankName || "Mandiri"}</span>
                         </div>
                         <div className={styles.accountNumberGroup}>
-                          <span className={styles.accountNumber}>1420088209284</span>
+                          <span className={styles.accountNumber}>{user?.dojo?.bankAccountNumber || "1420088209284"}</span>
                           <button 
                             className={styles.copyBtn} 
-                            onClick={() => handleCopy("1420088209284", "account")}
+                            onClick={() => handleCopy(user?.dojo?.bankAccountNumber || "1420088209284", "account")}
                             type="button"
                           >
                             {copiedKey === "account" ? <Check size={14} className={styles.copyIconCheck} /> : <Copy size={14} />}
                           </button>
                         </div>
-                        <span className={styles.accountName}>a/n Sensei Ahmad (Ketua Ranting)</span>
+                        <span className={styles.accountName}>a/n {user?.dojo?.bankAccountName || "Sensei Ahmad (Ketua Ranting)"}</span>
                       </div>
                     </div>
                   </div>
                   <p className={styles.transferHelpNote}>
-                    *Penting: Untuk iuran bulanan, transfer ditujukan langsung ke rekening Ketua Ranting masing-masing (Sensei Ahmad), bukan ke rekening cabang.
+                    *Penting: Untuk iuran bulanan, transfer ditujukan langsung ke rekening Ketua Ranting masing-masing ({user?.dojo?.bankAccountName || "Sensei Ahmad"}), bukan ke rekening cabang.
                   </p>
 
                   <div 
@@ -644,7 +644,7 @@ export default function Billing() {
                     <Info size={20} className={styles.cashNoteIcon} />
                     <div className={styles.cashNoteText}>
                       <strong>Pembayaran Tunai Ranting</strong>
-                      <p>Silakan lakukan penyerahan dana sebesar tagihan ke <strong>Sensei Ahmad</strong> secara langsung pada jadwal latihan berikutnya. Ketua Ranting akan mengkonfirmasi status tagihan secara manual.</p>
+                      <p>Silakan lakukan penyerahan dana sebesar tagihan ke <strong>{user?.dojo?.bankAccountName || "Sensei Ahmad"}</strong> secara langsung pada jadwal latihan berikutnya. Ketua Ranting akan mengkonfirmasi status tagihan secara manual.</p>
                     </div>
                   </div>
                 </div>

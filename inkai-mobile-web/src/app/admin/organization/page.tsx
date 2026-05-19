@@ -74,6 +74,9 @@ function OrganizationContent() {
   const [editDojoVenue, setEditDojoVenue] = useState('');
   const [editDojoPhone, setEditDojoPhone] = useState('');
   const [editDojoSchedule, setEditDojoSchedule] = useState('');
+  const [editDojoBankName, setEditDojoBankName] = useState('');
+  const [editDojoBankAccountNumber, setEditDojoBankAccountNumber] = useState('');
+  const [editDojoBankAccountName, setEditDojoBankAccountName] = useState('');
   
   // Add Dojo states
   const [showAddDojoModal, setShowAddDojoModal] = useState(false);
@@ -84,6 +87,9 @@ function OrganizationContent() {
   const [newDojoVenue, setNewDojoVenue] = useState('');
   const [newDojoPhone, setNewDojoPhone] = useState('');
   const [newDojoSchedule, setNewDojoSchedule] = useState('');
+  const [newDojoBankName, setNewDojoBankName] = useState('');
+  const [newDojoBankAccountNumber, setNewDojoBankAccountNumber] = useState('');
+  const [newDojoBankAccountName, setNewDojoBankAccountName] = useState('');
 
   // Admin Account states
   const [adminEmail, setAdminEmail] = useState('');
@@ -392,6 +398,9 @@ function OrganizationContent() {
     setEditDojoVenue(dojo.tempatLatihan || '');
     setEditDojoPhone(dojo.phoneNumber || '');
     setEditDojoSchedule(dojo.schedule || '');
+    setEditDojoBankName(dojo.bankName || '');
+    setEditDojoBankAccountNumber(dojo.bankAccountNumber || '');
+    setEditDojoBankAccountName(dojo.bankAccountName || '');
     setAdminEmail(dojo.admins?.[0]?.email || '');
     setAdminPassword('');
     setShowEditDojoModal(true);
@@ -411,6 +420,9 @@ function OrganizationContent() {
         tempatLatihan: editDojoVenue,
         phoneNumber: editDojoPhone,
         schedule: editDojoSchedule,
+        bankName: editDojoBankName,
+        bankAccountNumber: editDojoBankAccountNumber,
+        bankAccountName: editDojoBankAccountName,
         adminEmail,
         adminPassword
       });
@@ -442,6 +454,9 @@ function OrganizationContent() {
         tempatLatihan: newDojoVenue,
         phoneNumber: newDojoPhone,
         schedule: newDojoSchedule,
+        bankName: newDojoBankName,
+        bankAccountNumber: newDojoBankAccountNumber,
+        bankAccountName: newDojoBankAccountName,
         branchId: selectedBranch.id,
         adminEmail,
         adminPassword
@@ -457,6 +472,9 @@ function OrganizationContent() {
       setNewDojoVenue('');
       setNewDojoPhone('');
       setNewDojoSchedule('');
+      setNewDojoBankName('');
+      setNewDojoBankAccountNumber('');
+      setNewDojoBankAccountName('');
       toast.success('Dojo baru berhasil ditambahkan!');
     } catch (err: any) {
       toast.error(err.message);
@@ -882,6 +900,47 @@ function OrganizationContent() {
 
               <div className="pt-4 border-t border-white-5 space-y-4">
                 <div className="flex items-center gap-2 text-amber-500">
+                  <Building2 size={16} />
+                  <span className="text-xs font-black uppercase tracking-widest">Rekening Ketua Ranting / Dojo (Untuk Iuran)</span>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Nama Bank</label>
+                      <input 
+                        type="text"
+                        placeholder="Contoh: Mandiri, BSI, BCA"
+                        className="glass-input w-full px-4 py-3 text-sm focus-outline-none uppercase font-bold tracking-tight"
+                        value={editDojoBankName}
+                        onChange={(e) => setEditDojoBankName(e.target.value.toUpperCase())}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Nomor Rekening</label>
+                      <input 
+                        type="text"
+                        placeholder="Contoh: 1420088209284"
+                        className="glass-input w-full px-4 py-3 text-sm focus-outline-none font-bold tracking-tight"
+                        value={editDojoBankAccountNumber}
+                        onChange={(e) => setEditDojoBankAccountNumber(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-10 font-black uppercase text-gray-500 tracking-widest mb-2 block ml-1 opacity-80">Nama Pemilik Rekening (Atas Nama)</label>
+                    <input 
+                      type="text"
+                      placeholder="Contoh: Sensei Ahmad"
+                      className="glass-input w-full px-4 py-3 text-sm focus-outline-none uppercase font-bold tracking-tight"
+                      value={editDojoBankAccountName}
+                      onChange={(e) => setEditDojoBankAccountName(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white-5 space-y-4">
+                <div className="flex items-center gap-2 text-amber-500">
                   <Lock size={16} />
                   <span className="text-xs font-black uppercase tracking-widest">Akun Admin Dojo</span>
                 </div>
@@ -998,6 +1057,45 @@ function OrganizationContent() {
                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white"
                     value={newDojoPhone}
                     onChange={(e) => setNewDojoPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/5 space-y-3">
+                <div className="flex items-center gap-2 text-amber-500">
+                  <Building2 size={14} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Rekening Ketua Ranting / Dojo (Untuk Iuran)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nama Bank</label>
+                    <input 
+                      type="text"
+                      placeholder="Contoh: Mandiri, BSI"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white uppercase focus:border-amber-500/50"
+                      value={newDojoBankName}
+                      onChange={(e) => setNewDojoBankName(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">No. Rekening</label>
+                    <input 
+                      type="text"
+                      placeholder="Nomor rekening"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white focus:border-amber-500/50"
+                      value={newDojoBankAccountNumber}
+                      onChange={(e) => setNewDojoBankAccountNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nama Pemilik (Atas Nama)</label>
+                  <input 
+                    type="text"
+                    placeholder="Contoh: Sensei Ahmad"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white uppercase focus:border-amber-500/50"
+                    value={newDojoBankAccountName}
+                    onChange={(e) => setNewDojoBankAccountName(e.target.value.toUpperCase())}
                   />
                 </div>
               </div>
