@@ -716,3 +716,416 @@ html[data-clock-phase="day"] .dropdownSelect option {
   background-color: #ffffff;
   color: #0f172a;
 }
+
+/* ==========================================================
+   PREMIUM CUSTOM ELEMENTS & LAYOUT MODULES
+   ========================================================== */
+
+/* 1. Member Identity Card Glassmorphism */
+.memberCard {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 20px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.memberDojoBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--primary-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.memberName {
+  font-size: 20px;
+  font-weight: 900;
+  color: white;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.memberNia {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-family: monospace;
+  margin-bottom: 16px;
+}
+
+.memberLeaderInfo {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+}
+
+.memberLeaderInfo strong {
+  color: white;
+  margin-left: 4px;
+}
+
+/* 2. Dues Custom Determined Amount info bar */
+.duesAmountInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.duesInfoIcon {
+  color: var(--primary-gold);
+  flex-shrink: 0;
+}
+
+.duesAmountInfo strong {
+  color: white;
+}
+
+/* 3. Dues Checklist Selection Grid */
+.duesSelectorGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 24px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.duesSelectItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.duesChecked {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: var(--primary-gold);
+}
+
+.duesSelectLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+}
+
+.duesCheckbox {
+  accent-color: var(--primary-gold);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.duesSelectAmount {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--primary-gold);
+}
+
+/* 4. Virtual Account Payment Info Box & Copy Box */
+.vaCodeBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--primary-gold);
+  font-family: monospace;
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.btnCopy {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btnCopy:hover {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--primary-gold);
+}
+
+.vaHelpText {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* 5. QRIS Details block */
+.qrisContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: white;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.qrisCodeImg {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.qrisLogo {
+  font-size: 12px;
+  font-weight: 900;
+  color: #1e1e24;
+  margin-top: 8px;
+  letter-spacing: 0.1em;
+}
+
+.qrisHelpText {
+  font-size: 11px;
+  color: #71717a;
+  text-align: center;
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
+/* 6. Cash note block */
+.cashNoteContainer {
+  display: flex;
+  gap: 16px;
+  padding: 18px;
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 18px;
+}
+
+.cashNoteIcon {
+  color: var(--primary-gold);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cashNoteText {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.cashNoteText strong {
+  color: white;
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+
+/* ==========================================================
+   THEMATIQUE DAY/LIGHT ADAPTIVE SELECTORS & OVERRIDES
+   ========================================================== */
+
+html[data-clock-phase="day"] .memberCard {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+html[data-clock-phase="day"] .memberName {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .memberLeaderInfo {
+  border-top-color: rgba(15, 23, 42, 0.06);
+}
+
+html[data-clock-phase="day"] .memberLeaderInfo strong {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .duesAmountInfo {
+  background: rgba(15, 23, 42, 0.02);
+  border-color: rgba(15, 23, 42, 0.05);
+}
+
+html[data-clock-phase="day"] .duesAmountInfo strong {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .duesSelectItem {
+  background: #ffffff;
+  border-color: var(--border-light);
+}
+
+html[data-clock-phase="day"] .duesChecked {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: var(--primary-gold);
+}
+
+html[data-clock-phase="day"] .duesSelectLeft {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .vaCodeBox {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+html[data-clock-phase="day"] .btnCopy {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+html[data-clock-phase="day"] .qrisContainer {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+html[data-clock-phase="day"] .cashNoteText strong {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .summaryCard {
+  background: var(--gradient-card);
+  border-color: var(--border-light);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+html[data-clock-phase="day"] .totalAmount {
+  color: var(--primary-gold-hover);
+}
+
+html[data-clock-phase="day"] .billItem {
+  background-color: var(--card-dark);
+  border-color: var(--border-light);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+html[data-clock-phase="day"] .billTitle {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .amount {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .amountPaid {
+  color: var(--text-muted);
+}
+
+html[data-clock-phase="day"] .modal {
+  background-color: var(--card-dark);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.15);
+}
+
+html[data-clock-phase="day"] .modalTitle {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .methodItem {
+  background-color: #f8fafc;
+  border-color: var(--border-light);
+}
+
+html[data-clock-phase="day"] .methodSelected {
+  background-color: rgba(245, 158, 11, 0.08);
+  border-color: var(--primary-gold);
+}
+
+html[data-clock-phase="day"] .methodSelected .methodText {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .qrisPanel {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+html[data-clock-phase="day"] .bankCard {
+  background: var(--gradient-card);
+  border-color: var(--border-light);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+html[data-clock-phase="day"] .bankName {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .accountName {
+  color: var(--text-muted);
+}
+
+html[data-clock-phase="day"] .dropZone {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.15);
+}
+
+html[data-clock-phase="day"] .dropText {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .previewCard {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+html[data-clock-phase="day"] .fileName {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .downloadBtn {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .downloadBtn:hover {
+  background: #f1f5f9;
+}

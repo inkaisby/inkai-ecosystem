@@ -271,6 +271,10 @@ export default function Billing() {
         <h2 className={styles.totalAmount}>
           Rp {new Intl.NumberFormat('id-ID').format(totalUnpaid)}
         </h2>
+        <div className={styles.duesAmountInfo}>
+          <Info size={12} className={styles.duesInfoIcon} />
+          <span>Iuran bulanan diselaraskan Ketua Ranting: <strong>Rp {new Intl.NumberFormat('id-ID').format(user.monthlyDuesAmount ?? user.member?.monthlyDuesAmount ?? 50000)}</strong></span>
+        </div>
         <button 
           className={`${styles.payBtn} ${hasWaiting ? styles.waiting : ''}`}
           disabled={(totalUnpaid === 0 && !hasWaiting) || isProcessing}
