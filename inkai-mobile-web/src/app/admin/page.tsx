@@ -257,7 +257,13 @@ export default function Dashboard() {
           <ChevronRight size={16} className="text-gray-600 shrink-0" />
         </button>
         <button
-          onClick={() => router.push("/admin/organization")}
+          onClick={() => {
+            if (user?.roles?.[0] === 'ADMIN_DOJO' && user?.managedDojoId) {
+              router.push(`/admin/organization?dojoId=${user.managedDojoId}&dojoName=${encodeURIComponent(user.managedDojoName || '')}`);
+            } else {
+              router.push("/admin/organization");
+            }
+          }}
           className="w-full glass-card p-4 flex items-center justify-between border-amber-500/15 bg-amber-500/[0.04] hover:bg-amber-500/10 active:scale-[0.99] transition-all text-left"
         >
           <div className="flex items-center gap-3 min-w-0">

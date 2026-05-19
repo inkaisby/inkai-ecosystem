@@ -423,43 +423,137 @@ html[data-clock-phase="day"] .admin-modal-dialog-panel button.text-gray-400 {
 @media (max-width: 639px) {
   .admin-notif-sheet,
   .admin-account-sheet {
-    top: calc(var(--admin-topbar-top) + var(--admin-topbar-h));
+    position: fixed !important;
+    top: calc(var(--admin-topbar-top) + var(--admin-topbar-h)) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 120 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: var(--card-dark) !important;
+    border-radius: 0 !important;
+    border-top: 1px solid var(--border-light) !important;
+    box-shadow: none !important;
+    max-height: calc(100vh - var(--admin-topbar-top) - var(--admin-topbar-h)) !important;
+    overflow: hidden !important;
+  }
+  
+  .admin-topbar-dropdown-popover {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: calc(var(--admin-topbar-top) + var(--admin-topbar-h)) !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 }
 
 @media (min-width: 640px) {
   .admin-notif-sheet,
   .admin-account-sheet {
-    bottom: auto;
+    bottom: auto !important;
+    position: absolute !important;
+    top: 100% !important;
+    right: 0 !important;
+    margin-top: 0.5rem !important;
+    z-index: 120 !important;
+    background-color: var(--card-dark) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
-}
-
-/**
- * Dropdown TopBar (notifikasi / menu akun).
- * Tanpa Tailwind: `bg-black/80`, `text-white/90`, dll. tidak pernah ter-apply.
- * Z-index di atas BottomNav (100) dan backdrop (115).
- */
-[data-admin-shell] .admin-topbar-dropdown-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 115;
-  background-color: rgba(0, 0, 0, 0.8);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
-
-html[data-clock-phase="day"] [data-admin-shell] .admin-topbar-dropdown-backdrop {
-  background-color: rgba(15, 23, 42, 0.42);
-}
-
-@media (min-width: 640px) {
-  [data-admin-shell] .admin-topbar-dropdown-backdrop {
-    display: none;
+  .admin-notif-sheet {
+    width: 20rem !important; /* sm:w-80 */
+  }
+  .admin-account-sheet {
+    width: 12rem !important; /* sm:w-48 */
   }
 }
 
 [data-admin-shell] .admin-topbar-dropdown-popover {
   z-index: 120;
+}
+
+/* Fallback utility classes for TopBar popover contents without Tailwind */
+.admin-topbar-dropdown-popover .bg-dark-panel {
+  background-color: var(--card-dark) !important;
+}
+
+.admin-topbar-dropdown-popover .flex-1 {
+  flex: 1 1 0% !important;
+}
+
+.admin-topbar-dropdown-popover .overflow-y-auto {
+  overflow-y: auto !important;
+}
+
+.admin-topbar-dropdown-popover .flex-col {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.admin-topbar-dropdown-popover .grid {
+  display: grid !important;
+}
+
+.admin-topbar-dropdown-popover .grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.admin-topbar-dropdown-popover .gap-2 {
+  gap: 0.5rem !important;
+}
+
+.admin-topbar-dropdown-popover .space-y-3 > * + * {
+  margin-top: 0.75rem !important;
+}
+
+.admin-topbar-dropdown-popover .space-y-4 > * + * {
+  margin-top: 1rem !important;
+}
+
+/* Styled notification items */
+.admin-notif-sheet .group {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--border-light) !important;
+  cursor: pointer !important;
+  border-radius: 1rem !important;
+}
+
+html[data-clock-phase="day"] .admin-notif-sheet .group {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+.admin-notif-sheet .group.bg-transparent {
+  background-color: transparent !important;
+}
+
+/* Styled dropdown backdrop for TopBar dropdowns */
+[data-admin-shell] .admin-topbar-dropdown-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 115 !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+html[data-clock-phase="day"] [data-admin-shell] .admin-topbar-dropdown-backdrop {
+  background-color: rgba(15, 23, 42, 0.42) !important;
+}
+
+@media (min-width: 640px) {
+  [data-admin-shell] .admin-topbar-dropdown-backdrop {
+    display: none !important;
+  }
 }
 
 /** Ring badge lonceng — ikut --background-dark (siang/malam) */
