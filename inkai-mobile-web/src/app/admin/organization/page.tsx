@@ -545,28 +545,26 @@ function OrganizationContent() {
                 </span>
               </div>
               <div>
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 leading-none mb-1.5 truncate max-w-[150px]">
-                  {user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Pengurus Pusat' :
-                   user?.roles?.[0] === 'ADMIN_PROVINCE' ? (user?.managedProvinceName || 'Provinsi') :
-                   user?.roles?.[0] === 'ADMIN_BRANCH' ? (user?.managedBranchName || 'Cabang') :
-                   user?.roles?.[0] === 'ADMIN_DOJO' ? (user?.managedDojoName || 'Dojo / Ranting') :
-                   'Administrator'}
+                <h2 className="text-sm font-black uppercase tracking-wider text-amber-500 leading-none mb-1.5 truncate max-w-[180px]">
+                  {user?.fullName || user?.email?.split('@')[0] || 'Administrator'}
                 </h2>
                 <div className="flex items-center gap-1.5">
                   <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div>
                   <p className="text-[9px] font-bold text-white/60 tracking-wider">
                     {user?.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
                      user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Admin Pusat' :
-                     user?.roles?.[0] === 'ADMIN_PROVINCE' ? 'Admin Provinsi' :
-                     user?.roles?.[0] === 'ADMIN_BRANCH' ? 'Admin Cabang' :
-                     user?.roles?.[0] === 'ADMIN_DOJO' ? 'Admin Dojo' :
+                     user?.roles?.[0] === 'ADMIN_PROVINCE' ? `Admin Provinsi (${user?.managedProvinceName || 'Wilayah'})` :
+                     user?.roles?.[0] === 'ADMIN_BRANCH' ? `Admin Cabang (${user?.managedBranchName || 'Cabang'})` :
+                     user?.roles?.[0] === 'ADMIN_DOJO' ? `Admin Dojo (${user?.managedDojoName || 'Dojo'})` :
                      'Administrator'}
                   </p>
                 </div>
               </div>
             </div>
           </div>
-          {!user?.managedDojoId && (
+          {((viewState === 'provinces' && (user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT')) ||
+            (viewState === 'branches' && (user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT' || (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id))) ||
+            (viewState === 'dojos' && (user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT' || (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id) || (user?.roles?.[0] === 'ADMIN_BRANCH' && user?.managedBranchId === selectedBranch?.id)))) && (
             <button 
               onClick={() => {
                 if (viewState === 'provinces') setShowAddModal(true);
@@ -642,12 +640,16 @@ function OrganizationContent() {
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleOpenEditProvince(prov)}
-                  className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
-                >
-                  <MoreVertical size={20} />
-                </button>
+                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
+                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
+                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === prov.id)) && (
+                  <button 
+                    onClick={() => handleOpenEditProvince(prov)}
+                    className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-3 my-6">
@@ -672,12 +674,20 @@ function OrganizationContent() {
                 >
                   Detail
                 </button>
-                <button 
-                  onClick={() => handleManageBranches(prov)}
-                  className="btn-primary flex-[2] py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
-                >
-                  Kelola Cabang
-                </button>
+                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
+                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
+                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === prov.id)) ? (
+                  <button 
+                    onClick={() => handleManageBranches(prov)}
+                    className="btn-primary flex-[2] py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
+                  >
+                    Kelola Cabang
+                  </button>
+                ) : (
+                  <div className="flex-[2] py-3 text-[10px] font-black uppercase tracking-widest text-center text-gray-600 bg-white-5 rounded-2xl border border-white-5">
+                    Hanya Lihat
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -754,12 +764,17 @@ function OrganizationContent() {
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleOpenEditBranch(branch)}
-                  className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
-                >
-                  <MoreVertical size={20} />
-                </button>
+                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
+                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
+                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id) || 
+                  (user?.roles?.[0] === 'ADMIN_BRANCH' && user?.managedBranchId === branch.id)) && (
+                  <button 
+                    onClick={() => handleOpenEditBranch(branch)}
+                    className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 my-6">
@@ -774,12 +789,21 @@ function OrganizationContent() {
               </div>
 
               <div className="flex gap-3 relative z-10">
-                <button 
-                  onClick={() => handleManageDojos(branch)}
-                  className="btn-primary flex-1 py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
-                >
-                  Kelola Dojo / Ranting
-                </button>
+                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
+                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
+                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id) || 
+                  (user?.roles?.[0] === 'ADMIN_BRANCH' && user?.managedBranchId === branch.id)) ? (
+                  <button 
+                    onClick={() => handleManageDojos(branch)}
+                    className="btn-primary flex-1 py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
+                  >
+                    Kelola Dojo / Ranting
+                  </button>
+                ) : (
+                  <div className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-center text-gray-600 bg-white-5 rounded-2xl border border-white-5">
+                    Hanya Lihat
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -812,12 +836,18 @@ function OrganizationContent() {
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleOpenEditDojo(dojo)}
-                  className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
-                >
-                  <MoreVertical size={20} />
-                </button>
+                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
+                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
+                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id) || 
+                  (user?.roles?.[0] === 'ADMIN_BRANCH' && user?.managedBranchId === selectedBranch?.id) || 
+                  (user?.roles?.[0] === 'ADMIN_DOJO' && user?.managedDojoId === dojo.id)) && (
+                  <button 
+                    onClick={() => handleOpenEditDojo(dojo)}
+                    className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 my-6">
