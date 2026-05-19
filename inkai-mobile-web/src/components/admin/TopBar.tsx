@@ -139,10 +139,10 @@ export default function TopBar() {
             </span>
             <span className="text-[8px] font-bold text-white/50 truncate w-full leading-none">
               {user.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
-               user.roles?.[0] === 'ADMIN_PUSAT' ? 'Pusat' :
-               user.roles?.[0] === 'ADMIN_PROVINCE' ? (user.managedProvinceName || 'Provinsi') :
-               user.roles?.[0] === 'ADMIN_BRANCH' ? (user.managedBranchName || 'Cabang') :
-               user.roles?.[0] === 'ADMIN_DOJO' ? (user.managedDojoName || 'Dojo') :
+               user.roles?.[0] === 'ADMIN_PUSAT' ? 'Admin Pusat' :
+               user.roles?.[0] === 'ADMIN_PROVINCE' ? 'Admin Provinsi' :
+               user.roles?.[0] === 'ADMIN_BRANCH' ? 'Admin Cabang' :
+               user.roles?.[0] === 'ADMIN_DOJO' ? 'Admin Ranting' :
                'Admin'}
             </span>
           </div>
