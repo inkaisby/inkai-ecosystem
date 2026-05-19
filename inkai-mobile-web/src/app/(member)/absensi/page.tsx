@@ -105,6 +105,80 @@ export default function AttendanceScannerPage() {
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
+  const calendarCells = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-indexed
+
+    // First day of the month
+    const firstDay = new Date(year, month, 1);
+    // Day of the week for the 1st of the month (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const dayOfWeek = firstDay.getDay(); 
+    
+    // Shift Sunday to be the 7th day of the week (so Mon=0, Tue=1, ..., Sun=6)
+    const startOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    // Number of days in the current month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const cells = [];
+
+    // Add empty padding cells for the previous month
+    for (let i = 0; i < startOffset; i++) {
+      cells.push({ day: null, isPresent: false, isToday: false, isFuture: false });
+    }
+
+    // Add actual days
+    const today = new Date();
+    const todayDate = today.getDate();
+    const isCurrentMonthYear = today.getMonth() === month && today.getFullYear() === year;
+
+    // Build a set of days where the member checked in
+    const presentDays = new Set<number>();
+    history.forEach((h) => {
+      if (!h.checkInAt) return;
+      const d = new Date(h.checkInAt);
+      if (d.getMonth() === month && d.getFullYear() === year) {
+        presentDays.add(d.getDate());
+      }
+    });
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isPresent = presentDays.has(day);
+      const isToday = isCurrentMonthYear && day === todayDate;
+      const isFuture = isCurrentMonthYear && day > todayDate;
+
+      cells.push({
+        day,
+        isPresent,
+        isToday,
+        isFuture
+      });
+    }
+
+    return cells;
+  }, [history]);
+
+  const attendedSessionsCount = useMemo(() => {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    const presentDays = new Set<number>();
+    history.forEach((h) => {
+      if (!h.checkInAt) return;
+      const d = new Date(h.checkInAt);
+      if (d.getMonth() === month && d.getFullYear() === year) {
+        presentDays.add(d.getDate());
+      }
+    });
+    return presentDays.size;
+  }, [history]);
+
+  const currentMonthYearName = useMemo(() => {
+    const now = new Date();
+    return now.toLocaleString("id-ID", { month: "long", year: "numeric" }).toUpperCase();
+  }, []);
+
   const loadLists = useCallback(async () => {
     if (!user) return;
     setLoadingLists(true);
@@ -487,6 +561,164 @@ export default function AttendanceScannerPage() {
           Pengurus dapat mengoreksi atau menghapus catatan dari panel admin jika
           terjadi kesalahan.
         </p>
+      </section>
+
+      {/* Calendar visual */}
+      <section className={dashStyles.section} style={{ marginBottom: 0 }}>
+        <div className={dashStyles.sectionHeader}>
+          <h2 className={dashStyles.sectionTitle}>Jadwal & Absen Latihan Dojo</h2>
+        </div>
+        <div
+          style={{
+            padding: "16px",
+            borderRadius: "20px",
+            background: "var(--card-dark)",
+            border: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 800,
+              color: "#fff",
+              textAlign: "center",
+              marginBottom: "12px",
+              letterSpacing: "0.05em",
+            }}
+          >
+            {currentMonthYearName}
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              gap: "6px",
+              justifyItems: "center",
+              alignItems: "center",
+            }}
+          >
+            {/* Day headers */}
+            {["S", "S", "R", "K", "J", "S", "M"].map((d, idx) => (
+              <div
+                key={idx}
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  color: "var(--text-muted)",
+                  width: "28px",
+                  height: "28px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {d}
+              </div>
+            ))}
+
+            {/* Calendar cells */}
+            {calendarCells.map((cell, idx) => {
+              if (cell.day === null) {
+                return <div key={`empty-${idx}`} style={{ width: "28px", height: "28px" }} />;
+              }
+
+              let bg = "rgba(255, 255, 255, 0.02)";
+              let border = "1px solid rgba(255, 255, 255, 0.05)";
+              let color = "#aaa";
+
+              if (cell.isPresent) {
+                bg = "rgba(16, 185, 129, 0.15)";
+                border = "1px solid #10b981";
+                color = "#10b981";
+              }
+
+              if (cell.isToday) {
+                border = cell.isPresent ? "2px solid #10b981" : "2px solid var(--primary-gold)";
+                if (!cell.isPresent) {
+                  color = "var(--primary-gold)";
+                }
+              }
+
+              if (cell.isFuture) {
+                color = "#444";
+                bg = "rgba(255, 255, 255, 0.005)";
+                border = "1px dashed rgba(255, 255, 255, 0.02)";
+              }
+
+              return (
+                <div
+                  key={`day-${cell.day}`}
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "8px",
+                    background: bg,
+                    border: border,
+                    color: color,
+                    fontSize: "11px",
+                    fontWeight: cell.isPresent || cell.isToday ? 900 : 500,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                  }}
+                >
+                  {cell.day}
+                  {cell.isToday && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        bottom: "2px",
+                        width: "3px",
+                        height: "3px",
+                        borderRadius: "50%",
+                        background: cell.isPresent ? "#10b981" : "var(--primary-gold)",
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              fontSize: "10px",
+              color: "var(--text-muted)",
+              marginTop: "16px",
+              borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+              paddingTop: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  background: "rgba(16, 185, 129, 0.15)",
+                  border: "1px solid #10b981",
+                  borderRadius: "3px",
+                }}
+              />
+              <span>Hadir ({attendedSessionsCount} Sesi)</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  background: "rgba(255, 255, 255, 0.005)",
+                  border: "1px dashed rgba(255, 255, 255, 0.05)",
+                  borderRadius: "3px",
+                }}
+              />
+              <span>Belum Terjadi</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className={dashStyles.section} style={{ marginBottom: 0 }}>
