@@ -1,9 +1,54 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 
+const ensureMonthlyBilling = async (memberId: string) => {
+  if (!memberId) return;
+  const member = await prisma.member.findUnique({
+    where: { id: memberId }
+  });
+
+  if (member && member.status === 'Active' && !member.isDeleted) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const existingThisMonth = await prisma.billing.findFirst({
+      where: {
+        memberId,
+        type: 'MONTHLY_IURAN',
+        dueDate: {
+          gte: startOfMonth,
+          lte: endOfMonth
+        }
+      }
+    });
+
+    if (!existingThisMonth) {
+      const monthNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      const monthLabel = monthNames[now.getMonth()];
+      const yearLabel = now.getFullYear();
+
+      await prisma.billing.create({
+        data: {
+          memberId,
+          type: 'MONTHLY_IURAN',
+          amount: member.monthlyDuesAmount ?? 50000,
+          dueDate: endOfMonth,
+          status: 'PENDING',
+          description: `Iuran Bulanan - ${monthLabel} ${yearLabel}`
+        }
+      });
+    }
+  }
+};
+
 export const getMemberBillings = async (req: Request, res: Response) => {
   try {
     const { memberId } = req.params;
+    await ensureMonthlyBilling(memberId);
     const billings = await prisma.billing.findMany({
       where: { memberId },
       include: { payment: true },
@@ -228,6 +273,7 @@ export const deleteBilling = async (req: Request, res: Response) => {
 export const getMyBillings = async (req: any, res: Response) => {
   try {
     const memberId = req.user.memberId;
+    await ensureMonthlyBilling(memberId);
     const billings = await prisma.billing.findMany({
       where: { memberId },
       include: { payment: true },

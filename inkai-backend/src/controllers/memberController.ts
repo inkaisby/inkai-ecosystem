@@ -695,7 +695,21 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
           nia && String(nia).trim() !== '' ? String(nia).trim() : null;
       }
       if (allowEventWithoutDues !== undefined) memberUpdateData.allowEventWithoutDues = allowEventWithoutDues;
-      if (monthlyDuesAmount !== undefined) memberUpdateData.monthlyDuesAmount = Number(monthlyDuesAmount);
+      if (monthlyDuesAmount !== undefined) {
+        memberUpdateData.monthlyDuesAmount = Number(monthlyDuesAmount);
+        
+        // Retroactively update all PENDING or UNPAID monthly iuran billings for this member to the new nominal
+        await tx.billing.updateMany({
+          where: {
+            memberId: id,
+            type: 'MONTHLY_IURAN',
+            status: { in: ['PENDING', 'UNPAID'] }
+          },
+          data: {
+            amount: Number(monthlyDuesAmount)
+          }
+        });
+      }
       if (userId !== currentMember.userId) memberUpdateData.userId = userId;
 
       return await tx.member.update({
