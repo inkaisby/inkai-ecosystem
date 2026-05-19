@@ -118,6 +118,7 @@ export default function Dashboard() {
   const [mounted, setMounted] = useState(false);
   const [billings, setBillings] = useState<any[]>([]);
   const [showIuranLock, setShowIuranLock] = useState(false);
+  const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -137,10 +138,11 @@ export default function Dashboard() {
 
   const fetchEvents = useCallback(async () => {
     try {
-      const [upcomingRes, myEventsRes, billingsRes] = await Promise.all([
+      const [upcomingRes, myEventsRes, billingsRes, attendanceRes] = await Promise.all([
         eventApi.getEvents(),
         eventApi.getMyEvents(),
         billingApi.getMyBillings().catch(() => ({ data: { status: "error", data: [] } })),
+        api.attendance.getMy({ limit: 100 }).catch(() => ({ status: "error", data: [] })),
       ]);
 
       if (upcomingRes.data.status === "success") {
@@ -175,6 +177,9 @@ export default function Dashboard() {
       }
       if (billingsRes?.data?.status === "success") {
         setBillings(billingsRes.data.data || []);
+      }
+      if (attendanceRes?.status === "success" && Array.isArray(attendanceRes.data)) {
+        setAttendanceHistory(attendanceRes.data);
       }
     } catch (error) {
       console.error("Fetch events error:", error);
@@ -305,6 +310,28 @@ export default function Dashboard() {
   })();
 
   const visibleMyEvents = myEvents.filter(isMyEventStillVisible);
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const namaBulanIni = now.toLocaleString("id-ID", { month: "long" }).replace(/^\w/, (c) => c.toUpperCase());
+
+  const currentMonthAttendances = attendanceHistory.filter((h: any) => {
+    if (!h.checkInAt) return false;
+    const checkInDate = new Date(h.checkInAt);
+    return (
+      checkInDate.getMonth() === currentMonth &&
+      checkInDate.getFullYear() === currentYear
+    );
+  });
+
+  const attendanceCount = currentMonthAttendances.length;
+  const totalSessions = 8; // Standar 8 kali latihan sebulan (2x seminggu)
+  const attendancePct =
+    totalSessions > 0
+      ? Math.min(100, Math.round((attendanceCount / totalSessions) * 1000) / 10)
+      : 0;
 
   return (
     <div className={styles.container}>
@@ -441,6 +468,60 @@ export default function Dashboard() {
           }
         />
       </section>
+
+      {!isAdmin && (
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Kehadiran Latihan Bulan {namaBulanIni}</h2>
+          </div>
+          <div
+            className={styles.eventItem}
+            style={{
+              padding: "16px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "26px",
+                  fontWeight: 900,
+                  color: attendancePct >= 75 ? "#10b981" : "#f59e0b",
+                  fontFamily: "var(--font-outfit), sans-serif",
+                  lineHeight: 1.1,
+                }}
+              >
+                {attendancePct}%
+              </div>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
+                {attendanceCount} dari {totalSessions} Latihan Bulan Ini
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <span
+                style={{
+                  display: "inline-block",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  padding: "4px 10px",
+                  borderRadius: "8px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  background: attendancePct >= 75 ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)",
+                  color: attendancePct >= 75 ? "#10b981" : "#f59e0b",
+                }}
+              >
+                {attendancePct >= 75 ? "LAYAK UJIAN" : "TETAP SEMANGAT"}
+              </span>
+              <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px" }}>
+                Min. Kehadiran 75%
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className={styles.section}>
         <div className={styles.grid}>
