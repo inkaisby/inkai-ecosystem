@@ -132,6 +132,25 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-2 ml-auto shrink-0 pointer-events-auto">
+        {user && (
+          <div className="flex flex-col items-end min-w-0 text-right mr-1.5" style={{ maxWidth: '90px' }}>
+            <span className="text-[9px] font-black uppercase text-amber-500 truncate w-full leading-tight">
+              {user.fullName || user.email?.split('@')[0]}
+            </span>
+            <span className="text-[8px] font-bold text-white/50 truncate w-full leading-none">
+              {user.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
+               user.roles?.[0] === 'ADMIN_PUSAT' ? 'Pusat' :
+               user.roles?.[0] === 'ADMIN_PROVINCE' ? (user.managedProvinceName || 'Provinsi') :
+               user.roles?.[0] === 'ADMIN_BRANCH' ? (user.managedBranchName || 'Cabang') :
+               user.roles?.[0] === 'ADMIN_DOJO' ? (user.managedDojoName || 'Dojo') :
+               'Admin'}
+            </span>
+          </div>
+        )}
+
+        {/* Separator */}
+        <div className="h-5 w-px bg-white/10 mx-0.5" />
+
         {/* Notifications */}
         <div className="relative notifications-container">
           <button 
@@ -257,21 +276,6 @@ export default function TopBar() {
 
         {/* User Profile — klik/sentuh (bukan hover saja) */}
         <div className="flex items-center gap-2 pl-2 border-l border-white/10 user-menu-container">
-          {user && (
-            <div className="flex flex-col items-end min-w-0 text-right mr-1" style={{ maxWidth: '80px' }}>
-              <span className="text-[9px] font-black uppercase text-amber-500 truncate w-full leading-tight">
-                {user.fullName || user.email?.split('@')[0]}
-              </span>
-              <span className="text-[8px] font-bold text-white/50 truncate w-full leading-none">
-                {user.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
-                 user.roles?.[0] === 'ADMIN_PUSAT' ? 'Pusat' :
-                 user.roles?.[0] === 'ADMIN_PROVINCE' ? (user.managedProvinceName || 'Provinsi') :
-                 user.roles?.[0] === 'ADMIN_BRANCH' ? (user.managedBranchName || 'Cabang') :
-                 user.roles?.[0] === 'ADMIN_DOJO' ? (user.managedDojoName || 'Dojo') :
-                 'Admin'}
-              </span>
-            </div>
-          )}
           <div className="relative">
             <button
               type="button"

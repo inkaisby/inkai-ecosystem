@@ -300,14 +300,14 @@ function AdminMemberListCard({
 
 function MembersContent() {
   const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
-  const dojoId = searchParams.get("dojoId");
-  const dojoName = searchParams.get("dojoName");
+  const dojoId = searchParams.get("dojoId") || user?.managedDojoId;
+  const dojoName = searchParams.get("dojoName") || user?.managedDojoName;
   const branchId = searchParams.get("branchId");
   const provinceId = searchParams.get("provinceId");
   const memberId = searchParams.get("memberId");
 
-  const { user } = useAuth();
   const canEditNiaSabuk = useMemo(
     () => adminMayEditMemberNiaAndSabuk(user),
     [user],
