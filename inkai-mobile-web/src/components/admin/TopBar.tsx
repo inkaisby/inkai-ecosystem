@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TopBar() {
-  const { logout, isAuthenticated } = useAuth();
+  const { logout, isAuthenticated, user } = useAuth();
   const router = useRouter();
 
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -257,6 +257,21 @@ export default function TopBar() {
 
         {/* User Profile — klik/sentuh (bukan hover saja) */}
         <div className="flex items-center gap-2 pl-2 border-l border-white/10 user-menu-container">
+          {user && (
+            <div className="flex flex-col items-end min-w-0 text-right mr-1" style={{ maxWidth: '80px' }}>
+              <span className="text-[9px] font-black uppercase text-amber-500 truncate w-full leading-tight">
+                {user.fullName || user.email?.split('@')[0]}
+              </span>
+              <span className="text-[8px] font-bold text-white/50 truncate w-full leading-none">
+                {user.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
+                 user.roles?.[0] === 'ADMIN_PUSAT' ? 'Pusat' :
+                 user.roles?.[0] === 'ADMIN_PROVINCE' ? (user.managedProvinceName || 'Provinsi') :
+                 user.roles?.[0] === 'ADMIN_BRANCH' ? (user.managedBranchName || 'Cabang') :
+                 user.roles?.[0] === 'ADMIN_DOJO' ? (user.managedDojoName || 'Dojo') :
+                 'Admin'}
+              </span>
+            </div>
+          )}
           <div className="relative">
             <button
               type="button"
@@ -293,6 +308,21 @@ export default function TopBar() {
                       <X size={18} />
                     </button>
                   </div>
+                  {user && (
+                    <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                      <p className="text-xs font-black uppercase text-amber-500 truncate">
+                        {user.fullName || user.email?.split('@')[0]}
+                      </p>
+                      <p className="text-[9px] font-bold text-white/50 truncate">
+                        {user.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
+                         user.roles?.[0] === 'ADMIN_PUSAT' ? 'Admin Pusat' :
+                         user.roles?.[0] === 'ADMIN_PROVINCE' ? `Admin Provinsi - ${user.managedProvinceName || ''}` :
+                         user.roles?.[0] === 'ADMIN_BRANCH' ? `Admin Cabang - ${user.managedBranchName || ''}` :
+                         user.roles?.[0] === 'ADMIN_DOJO' ? `Admin Dojo - ${user.managedDojoName || ''}` :
+                         'Administrator'}
+                      </p>
+                    </div>
+                  )}
                   <div className="p-2">
                     <button
                       type="button"
