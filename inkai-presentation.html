@@ -136,10 +136,12 @@
       gap: 0.75rem;
     }
 
-    .brand-logo svg {
+    .brand-logo svg,
+    .brand-logo img {
       width: 38px;
       height: 38px;
       filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4));
+      object-fit: contain;
     }
 
     .brand-title {
@@ -578,9 +580,11 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    .sim-logo-bg svg {
+    .sim-logo-bg svg,
+    .sim-logo-bg img {
       width: 50px;
       height: 50px;
+      object-fit: contain;
     }
 
     .sim-app-title {
@@ -687,9 +691,11 @@
       color: #fff;
     }
 
-    .kta-logo svg {
+    .kta-logo svg,
+    .kta-logo img {
       width: 20px;
       height: 20px;
+      object-fit: contain;
     }
 
     .kta-logo-text {
@@ -1176,15 +1182,7 @@
       <!-- Top header bar -->
       <div class="header-bar">
         <div class="brand-logo">
-          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="45" fill="black" stroke="#f59e0b" stroke-width="4" />
-            <!-- Sun circle -->
-            <circle cx="50" cy="45" r="22" fill="#ef4444" />
-            <!-- Karate master silhouette or belt style -->
-            <path d="M25 75 L38 52 L50 62 L62 52 L75 75 Z" fill="#f59e0b" />
-            <!-- Text or symbol inside logo -->
-            <circle cx="50" cy="45" r="8" fill="#fff" opacity="0.1" />
-          </svg>
+          <img src="logo.png" alt="INKAI Logo" width="38" height="38" style="position: relative; z-index: 2;" />
           <div class="brand-title">INKAI DIGITAL</div>
         </div>
         <div class="toolbar">
@@ -1560,11 +1558,13 @@
           <div class="screen-template active" id="sim-screen-login">
             <div class="sim-logo-wrapper">
               <div class="sim-logo-bg">
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="50" cy="50" r="45" fill="black" stroke="#f59e0b" stroke-width="4" />
-                  <circle cx="50" cy="45" r="22" fill="#ef4444" />
-                  <path d="M25 75 L38 52 L50 62 L62 52 L75 75 Z" fill="#f59e0b" />
-                </svg>
+                <img
+                  src="logo.png"
+                  alt="INKAI Logo"
+                  width="70"
+                  height="70"
+                  style="position: relative; z-index: 2; object-fit: contain;"
+                />
               </div>
               <h1 class="sim-app-title" contenteditable="false">INKAI MOBILE</h1>
               <p class="sim-app-subtitle">Sistem Anggota & Dojo</p>
@@ -1618,11 +1618,7 @@
             <div class="sim-kta">
               <div class="kta-header">
                 <div class="kta-logo">
-                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="45" fill="black" stroke="#f59e0b" stroke-width="4" />
-                    <circle cx="50" cy="45" r="22" fill="#ef4444" />
-                    <path d="M25 75 L38 52 L50 62 L62 52 L75 75 Z" fill="#f59e0b" />
-                  </svg>
+                  <img src="logo.png" alt="INKAI Logo" width="20" height="20" style="position: relative; z-index: 2;" />
                   <span class="kta-logo-text">KTA INKAI DIGITAL</span>
                 </div>
                 <div class="kta-badge-status" id="txt-member-status">AKTIF</div>
@@ -1902,9 +1898,7 @@
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
               <div style="display: flex; align-items: center; gap: 0.4rem;">
                 <div class="sim-logo-bg" style="width: 22px; height: 22px; box-shadow: none;">
-                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="45" fill="black" stroke="#f59e0b" stroke-width="4" />
-                  </svg>
+                  <img src="logo.png" alt="INKAI Logo" style="width: 16px; height: 16px; object-fit: contain; position: relative; z-index: 2;" />
                 </div>
                 <span style="font-family: var(--font-outfit); font-weight: 800; font-size: 0.7rem; color: #fff;">PORTAL
                   ADMIN CABANG</span>
