@@ -382,10 +382,7 @@ export default function AttendanceScannerPage() {
           <h2 className={dashStyles.sectionTitle}>Absensi agenda</h2>
           <Calendar size={16} style={{ opacity: 0.6 }} aria-hidden />
         </div>
-        <p style={{ fontSize: 12, color: "#888", marginBottom: 12, lineHeight: 1.5 }}>
-          Tap absen untuk agenda yang Anda ikuti dengan status disetujui/lunas,
-          pada jadwal event berlangsung (maksimal sekali per hari per agenda).
-        </p>
+
         {loadingLists ? (
           <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
             <Loader2 className="animate-spin text-amber-500" size={28} />
