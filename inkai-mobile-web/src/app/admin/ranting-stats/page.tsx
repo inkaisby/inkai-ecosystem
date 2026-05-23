@@ -14,13 +14,13 @@ interface RantingStat {
 
 const getKyuColors = (kyuName: string) => {
   const name = kyuName.toUpperCase();
-  if (name.includes('PUTIH')) return { bar: 'bg-white/30 border-r-2 border-white', globalBar: 'bg-white/80', dot: 'bg-white' };
-  if (name.includes('KUNING')) return { bar: 'bg-yellow-400/30 border-r-2 border-yellow-400', globalBar: 'bg-yellow-400/80', dot: 'bg-yellow-400' };
-  if (name.includes('HIJAU')) return { bar: 'bg-green-500/30 border-r-2 border-green-500', globalBar: 'bg-green-500/80', dot: 'bg-green-500' };
-  if (name.includes('BIRU')) return { bar: 'bg-blue-500/30 border-r-2 border-blue-500', globalBar: 'bg-blue-500/80', dot: 'bg-blue-500' };
-  if (name.includes('COKELAT')) return { bar: 'bg-orange-700/40 border-r-2 border-orange-700', globalBar: 'bg-orange-700/90', dot: 'bg-orange-700' };
-  if (name.includes('HITAM')) return { bar: 'bg-gray-500/40 border-r-2 border-gray-400', globalBar: 'bg-gray-500/90', dot: 'bg-gray-400' };
-  return { bar: 'bg-amber-500/30 border-r-2 border-amber-500', globalBar: 'bg-amber-500/80', dot: 'bg-amber-500' };
+  if (name.includes('PUTIH')) return { bg: 'rgba(255,255,255,0.4)', border: '#ffffff', dot: '#ffffff' };
+  if (name.includes('KUNING')) return { bg: 'rgba(250,204,21,0.4)', border: '#facc15', dot: '#facc15' };
+  if (name.includes('HIJAU')) return { bg: 'rgba(34,197,94,0.4)', border: '#22c55e', dot: '#22c55e' };
+  if (name.includes('BIRU')) return { bg: 'rgba(59,130,246,0.4)', border: '#3b82f6', dot: '#3b82f6' };
+  if (name.includes('COKELAT')) return { bg: 'rgba(194,65,12,0.5)', border: '#c2410c', dot: '#c2410c' };
+  if (name.includes('HITAM')) return { bg: 'rgba(107,114,128,0.5)', border: '#9ca3af', dot: '#9ca3af' };
+  return { bg: 'rgba(245,158,11,0.4)', border: '#f59e0b', dot: '#f59e0b' };
 };
 
 export default function RantingStatsPage() {
@@ -173,7 +173,7 @@ export default function RantingStatsPage() {
                       expandedKyu === kyu ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : 'bg-amber-500/5 border-amber-500/10 hover:bg-amber-500/10'
                     }`}
                   >
-                    <div className={`absolute bottom-0 left-0 h-1 ${colors.globalBar}`} style={{ width: `${percentage}%` }}></div>
+                    <div className="absolute bottom-0 left-0 h-1" style={{ width: `${percentage}%`, backgroundColor: colors.dot }}></div>
                     <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wide">{kyu}</span>
                     <div className="mt-1 flex items-baseline gap-1">
                       <span className="text-xl font-black text-white">{count}</span>
@@ -275,9 +275,9 @@ export default function RantingStatsPage() {
                                     isKyuExpanded ? 'border-amber-500/30' : 'border-white/5'
                                   }`}
                                 >
-                                  <div className={`absolute top-0 left-0 h-full ${colors.bar}`} style={{ width: `${barWidth}%` }}></div>
+                                  <div className="absolute top-0 left-0 h-full border-r-2" style={{ width: `${barWidth}%`, backgroundColor: colors.bg, borderColor: colors.border }}></div>
                                   <div className="flex items-center gap-3 relative z-10">
-                                    <div className={`w-2 h-2 rounded-full ${colors.dot}`}></div>
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }}></div>
                                     <span className="text-xs text-gray-300 font-bold uppercase tracking-wide">{kyu}</span>
                                   </div>
                                   <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-1.5 rounded-md border border-amber-500/10 shadow-sm relative z-10">
