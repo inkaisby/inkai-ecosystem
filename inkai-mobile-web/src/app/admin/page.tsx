@@ -387,13 +387,19 @@ export default function Dashboard() {
                     </button>
                     {expandedRantingIndex === idx && (
                       <div className="p-3 pt-0 border-t border-white/5 bg-black/20">
-                        <div className="grid grid-cols-2 gap-2 mt-3">
+                        <div className="flex flex-col gap-2 mt-3">
                           {Object.entries(ranting.kyuBreakdown)
                             .sort((a, b) => b[1] - a[1])
                             .map(([kyu, count]) => (
-                            <div key={kyu} className="flex justify-between items-center bg-white/5 rounded px-3 py-2">
-                              <span className="text-[10px] text-gray-300 font-medium">{kyu}</span>
-                              <span className="text-[10px] text-white font-bold">{count} anggota</span>
+                            <div key={kyu} className="flex justify-between items-center p-2.5 rounded-lg bg-gradient-to-r from-white/[0.03] to-transparent border border-white/[0.02]">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50"></div>
+                                <span className="text-[11px] text-gray-300 font-medium uppercase tracking-wide">{kyu}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/10">
+                                <span className="text-xs text-amber-500 font-bold">{count}</span>
+                                <span className="text-[9px] text-amber-500/70 font-black uppercase tracking-wider">anggota</span>
+                              </div>
                             </div>
                           ))}
                         </div>
