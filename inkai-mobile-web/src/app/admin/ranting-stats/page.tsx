@@ -14,13 +14,13 @@ interface RantingStat {
 
 const getKyuColors = (kyuName: string) => {
   const name = kyuName.toUpperCase();
-  if (name.includes('PUTIH')) return { bar: 'bg-white/30', globalBar: 'bg-white/40', dot: 'bg-white' };
-  if (name.includes('KUNING')) return { bar: 'bg-yellow-400/20', globalBar: 'bg-yellow-400/40', dot: 'bg-yellow-400' };
-  if (name.includes('HIJAU')) return { bar: 'bg-green-500/20', globalBar: 'bg-green-500/40', dot: 'bg-green-500' };
-  if (name.includes('BIRU')) return { bar: 'bg-blue-500/20', globalBar: 'bg-blue-500/40', dot: 'bg-blue-500' };
-  if (name.includes('COKELAT')) return { bar: 'bg-orange-800/40', globalBar: 'bg-orange-800/60', dot: 'bg-orange-800' };
-  if (name.includes('HITAM')) return { bar: 'bg-gray-400/30', globalBar: 'bg-gray-400/50', dot: 'bg-gray-400' };
-  return { bar: 'bg-amber-500/10', globalBar: 'bg-amber-500/40', dot: 'bg-amber-500' };
+  if (name.includes('PUTIH')) return { bar: 'bg-white/30 border-r-2 border-white', globalBar: 'bg-white/80', dot: 'bg-white' };
+  if (name.includes('KUNING')) return { bar: 'bg-yellow-400/30 border-r-2 border-yellow-400', globalBar: 'bg-yellow-400/80', dot: 'bg-yellow-400' };
+  if (name.includes('HIJAU')) return { bar: 'bg-green-500/30 border-r-2 border-green-500', globalBar: 'bg-green-500/80', dot: 'bg-green-500' };
+  if (name.includes('BIRU')) return { bar: 'bg-blue-500/30 border-r-2 border-blue-500', globalBar: 'bg-blue-500/80', dot: 'bg-blue-500' };
+  if (name.includes('COKELAT')) return { bar: 'bg-orange-700/40 border-r-2 border-orange-700', globalBar: 'bg-orange-700/90', dot: 'bg-orange-700' };
+  if (name.includes('HITAM')) return { bar: 'bg-gray-500/40 border-r-2 border-gray-400', globalBar: 'bg-gray-500/90', dot: 'bg-gray-400' };
+  return { bar: 'bg-amber-500/30 border-r-2 border-amber-500', globalBar: 'bg-amber-500/80', dot: 'bg-amber-500' };
 };
 
 export default function RantingStatsPage() {
