@@ -12,6 +12,17 @@ interface RantingStat {
   kyuBreakdown: Record<string, number>;
 }
 
+const getKyuColors = (kyuName: string) => {
+  const name = kyuName.toUpperCase();
+  if (name.includes('PUTIH')) return { bar: 'bg-white/30', globalBar: 'bg-white/40', dot: 'bg-white' };
+  if (name.includes('KUNING')) return { bar: 'bg-yellow-400/20', globalBar: 'bg-yellow-400/40', dot: 'bg-yellow-400' };
+  if (name.includes('HIJAU')) return { bar: 'bg-green-500/20', globalBar: 'bg-green-500/40', dot: 'bg-green-500' };
+  if (name.includes('BIRU')) return { bar: 'bg-blue-500/20', globalBar: 'bg-blue-500/40', dot: 'bg-blue-500' };
+  if (name.includes('COKELAT')) return { bar: 'bg-orange-800/40', globalBar: 'bg-orange-800/60', dot: 'bg-orange-800' };
+  if (name.includes('HITAM')) return { bar: 'bg-gray-400/30', globalBar: 'bg-gray-400/50', dot: 'bg-gray-400' };
+  return { bar: 'bg-amber-500/10', globalBar: 'bg-amber-500/40', dot: 'bg-amber-500' };
+};
+
 export default function RantingStatsPage() {
   const router = useRouter();
   const [stats, setStats] = useState<RantingStat[]>([]);
@@ -153,6 +164,7 @@ export default function RantingStatsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {kyuTotals.map(([kyu, count]) => {
                 const percentage = totalGlobalMembers > 0 ? Math.round((count / totalGlobalMembers) * 100) : 0;
+                const colors = getKyuColors(kyu);
                 return (
                   <button 
                     key={kyu} 
@@ -161,7 +173,7 @@ export default function RantingStatsPage() {
                       expandedKyu === kyu ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : 'bg-amber-500/5 border-amber-500/10 hover:bg-amber-500/10'
                     }`}
                   >
-                    <div className="absolute bottom-0 left-0 h-1 bg-amber-500/40" style={{ width: `${percentage}%` }}></div>
+                    <div className={`absolute bottom-0 left-0 h-1 ${colors.globalBar}`} style={{ width: `${percentage}%` }}></div>
                     <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wide">{kyu}</span>
                     <div className="mt-1 flex items-baseline gap-1">
                       <span className="text-xl font-black text-white">{count}</span>
@@ -254,6 +266,7 @@ export default function RantingStatsPage() {
                           .map(([kyu, count], kyuIdx) => {
                             const barWidth = maxInRanting > 0 ? Math.round((count / maxInRanting) * 100) : 0;
                             const isKyuExpanded = expandedRantingKyu?.rantingId === ranting.rantingId && expandedRantingKyu?.kyu === kyu;
+                            const colors = getKyuColors(kyu);
                             return (
                               <div key={kyuIdx} className="flex flex-col">
                                 <button 
@@ -262,9 +275,9 @@ export default function RantingStatsPage() {
                                     isKyuExpanded ? 'border-amber-500/30' : 'border-white/5'
                                   }`}
                                 >
-                                  <div className="absolute top-0 left-0 h-full bg-amber-500/10" style={{ width: `${barWidth}%` }}></div>
+                                  <div className={`absolute top-0 left-0 h-full ${colors.bar}`} style={{ width: `${barWidth}%` }}></div>
                                   <div className="flex items-center gap-3 relative z-10">
-                                    <div className="w-2 h-2 rounded-full bg-amber-500/50"></div>
+                                    <div className={`w-2 h-2 rounded-full ${colors.dot}`}></div>
                                     <span className="text-xs text-gray-300 font-bold uppercase tracking-wide">{kyu}</span>
                                   </div>
                                   <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-1.5 rounded-md border border-amber-500/10 shadow-sm relative z-10">
