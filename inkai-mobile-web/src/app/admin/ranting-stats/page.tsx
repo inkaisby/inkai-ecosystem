@@ -18,6 +18,20 @@ export default function RantingStatsPage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedRantingIndex, setExpandedRantingIndex] = useState<number | null>(null);
 
+  const kyuTotals = React.useMemo(() => {
+    const totals: Record<string, number> = {};
+    stats.forEach(ranting => {
+      Object.entries(ranting.kyuBreakdown).forEach(([kyu, count]) => {
+        totals[kyu] = (totals[kyu] || 0) + count;
+      });
+    });
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  }, [stats]);
+
+  const sortedStats = React.useMemo(() => {
+    return [...stats].sort((a, b) => a.rantingName.localeCompare(b.rantingName));
+  }, [stats]);
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -76,8 +90,26 @@ export default function RantingStatsPage() {
       </div>
 
       <div className="space-y-3">
-        {stats.length > 0 ? (
-          stats.map((ranting, idx) => (
+        {kyuTotals.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 mb-3">Total per Tingkatan (Kyu)</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {kyuTotals.map(([kyu, count]) => (
+                <div key={kyu} className="glass-card p-4 border-amber-500/10 bg-amber-500/5 flex flex-col items-center justify-center text-center">
+                  <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wide">{kyu}</span>
+                  <div className="mt-1 flex items-baseline gap-1">
+                    <span className="text-xl font-black text-white">{count}</span>
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">anggota</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 mb-3">Rincian per Ranting</h2>
+        {sortedStats.length > 0 ? (
+          sortedStats.map((ranting, idx) => (
             <div key={idx} className="glass-card border-white/5 bg-white/[0.02] rounded-xl overflow-hidden">
               <button
                 onClick={() => setExpandedRantingIndex(expandedRantingIndex === idx ? null : idx)}
@@ -111,9 +143,9 @@ export default function RantingStatsPage() {
                           <div className="w-2 h-2 rounded-full bg-amber-500/50"></div>
                           <span className="text-xs text-gray-300 font-bold uppercase tracking-wide">{kyu}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 bg-amber-500/10 px-3 py-1.5 rounded-md border border-amber-500/10 shadow-sm">
+                        <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-1.5 rounded-md border border-amber-500/10 shadow-sm">
                           <span className="text-sm text-amber-500 font-black">{count}</span>
-                          <span className="text-[10px] text-amber-500/70 font-black uppercase tracking-wider">anggota</span>
+                          <span className="text-[10px] text-amber-500/70 font-black uppercase tracking-wider">&nbsp;ANGGOTA</span>
                         </div>
                       </div>
                     ))}
