@@ -64,7 +64,7 @@ export const getStats = async (req: AuthRequest, res: Response) => {
       }
       const stat = rantingStatsMap.get(m.dojoId)!;
       stat.totalMembers += m._count.id;
-      const rank = m.currentRank || 'Unknown';
+      const rank = (m.currentRank || 'Unknown').trim().toUpperCase();
       stat.kyuBreakdown[rank] = (stat.kyuBreakdown[rank] || 0) + m._count.id;
     }
 

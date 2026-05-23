@@ -243,7 +243,7 @@ export const getMemberDetail = async (req: AuthRequest, res: Response) => {
 
 export const getAllMembers = async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 10, search = '', dojoId, status } = req.query;
+    const { page = 1, limit = 10, search = '', dojoId, status, currentRank } = req.query;
     const pageNum = Number(page);
     const pageSafe =
       typeof pageNum === 'number' && Number.isFinite(pageNum) && pageNum > 0
@@ -268,6 +268,10 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
 
     if (status) {
       where.status = String(status);
+    }
+
+    if (currentRank) {
+      where.currentRank = { equals: String(currentRank), mode: 'insensitive' };
     }
 
     // Regional Scoping — dojo lebih spesifik dari cabang/provinsi

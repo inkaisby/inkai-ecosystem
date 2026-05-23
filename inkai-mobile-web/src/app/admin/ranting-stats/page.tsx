@@ -18,6 +18,10 @@ export default function RantingStatsPage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedRantingIndex, setExpandedRantingIndex] = useState<number | null>(null);
 
+  const [expandedKyu, setExpandedKyu] = useState<string | null>(null);
+  const [kyuMembers, setKyuMembers] = useState<any[]>([]);
+  const [kyuMembersLoading, setKyuMembersLoading] = useState(false);
+
   const kyuTotals = React.useMemo(() => {
     const totals: Record<string, number> = {};
     stats.forEach(ranting => {
@@ -47,6 +51,23 @@ export default function RantingStatsPage() {
     };
     fetchStats();
   }, []);
+
+  const handleExpandKyu = async (kyu: string) => {
+    if (expandedKyu === kyu) {
+      setExpandedKyu(null);
+      return;
+    }
+    setExpandedKyu(kyu);
+    setKyuMembersLoading(true);
+    try {
+      const res = await api.members.getAll({ currentRank: kyu, limit: 1000 });
+      setKyuMembers(res.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setKyuMembersLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -95,15 +116,53 @@ export default function RantingStatsPage() {
             <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 mb-3">Total per Tingkatan (Kyu)</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {kyuTotals.map(([kyu, count]) => (
-                <div key={kyu} className="glass-card p-4 border-amber-500/10 bg-amber-500/5 flex flex-col items-center justify-center text-center">
+                <button 
+                  key={kyu} 
+                  onClick={() => handleExpandKyu(kyu)}
+                  className={`glass-card p-4 border flex flex-col items-center justify-center text-center active:scale-95 transition-all ${
+                    expandedKyu === kyu ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : 'bg-amber-500/5 border-amber-500/10 hover:bg-amber-500/10'
+                  }`}
+                >
                   <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wide">{kyu}</span>
                   <div className="mt-1 flex items-baseline gap-1">
                     <span className="text-xl font-black text-white">{count}</span>
                     <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">anggota</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
+
+            {expandedKyu && (
+              <div className="mt-4 glass-card p-4 border-amber-500/20 bg-black/40 animate-in slide-in-from-top-2 duration-300">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider">{expandedKyu}</h3>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2.5 py-1 rounded-full font-bold">
+                    {kyuMembers.length} Anggota
+                  </span>
+                </div>
+                
+                {kyuMembersLoading ? (
+                  <div className="text-center text-xs text-amber-500/70 font-medium italic py-6 animate-pulse">
+                    Memuat data anggota...
+                  </div>
+                ) : kyuMembers.length > 0 ? (
+                  <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    {kyuMembers.map((m: any) => (
+                      <div key={m.id} className="flex justify-between items-center bg-white/[0.03] hover:bg-white/[0.05] rounded-lg p-3 transition-colors">
+                        <span className="text-xs text-white font-bold truncate max-w-[60%]">{m.fullName}</span>
+                        <span className="text-[9px] text-amber-500/80 font-black uppercase tracking-wider text-right truncate max-w-[40%] bg-amber-500/5 px-2 py-1 rounded">
+                          {m.dojo?.name || 'Pusat'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-xs text-gray-500 italic py-6">
+                    Tidak ada data anggota ditemukan.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
