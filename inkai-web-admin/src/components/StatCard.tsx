@@ -7,10 +7,9 @@ interface StatCardProps {
   subValue?: string;
   icon: LucideIcon;
   trend?: 'up' | 'down';
-  children?: React.ReactNode;
 }
 
-export default function StatCard({ label, value, subValue, icon: Icon, trend, children }: StatCardProps) {
+export default function StatCard({ label, value, subValue, icon: Icon, trend }: StatCardProps) {
   return (
     <div className="glass-card flex flex-col gap-4">
       <div className="flex justify-between items-start">
@@ -28,7 +27,6 @@ export default function StatCard({ label, value, subValue, icon: Icon, trend, ch
         <h3 className="text-3xl font-bold mt-1">{value}</h3>
         {subValue && <p className="text-xs text-gray-500 mt-1">{subValue}</p>}
       </div>
-      {children}
     </div>
   );
 }

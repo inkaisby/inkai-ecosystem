@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Plus,
   ChevronRight,
+  ChevronDown,
   ShieldCheck,
   UserCheck,
   FileText,
@@ -33,6 +34,11 @@ interface DashboardStats {
   totalBranches: number;
   totalProvinces: number;
   pendingVerifications: number;
+  rantingStats?: {
+    rantingName: string;
+    totalMembers: number;
+    kyuBreakdown: Record<string, number>;
+  }[];
 }
 
 interface PendingClaim {
@@ -66,6 +72,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const [showStats, setShowStats] = useState(true);
+  const [expandedRantingIndex, setExpandedRantingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -354,6 +361,48 @@ export default function Dashboard() {
               icon={Clock}
               onClick={() => router.push("/admin/verification")}
             />
+            {stats?.rantingStats && stats.rantingStats.length > 0 && (
+              <div className="col-span-2 mt-2 space-y-2">
+                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">Sebaran Anggota per Ranting</h4>
+                {stats.rantingStats.map((ranting, idx) => (
+                  <div key={idx} className="glass-card border-white/5 bg-white/[0.02] rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setExpandedRantingIndex(expandedRantingIndex === idx ? null : idx)}
+                      className="w-full flex items-center justify-between p-3 text-left active:bg-white/[0.02] transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+                          <Users size={16} />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-bold text-white">{ranting.rantingName}</h5>
+                          <p className="text-[10px] text-amber-500 font-medium">{ranting.totalMembers} anggota</p>
+                        </div>
+                      </div>
+                      {expandedRantingIndex === idx ? (
+                        <ChevronDown size={16} className="text-gray-500" />
+                      ) : (
+                        <ChevronRight size={16} className="text-gray-500" />
+                      )}
+                    </button>
+                    {expandedRantingIndex === idx && (
+                      <div className="p-3 pt-0 border-t border-white/5 bg-black/20">
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                          {Object.entries(ranting.kyuBreakdown)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([kyu, count]) => (
+                            <div key={kyu} className="flex justify-between items-center bg-white/5 rounded px-3 py-2">
+                              <span className="text-[10px] text-gray-300 font-medium">{kyu}</span>
+                              <span className="text-[10px] text-white font-bold">{count} anggota</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

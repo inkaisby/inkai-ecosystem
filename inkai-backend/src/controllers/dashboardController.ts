@@ -43,6 +43,31 @@ export const getStats = async (req: AuthRequest, res: Response) => {
       _sum: { amount: true }
     });
 
+    const membersByRank = await prisma.member.groupBy({
+      by: ['dojoId', 'currentRank'],
+      where,
+      _count: { id: true },
+    });
+
+    const dojosInStats = await prisma.dojo.findMany({
+      where: { id: { in: membersByRank.map(m => m.dojoId).filter(id => id !== null) as string[] } },
+      select: { id: true, name: true }
+    });
+    const dojoMap = new Map(dojosInStats.map(d => [d.id, d.name]));
+
+    const rantingStatsMap = new Map<string, { rantingName: string, totalMembers: number, kyuBreakdown: Record<string, number> }>();
+    for (const m of membersByRank) {
+      if (!m.dojoId) continue;
+      const dojoName = dojoMap.get(m.dojoId) || 'Unknown';
+      if (!rantingStatsMap.has(m.dojoId)) {
+        rantingStatsMap.set(m.dojoId, { rantingName: dojoName, totalMembers: 0, kyuBreakdown: {} });
+      }
+      const stat = rantingStatsMap.get(m.dojoId)!;
+      stat.totalMembers += m._count.id;
+      const rank = m.currentRank || 'Unknown';
+      stat.kyuBreakdown[rank] = (stat.kyuBreakdown[rank] || 0) + m._count.id;
+    }
+
     const pendingVerifications = 0; 
 
     res.json({
@@ -53,7 +78,8 @@ export const getStats = async (req: AuthRequest, res: Response) => {
         totalBranches,
         totalProvinces,
         iuranTotal: iuranSum._sum.amount || 0,
-        pendingVerifications
+        pendingVerifications,
+        rantingStats: Array.from(rantingStatsMap.values())
       }
     });
   } catch (error: any) {

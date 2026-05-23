@@ -12,9 +12,7 @@ import {
   MessageSquare,
   Loader2,
   TrendingUp,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp
+  AlertCircle
 } from 'lucide-react';
 import StatCard from '@/components/StatCard';
 import { api } from '@/lib/api';
@@ -27,7 +25,6 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const [user, setUser] = useState<any>(null);
-  const [openRanting, setOpenRanting] = useState<string | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -138,58 +135,14 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           label="Total Anggota" 
           value={stats?.totalMembers?.toLocaleString() || '0'} 
           subValue="Aktif Nasional" 
           icon={Users} 
           trend="up" 
-        >
-          <div className="mt-4 border-t border-white/10 pt-4 space-y-2">
-            <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Per Ranting</p>
-            {(stats?.rantingStats || [
-              {
-                name: 'Gading',
-                total: 10,
-                kyu: [
-                  { level: 10, count: 2 },
-                  { level: 8, count: 5 },
-                  { level: 7, count: 3 }
-                ]
-              },
-              {
-                name: 'Kenjeran',
-                total: 15,
-                kyu: [
-                  { level: 10, count: 5 },
-                  { level: 9, count: 5 },
-                  { level: 8, count: 5 }
-                ]
-              }
-            ]).map((ranting: any, idx: number) => (
-              <div key={idx} className="bg-white/5 rounded-lg overflow-hidden">
-                <button 
-                  onClick={() => setOpenRanting(openRanting === ranting.name ? null : ranting.name)}
-                  className="w-full flex items-center justify-between p-3 text-sm hover:bg-white/5 transition-colors"
-                >
-                  <span className="font-medium text-left">{ranting.name} <span className="text-gray-400 text-xs ml-1">({ranting.total} anggota)</span></span>
-                  {openRanting === ranting.name ? <ChevronUp size={16} className="text-gray-400 shrink-0" /> : <ChevronDown size={16} className="text-gray-400 shrink-0" />}
-                </button>
-                {openRanting === ranting.name && (
-                  <div className="px-3 pb-3 pt-1 space-y-1 bg-black/20">
-                    {ranting.kyu.map((k: any, i: number) => (
-                      <div key={i} className="flex justify-between text-xs text-gray-400">
-                        <span>Kyu {k.level}</span>
-                        <span>{k.count} anggota</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </StatCard>
+        />
         <StatCard 
           label="Total Dojo" 
           value={stats?.totalDojos?.toLocaleString() || '0'} 
