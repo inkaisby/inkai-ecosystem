@@ -55,12 +55,12 @@ export const getStats = async (req: AuthRequest, res: Response) => {
     });
     const dojoMap = new Map(dojosInStats.map(d => [d.id, d.name]));
 
-    const rantingStatsMap = new Map<string, { rantingName: string, totalMembers: number, kyuBreakdown: Record<string, number> }>();
+    const rantingStatsMap = new Map<string, { rantingId: string, rantingName: string, totalMembers: number, kyuBreakdown: Record<string, number> }>();
     for (const m of membersByRank) {
       if (!m.dojoId) continue;
       const dojoName = dojoMap.get(m.dojoId) || 'Unknown';
       if (!rantingStatsMap.has(m.dojoId)) {
-        rantingStatsMap.set(m.dojoId, { rantingName: dojoName, totalMembers: 0, kyuBreakdown: {} });
+        rantingStatsMap.set(m.dojoId, { rantingId: m.dojoId, rantingName: dojoName, totalMembers: 0, kyuBreakdown: {} });
       }
       const stat = rantingStatsMap.get(m.dojoId)!;
       stat.totalMembers += m._count.id;
