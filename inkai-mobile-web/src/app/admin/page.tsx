@@ -72,7 +72,6 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const [showStats, setShowStats] = useState(true);
-  const [expandedRantingIndex, setExpandedRantingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -312,6 +311,25 @@ export default function Dashboard() {
           </div>
           <ChevronRight size={16} className="text-gray-600 shrink-0" />
         </button>
+        <button
+          onClick={() => router.push("/admin/ranting-stats")}
+          className="w-full glass-card p-4 flex items-center justify-between border-amber-500/15 bg-amber-500/[0.04] hover:bg-amber-500/10 active:scale-[0.99] transition-all text-left"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-500 border border-amber-500/25 shrink-0">
+              <Users size={22} strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-xs font-black text-white uppercase tracking-wide">
+                Sebaran Anggota per Ranting
+              </h4>
+              <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">
+                Lihat detail sebaran jumlah anggota dan tingkatan sabuk (Kyu) per ranting
+              </p>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-gray-600 shrink-0" />
+        </button>
       </div>
 
       {/* Stats Section with Collapse Toggle */}
@@ -361,54 +379,6 @@ export default function Dashboard() {
               icon={Clock}
               onClick={() => router.push("/admin/verification")}
             />
-            {stats?.rantingStats && stats.rantingStats.length > 0 && (
-              <div className="col-span-2 mt-2 space-y-2">
-                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">Sebaran Anggota per Ranting</h4>
-                {stats.rantingStats.map((ranting, idx) => (
-                  <div key={idx} className="glass-card border-white/5 bg-white/[0.02] rounded-xl overflow-hidden">
-                    <button
-                      onClick={() => setExpandedRantingIndex(expandedRantingIndex === idx ? null : idx)}
-                      className="w-full flex items-center justify-between p-3 text-left active:bg-white/[0.02] transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                          <Users size={16} />
-                        </div>
-                        <div>
-                          <h5 className="text-xs font-bold text-white">{ranting.rantingName}</h5>
-                          <p className="text-[10px] text-amber-500 font-medium">{ranting.totalMembers} anggota</p>
-                        </div>
-                      </div>
-                      {expandedRantingIndex === idx ? (
-                        <ChevronDown size={16} className="text-gray-500" />
-                      ) : (
-                        <ChevronRight size={16} className="text-gray-500" />
-                      )}
-                    </button>
-                    {expandedRantingIndex === idx && (
-                      <div className="p-3 pt-0 border-t border-white/5 bg-black/20">
-                        <div className="flex flex-col gap-2 mt-3">
-                          {Object.entries(ranting.kyuBreakdown)
-                            .sort((a, b) => b[1] - a[1])
-                            .map(([kyu, count]) => (
-                            <div key={kyu} className="flex justify-between items-center p-2.5 rounded-lg bg-gradient-to-r from-white/[0.03] to-transparent border border-white/[0.02]">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50"></div>
-                                <span className="text-[11px] text-gray-300 font-medium uppercase tracking-wide">{kyu}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/10">
-                                <span className="text-xs text-amber-500 font-bold">{count}</span>
-                                <span className="text-[9px] text-amber-500/70 font-black uppercase tracking-wider">anggota</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
