@@ -560,9 +560,28 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const resetLink = `inkai://reset-password?token=${token}`;
     console.log(`\n📧 [RESET PASSWORD] Link untuk ${user.email}:\n${resetLink}\n`);
 
+    if (user.phoneNumber) {
+      try {
+        const fonnteToken = process.env.FONNTE_TOKEN || "mXTpegz69aVwQkDx3y2s";
+        await fetch("https://api.fonnte.com/send", {
+          method: "POST",
+          headers: {
+            Authorization: fonnteToken,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            target: user.phoneNumber,
+            message: `Halo ${user.fullName || 'Anggota'},\n\nAnda baru saja meminta pemulihan kata sandi untuk akun Sistem Informasi INKAI.\n\nSilakan gunakan tautan berikut untuk mengatur ulang kata sandi Anda:\n${resetLink}\n\nJika Anda tidak merasa memintanya, abaikan pesan ini.\n\nSalam,\nSistem Informasi INKAI`
+          })
+        });
+      } catch (err) {
+        console.error("Gagal mengirim WhatsApp Fonnte:", err);
+      }
+    }
+
     res.json({
       status: 'success',
-      message: 'Instruksi pemulihan telah dikirim ke email Anda'
+      message: 'Instruksi pemulihan telah dikirim ke WhatsApp Anda'
     });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });
