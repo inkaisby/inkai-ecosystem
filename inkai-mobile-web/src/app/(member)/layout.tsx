@@ -5,8 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-/** Route group `(member)` maps ke URL root; hanya halaman ini yang boleh diakses tanpa sesi. */
-const PUBLIC_PATHS = new Set(["/", "/register", "/register-parent"]);
+const PUBLIC_PATHS = new Set(["/", "/register", "/register-parent", "/forgot-password"]);
 
 function normalizePathname(path: string): string {
   if (path.length > 1 && path.endsWith("/")) {
