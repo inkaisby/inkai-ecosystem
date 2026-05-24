@@ -294,6 +294,7 @@ export const createDojo = async (req: Request, res: Response) => {
       update: {
         passwordHash,
         managedDojoId: dojo.id,
+        phoneNumber: phoneNumber || undefined,
         roles: {
           connectOrCreate: {
             where: { name: 'ADMIN_DOJO' },
@@ -305,6 +306,7 @@ export const createDojo = async (req: Request, res: Response) => {
         email: adminEmail,
         passwordHash,
         managedDojoId: dojo.id,
+        phoneNumber: phoneNumber || undefined,
         roles: {
           connectOrCreate: {
             where: { name: 'ADMIN_DOJO' },
@@ -464,6 +466,7 @@ export const updateDojo = async (req: Request, res: Response) => {
         update: {
           ...(passwordHash && { passwordHash }),
           managedDojoId: id,
+          phoneNumber: phoneNumber || undefined,
           roles: {
             connectOrCreate: {
               where: { name: 'ADMIN_DOJO' },
@@ -475,6 +478,7 @@ export const updateDojo = async (req: Request, res: Response) => {
           email: adminEmail,
           passwordHash: passwordHash || (await bcrypt.hash('123456', 12)),
           managedDojoId: id,
+          phoneNumber: phoneNumber || undefined,
           roles: {
             connectOrCreate: {
               where: { name: 'ADMIN_DOJO' },
