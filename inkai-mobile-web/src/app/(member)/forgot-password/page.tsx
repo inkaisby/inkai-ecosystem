@@ -17,10 +17,14 @@ export default function ForgotPassword() {
   const [mounted, setMounted] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [toast, setToast] = useState({
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "error" | "success" | "warning" | "info";
+  }>({
     show: false,
     message: "",
-    type: "error" as const,
+    type: "error",
   });
   const router = useRouter();
 
