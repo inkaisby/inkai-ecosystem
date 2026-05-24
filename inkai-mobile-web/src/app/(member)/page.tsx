@@ -263,6 +263,7 @@ export default function Login() {
                 type="button"
                 className="text-10 font-bold uppercase tracking-widest"
                 style={{ color: "var(--primary-gold)", opacity: 0.8 }}
+                onClick={() => router.push("/forgot-password")}
               >
                 Lupa Kata Sandi?
               </button>

@@ -154,6 +154,8 @@ export const api = Object.assign(apiInstance, {
     updateProfile: (data: any) => apiInstance.put('/auth/profile', data).then(res => res.data),
     uploadPhoto: (formData: FormData) => apiInstance.post('/auth/upload-photo', formData).then(res => res.data),
     uploadFile: (formData: FormData) => apiInstance.post('/auth/upload', formData).then(res => res.data),
+    forgotPassword: (data: { identifier: string }) => apiInstance.post('/auth/forgot-password', data).then(res => res.data),
+    resetPassword: (data: { token: string; newPassword: string }) => apiInstance.post('/auth/reset-password', data).then(res => res.data),
   },
   members: {
     getAll: (params?: Record<string, any>) => apiInstance.get('/members', { params }).then(res => res.data),
