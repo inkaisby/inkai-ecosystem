@@ -335,14 +335,18 @@ const APPROVED_REGISTRATION_STATUSES = ['APPROVED', 'SUCCESS', 'PAID'];
 
 export const checkIn = async (req: AuthRequest, res: Response) => {
   try {
-    const { dojoId, eventId, method = 'QR_SCAN', latitude, longitude } = req.body;
+    const { dojoId, eventId, method = 'QR_SCAN', latitude, longitude, checkInAt } = req.body;
     const memberId = req.user?.memberId;
 
     if (!memberId) {
       return res.status(403).json({ status: 'error', message: 'Hanya anggota yang dapat melakukan absensi.' });
     }
 
-    const { startOfDay, endOfDay } = startEndOfToday();
+    const checkDate = checkInAt ? new Date(checkInAt) : new Date();
+    const startOfDay = new Date(checkDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(checkDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
     if (eventId) {
       const member = await prisma.member.findUnique({
@@ -406,7 +410,7 @@ export const checkIn = async (req: AuthRequest, res: Response) => {
           method: typeof method === 'string' ? method : 'EVENT_APP',
           latitude,
           longitude,
-          checkInAt: new Date(),
+          checkInAt: checkDate,
         },
         include: {
           dojo: { select: { name: true } },
@@ -467,7 +471,7 @@ export const checkIn = async (req: AuthRequest, res: Response) => {
         method,
         latitude,
         longitude,
-        checkInAt: new Date(),
+        checkInAt: checkDate,
       },
       include: {
         dojo: { select: { name: true } },

@@ -221,6 +221,7 @@ export const api = Object.assign(apiInstance, {
       method?: string;
       latitude?: number;
       longitude?: number;
+      checkInAt?: string;
     }) => apiInstance.post('/attendance/checkin', data).then((res) => res.data),
     updateStaff: (id: string, payload: { checkInAt: string }) =>
       apiInstance.patch(`/attendance/${id}`, payload).then((res) => res.data),

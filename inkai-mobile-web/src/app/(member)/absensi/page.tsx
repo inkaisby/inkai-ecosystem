@@ -159,6 +159,42 @@ export default function AttendanceScannerPage() {
     return cells;
   }, [history]);
 
+  const handleCalendarClick = async (cell: any) => {
+    if (!cell.day || cell.isPresent || cell.isFuture) return;
+
+    if (!user?.dojo?.id) {
+      toast.error("Anda belum memiliki Dojo yang terdaftar untuk absensi manual.");
+      return;
+    }
+
+    const now = new Date();
+    // Default manual check-in to 12:00 PM of that day
+    const checkInAt = new Date(now.getFullYear(), now.getMonth(), cell.day, 12, 0, 0).toISOString();
+
+    const confirmed = window.confirm(`Apakah Anda ingin mencatat kehadiran latihan untuk tanggal ${cell.day} ${currentMonthYearName}?`);
+    if (!confirmed) return;
+
+    setLoading(true);
+    try {
+      const response = await api.attendance.checkIn({
+        dojoId: user.dojo.id,
+        method: "MANUAL",
+        checkInAt,
+      });
+      toast.success(
+        typeof response.message === "string"
+          ? response.message
+          : "Absensi manual berhasil"
+      );
+      await loadLists();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } };
+      toast.error(ax.response?.data?.message || "Gagal mencatat kehadiran");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const attendedSessionsCount = useMemo(() => {
     const now = new Date();
     const month = now.getMonth();
@@ -643,9 +679,12 @@ export default function AttendanceScannerPage() {
                 border = "1px dashed rgba(255, 255, 255, 0.02)";
               }
 
+              const isClickable = !cell.isPresent && !cell.isFuture && cell.day !== null;
+
               return (
                 <div
                   key={`day-${cell.day}`}
+                  onClick={() => handleCalendarClick(cell)}
                   style={{
                     width: "28px",
                     height: "28px",
@@ -659,6 +698,7 @@ export default function AttendanceScannerPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     position: "relative",
+                    cursor: isClickable ? "pointer" : "default",
                   }}
                 >
                   {cell.day}
