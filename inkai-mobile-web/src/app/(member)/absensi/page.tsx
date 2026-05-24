@@ -102,6 +102,7 @@ export default function AttendanceScannerPage() {
   const [loadingLists, setLoadingLists] = useState(true);
   const [eventSubmittingId, setEventSubmittingId] = useState<string | null>(null);
   const [showQrSection, setShowQrSection] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; cell: any | null }>({ isOpen: false, cell: null });
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
@@ -147,12 +148,14 @@ export default function AttendanceScannerPage() {
       const isPresent = presentDays.has(day);
       const isToday = isCurrentMonthYear && day === todayDate;
       const isFuture = isCurrentMonthYear && day > todayDate;
+      const isPast = isCurrentMonthYear && day < todayDate;
 
       cells.push({
         day,
         isPresent,
         isToday,
-        isFuture
+        isFuture,
+        isPast
       });
     }
 
@@ -160,19 +163,24 @@ export default function AttendanceScannerPage() {
   }, [history]);
 
   const handleCalendarClick = async (cell: any) => {
-    if (!cell.day || cell.isPresent || cell.isFuture) return;
+    if (!cell.day || cell.isPresent || cell.isPast) return;
 
     if (!user?.dojo?.id) {
       toast.error("Anda belum memiliki Dojo yang terdaftar untuk absensi manual.");
       return;
     }
 
+    setConfirmModal({ isOpen: true, cell });
+  };
+
+  const processManualCheckIn = async () => {
+    const cell = confirmModal.cell;
+    setConfirmModal({ isOpen: false, cell: null });
+    if (!cell) return;
+
     const now = new Date();
     // Default manual check-in to 12:00 PM of that day
     const checkInAt = new Date(now.getFullYear(), now.getMonth(), cell.day, 12, 0, 0).toISOString();
-
-    const confirmed = window.confirm(`Apakah Anda ingin mencatat kehadiran latihan untuk tanggal ${cell.day} ${currentMonthYearName}?`);
-    if (!confirmed) return;
 
     setLoading(true);
     try {
@@ -673,13 +681,13 @@ export default function AttendanceScannerPage() {
                 }
               }
 
-              if (cell.isFuture) {
+              if (cell.isPast) {
                 color = "#444";
                 bg = "rgba(255, 255, 255, 0.005)";
                 border = "1px dashed rgba(255, 255, 255, 0.02)";
               }
 
-              const isClickable = !cell.isPresent && !cell.isFuture && cell.day !== null;
+              const isClickable = !cell.isPresent && !cell.isPast && cell.day !== null;
 
               return (
                 <div
@@ -945,6 +953,117 @@ export default function AttendanceScannerPage() {
       </section>
 
       <BottomNav />
+
+      {/* Premium Confirmation Modal */}
+      <AnimatePresence>
+        {confirmModal.isOpen && confirmModal.cell && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0, 0, 0, 0.7)",
+              backdropFilter: "blur(4px)",
+              padding: "20px",
+            }}
+            onClick={() => setConfirmModal({ isOpen: false, cell: null })}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "var(--card-dark)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "24px",
+                padding: "24px",
+                width: "100%",
+                maxWidth: "340px",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              }}
+            >
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "16px",
+                  background: "rgba(245, 158, 11, 0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "20px",
+                }}
+              >
+                <Calendar size={28} color="var(--primary-gold)" />
+              </div>
+              <h3
+                style={{
+                  margin: "0 0 12px 0",
+                  fontSize: "18px",
+                  fontWeight: 800,
+                  color: "var(--text-light)",
+                  lineHeight: 1.3,
+                }}
+              >
+                Konfirmasi Kehadiran
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 24px 0",
+                  fontSize: "13px",
+                  color: "var(--text-muted)",
+                  lineHeight: 1.5,
+                }}
+              >
+                Apakah Anda ingin mencatat kehadiran latihan Dojo untuk tanggal{" "}
+                <b style={{ color: "var(--primary-gold)" }}>{confirmModal.cell.day} {currentMonthYearName}</b>?
+              </p>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={() => setConfirmModal({ isOpen: false, cell: null })}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    borderRadius: "12px",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    background: "transparent",
+                    color: "var(--text-light)",
+                    fontWeight: 700,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={processManualCheckIn}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    borderRadius: "12px",
+                    border: "none",
+                    background: "var(--primary-gold)",
+                    color: "#111",
+                    fontWeight: 800,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                  }}
+                >
+                  Konfirmasi
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
