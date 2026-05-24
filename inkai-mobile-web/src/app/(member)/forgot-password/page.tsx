@@ -9,6 +9,7 @@ import {
   Mail,
   ChevronLeft,
   Send,
+  User,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import CustomToast from "@/components/CustomToast/CustomToast";
@@ -189,7 +190,7 @@ export default function ForgotPassword() {
             Lupa Kata Sandi
           </h1>
           <p className="text-gray-500 text-xs text-center mt-3 px-6 leading-relaxed">
-            Masukkan Email atau NIA Anda untuk menerima instruksi pemulihan kata sandi.
+            Masukkan Identitas Anggota (NIA atau Email) Anda. Instruksi pemulihan kata sandi akan dikirim melalui WhatsApp.
           </p>
         </motion.div>
 
@@ -218,11 +219,11 @@ export default function ForgotPassword() {
                     zIndex: 2,
                   }}
                 >
-                  <Mail size={18} />
+                  <User size={18} />
                 </div>
                 <input
                   type="text"
-                  placeholder="Email atau NIA"
+                  placeholder="NIA atau Email"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="glass-input w-full py-4 pl-12 pr-4 text-sm"
