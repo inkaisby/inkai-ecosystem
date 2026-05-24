@@ -20,7 +20,7 @@ export default function ForgotPassword() {
   const [toast, setToast] = useState<{
     show: boolean;
     message: string;
-    type: "error" | "success" | "warning" | "info";
+    type: "error" | "success" | "info";
   }>({
     show: false,
     message: "",
