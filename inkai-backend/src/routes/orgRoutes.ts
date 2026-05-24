@@ -17,13 +17,13 @@ import { authenticate } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get('/provinces', authenticate, getProvinces);
-router.get('/branches/all', authenticate, getBranches);
-router.get('/branches/:provinceId', authenticate, getBranches);
-router.get('/dojos/all', authenticate, getDojos);
-router.get('/dojos/search', authenticate, searchDojos);
-router.get('/dojos/:branchId', authenticate, getDojos);
-router.get('/dojo/:id', authenticate, getDojo);
+router.get('/provinces', getProvinces);
+router.get('/branches/all', getBranches);
+router.get('/branches/:provinceId', getBranches);
+router.get('/dojos/all', getDojos);
+router.get('/dojos/search', searchDojos);
+router.get('/dojos/:branchId', getDojos);
+router.get('/dojo/:id', getDojo);
 
 router.post('/provinces', authenticate, createProvince);
 router.post('/branches', authenticate, createBranch);
