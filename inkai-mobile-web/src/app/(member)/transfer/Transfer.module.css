@@ -1,7 +1,7 @@
 .container {
   min-height: 100vh;
   background-color: var(--background-dark);
-  color: white;
+  color: var(--text-light);
   padding-bottom: 100px;
 }
 
@@ -44,15 +44,15 @@
 .infoBox {
   margin-top: 16px;
   padding: 20px;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--surface-row-bg);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-row-border);
 }
 
 .infoLabel {
   font-size: 10px;
   font-weight: 800;
-  color: #666;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 8px;
@@ -112,7 +112,7 @@
 
 .fieldLabel {
   font-size: 13px;
-  color: #aaa;
+  color: var(--text-muted);
   margin-bottom: 10px;
   display: block;
 }
@@ -125,10 +125,10 @@
 .select {
   width: 100%;
   padding: 16px 40px 16px 16px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--surface-row-bg);
+  border: 1px solid var(--surface-row-border);
   border-radius: 16px;
-  color: white;
+  color: var(--text-light);
   font-size: 14px;
   appearance: none;
   cursor: pointer;
@@ -138,7 +138,7 @@
 .select:focus {
   outline: none;
   border-color: var(--primary-gold);
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--background-dark);
 }
 
 .select:disabled {
@@ -158,10 +158,10 @@
 .textarea {
   width: 100%;
   padding: 16px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--surface-row-bg);
+  border: 1px solid var(--surface-row-border);
   border-radius: 16px;
-  color: white;
+  color: var(--text-light);
   font-size: 14px;
   min-height: 120px;
   resize: vertical;
@@ -171,7 +171,7 @@
 .textarea:focus {
   outline: none;
   border-color: var(--primary-gold);
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--background-dark);
 }
 
 .submitBtn {
@@ -207,13 +207,13 @@
 .workflowSection {
   margin-top: 40px;
   padding-top: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--surface-row-border);
 }
 
 .workflowTitle {
   font-size: 12px;
   font-weight: 800;
-  color: #666;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 20px;
@@ -241,18 +241,18 @@
 
 .workflowLabel {
   font-size: 13px;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .workflowLabelActive {
-  color: white;
+  color: var(--text-light);
   font-weight: 600;
 }
 
 .historySection {
   margin-top: 48px;
   padding-top: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--surface-row-border);
 }
 
 .historyList {
@@ -262,9 +262,9 @@
 }
 
 .historyCard {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--surface-row-bg);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-row-border);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -280,7 +280,7 @@
 .historyType {
   font-size: 11px;
   font-weight: 800;
-  color: #666;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -310,20 +310,20 @@
 
 .historyDate {
   font-size: 13px;
-  color: white;
+  color: var(--text-light);
   font-weight: 600;
 }
 
 .historyDetails {
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
 .adminNotes {
   margin-top: 8px;
   padding: 12px;
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: var(--background-dark);
   border-radius: 12px;
   font-size: 12px;
   border-left: 3px solid var(--primary-gold);
@@ -332,7 +332,7 @@
 .emptyHistory {
   text-align: center;
   padding: 40px 0;
-  color: #555;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
