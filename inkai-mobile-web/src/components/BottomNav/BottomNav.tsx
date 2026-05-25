@@ -19,8 +19,6 @@ export default function BottomNav() {
     { icon: <User size={20} />, label: "Profil", path: "/profile" },
   ] : [
     { icon: <Home size={20} />, label: "Home", path: "/dashboard" },
-    { icon: <Award size={20} />, label: "Event", path: "/events" },
-    { icon: <Wallet size={20} />, label: "Iuran", path: "/billing" },
     { icon: <User size={20} />, label: "Profil", path: "/profile" },
   ];
 
