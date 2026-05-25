@@ -77,7 +77,7 @@ export default function Messages() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             className={styles.chatItem}
-            onClick={() => alert('Fitur Chat Detail akan segera hadir')}
+            onClick={() => router.push(`/messages/${chat.id}`)}
           >
             <div className={styles.avatarWrapper}>
               <Image src={chat.avatar} alt={chat.name} width={50} height={50} className={styles.avatar} />

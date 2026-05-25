@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Paperclip, Image as ImageIcon, FileText, Video, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Paperclip, Image as ImageIcon, FileText, Video, X, Loader2, MessageCircle } from "lucide-react";
 import api, { getAssetUrl } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
