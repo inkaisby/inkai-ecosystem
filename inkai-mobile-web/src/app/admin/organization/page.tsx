@@ -98,6 +98,17 @@ function OrganizationContent() {
   const { user: authUser } = useAuth();
   const [user, setUser] = useState<any>(null);
 
+  const roles = React.useMemo(() => {
+    if (!user?.roles) return [];
+    return Array.isArray(user.roles) ? user.roles : [];
+  }, [user]);
+
+  const isSuperAdmin = roles.includes('ADMINISTRATOR') || roles.includes('ADMIN');
+  const isAdminPusat = roles.includes('ADMIN_PUSAT');
+  const isAdminProvince = roles.includes('ADMIN_PROVINCE');
+  const isAdminBranch = roles.includes('ADMIN_BRANCH');
+  const isAdminDojo = roles.includes('ADMIN_DOJO');
+
   useEffect(() => {
     if (authUser) {
       initData();
@@ -550,20 +561,20 @@ function OrganizationContent() {
                 <div className="flex items-center gap-1.5">
                   <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div>
                   <p className="text-[9px] font-bold text-white/60 tracking-wider">
-                    {user?.roles?.[0] === 'ADMINISTRATOR' ? 'Super Admin' :
-                     user?.roles?.[0] === 'ADMIN_PUSAT' ? 'Admin Pusat' :
-                     user?.roles?.[0] === 'ADMIN_PROVINCE' ? `Admin Provinsi (${user?.managedProvinceName || 'Wilayah'})` :
-                     user?.roles?.[0] === 'ADMIN_BRANCH' ? `Admin Cabang (${user?.managedBranchName || 'Cabang'})` :
-                     user?.roles?.[0] === 'ADMIN_DOJO' ? `Admin Dojo (${user?.managedDojoName || 'Dojo'})` :
+                    {isSuperAdmin ? 'Super Admin' :
+                     isAdminPusat ? 'Admin Pusat' :
+                     isAdminProvince ? `Admin Provinsi (${user?.managedProvinceName || 'Wilayah'})` :
+                     isAdminBranch ? `Admin Cabang (${user?.managedBranchName || 'Cabang'})` :
+                     isAdminDojo ? `Admin Dojo (${user?.managedDojoName || 'Dojo'})` :
                      'Administrator'}
                   </p>
                 </div>
               </div>
             </div>
           </div>
-          {((viewState === 'provinces' && (user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT')) ||
-            (viewState === 'branches' && (user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT' || (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id))) ||
-            (viewState === 'dojos' && (user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT' || (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id) || (user?.roles?.[0] === 'ADMIN_BRANCH' && user?.managedBranchId === selectedBranch?.id)))) && (
+          {((viewState === 'provinces' && (isSuperAdmin || isAdminPusat)) ||
+            (viewState === 'branches' && (isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id))) ||
+            (viewState === 'dojos' && (isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || (isAdminBranch && user?.managedBranchId === selectedBranch?.id)))) && (
             <button 
               onClick={() => {
                 if (viewState === 'provinces') setShowAddModal(true);
@@ -639,9 +650,9 @@ function OrganizationContent() {
                     </div>
                   </div>
                 </div>
-                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
-                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
-                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === prov.id)) && (
+                {(isSuperAdmin || 
+                  isAdminPusat || 
+                  (isAdminProvince && user?.managedProvinceId === prov.id)) && (
                   <button 
                     onClick={() => handleOpenEditProvince(prov)}
                     className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
@@ -673,9 +684,9 @@ function OrganizationContent() {
                 >
                   Detail
                 </button>
-                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
-                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
-                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === prov.id)) ? (
+                {(isSuperAdmin || 
+                  isAdminPusat || 
+                  (isAdminProvince && user?.managedProvinceId === prov.id)) ? (
                   <button 
                     onClick={() => handleManageBranches(prov)}
                     className="btn-primary flex-[2] py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
@@ -763,10 +774,10 @@ function OrganizationContent() {
                     </div>
                   </div>
                 </div>
-                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
-                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
-                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id) || 
-                  (user?.roles?.[0] === 'ADMIN_BRANCH' && user?.managedBranchId === branch.id)) && (
+                {(isSuperAdmin || 
+                  isAdminPusat || 
+                  (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || 
+                  (isAdminBranch && user?.managedBranchId === branch.id)) && (
                   <button 
                     onClick={() => handleOpenEditBranch(branch)}
                     className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
@@ -788,10 +799,10 @@ function OrganizationContent() {
               </div>
 
               <div className="flex gap-3 relative z-10">
-                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
-                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
-                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id) || 
-                  (user?.roles?.[0] === 'ADMIN_BRANCH' && user?.managedBranchId === branch.id)) ? (
+                {(isSuperAdmin || 
+                  isAdminPusat || 
+                  (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || 
+                  (isAdminBranch && user?.managedBranchId === branch.id)) ? (
                   <button 
                     onClick={() => handleManageDojos(branch)}
                     className="btn-primary flex-1 py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
@@ -835,11 +846,11 @@ function OrganizationContent() {
                     </div>
                   </div>
                 </div>
-                {(user?.roles?.[0] === 'ADMINISTRATOR' || 
-                  user?.roles?.[0] === 'ADMIN_PUSAT' || 
-                  (user?.roles?.[0] === 'ADMIN_PROVINCE' && user?.managedProvinceId === selectedProvince?.id) || 
-                  (user?.roles?.[0] === 'ADMIN_BRANCH' && user?.managedBranchId === selectedBranch?.id) || 
-                  (user?.roles?.[0] === 'ADMIN_DOJO' && user?.managedDojoId === dojo.id)) && (
+                {(isSuperAdmin || 
+                  isAdminPusat || 
+                  (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || 
+                  (isAdminBranch && user?.managedBranchId === selectedBranch?.id) || 
+                  (isAdminDojo && user?.managedDojoId === dojo.id)) && (
                   <button 
                     onClick={() => handleOpenEditDojo(dojo)}
                     className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"

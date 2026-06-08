@@ -10,7 +10,8 @@ import {
   LogOut,
   ShieldCheck,
   Store,
-  BookOpen
+  BookOpen,
+  Projector
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +27,7 @@ const menuItems = [
   { icon: BookOpen, label: 'Library', href: '#', slug: 'library' },
   { icon: MessageSquare, label: 'Broadcast', href: '/broadcast', slug: 'broadcast' },
   { icon: Settings, label: 'Settings', href: '/settings', slug: 'settings' },
+  { icon: Projector, label: 'Presentasi', href: '/presentasi', slug: 'presentation' },
 ];
 
 export default function Sidebar() {
@@ -49,6 +51,7 @@ export default function Sidebar() {
     if (!user) return true; // Show all until user is loaded
     // If no permissions array, default to all for now (backward compatibility)
     if (!user.permissions) return true;
+    if (item.slug === 'presentation') return true;
     return user.permissions.includes(item.slug);
   });
 
