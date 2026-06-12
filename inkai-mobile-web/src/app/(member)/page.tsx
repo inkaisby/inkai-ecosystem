@@ -11,7 +11,6 @@ import {
   Mail,
   Lock,
   UserPlus,
-  ChevronRight,
   ShieldCheck,
   Zap,
 } from "lucide-react";
@@ -290,63 +289,48 @@ export default function Login() {
                 )}
               </div>
             </motion.button>
-          </form>
-        </motion.div>
 
-        {/* Quick Access/Registration */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-8 space-y-4 mb-8"
-        >
-          <div
-            className="flex items-center px-4"
-            style={{ position: "relative" }}
-          >
+            {/* Registrasi Anggota Baru (Elegant link / button inside login card) */}
             <div
-              style={{ flex: 1, height: "1px", background: "var(--hairline)" }}
-            />
-            <span className="px-4 text-10 font-black text-gray-500 tracking-widest uppercase">
-              Registrasi
-            </span>
-            <div
-              style={{ flex: 1, height: "1px", background: "var(--hairline)" }}
-            />
-          </div>
+              className="flex items-center"
+              style={{ marginTop: "2rem", marginBottom: "0.5rem" }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  height: "1px",
+                  background: "var(--hairline)",
+                }}
+              />
+              <span className="px-3 text-10 font-bold text-gray-500 tracking-widest uppercase">
+                Belum punya akun?
+              </span>
+              <div
+                style={{
+                  flex: 1,
+                  height: "1px",
+                  background: "var(--hairline)",
+                }}
+              />
+            </div>
 
-          <div className="grid grid-cols-1 gap-4">
             <motion.button
               whileTap={{ scale: 0.98 }}
+              type="button"
               onClick={() => router.push("/register")}
-              className="flex items-center justify-between p-4 rounded-2xl"
+              className="w-full py-3.5 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-2"
               style={{
-                backgroundColor: "var(--surface-row-bg)",
-                border: "1px solid var(--surface-row-border)",
+                fontSize: "0.7rem",
+                backgroundColor: "rgba(245, 158, 11, 0.08)",
+                border: "1px solid rgba(245, 158, 11, 0.15)",
+                color: "var(--primary-gold)",
+                boxShadow: "none",
               }}
             >
-              <div className="flex items-center gap-4">
-                <div
-                  className="flex items-center justify-center rounded-xl"
-                  style={{
-                    width: "44px",
-                    height: "44px",
-                    backgroundColor: "rgba(245, 158, 11, 0.1)",
-                    color: "var(--primary-gold)",
-                  }}
-                >
-                  <UserPlus size={20} />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-white">Anggota Baru</p>
-                  <p className="text-10 text-gray-500">
-                    Daftar nomor induk (NIA)
-                  </p>
-                </div>
-              </div>
-              <ChevronRight size={18} className="text-gray-500" />
+              <UserPlus size={14} />
+              <span>Daftar Anggota Baru</span>
             </motion.button>
-          </div>
+          </form>
         </motion.div>
 
         <footer className="mt-auto pt-4 pb-2 text-center">
