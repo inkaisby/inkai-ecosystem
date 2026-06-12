@@ -11,7 +11,6 @@ import {
   Mail,
   Lock,
   UserPlus,
-  Users,
   ChevronRight,
   ShieldCheck,
   Zap,
@@ -342,37 +341,6 @@ export default function Login() {
                   <p className="text-sm font-bold text-white">Anggota Baru</p>
                   <p className="text-10 text-gray-500">
                     Daftar nomor induk (NIA)
-                  </p>
-                </div>
-              </div>
-              <ChevronRight size={18} className="text-gray-500" />
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push("/register-parent")}
-              className="flex items-center justify-between p-4 rounded-2xl"
-              style={{
-                backgroundColor: "var(--surface-row-bg)",
-                border: "1px solid var(--surface-row-border)",
-              }}
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className="flex items-center justify-center rounded-xl"
-                  style={{
-                    width: "44px",
-                    height: "44px",
-                    backgroundColor: "rgba(59, 130, 246, 0.1)",
-                    color: "#3b82f6",
-                  }}
-                >
-                  <Users size={20} />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-white">Orang Tua</p>
-                  <p className="text-10 text-gray-500">
-                    Akses akun untuk wali murid
                   </p>
                 </div>
               </div>
