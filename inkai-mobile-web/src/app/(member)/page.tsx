@@ -243,7 +243,7 @@ export default function PublicLandingPage() {
 
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col w-full max-w-full overflow-x-hidden"
       style={{
         minHeight: "100vh",
         backgroundColor: "var(--background-dark)",
@@ -282,7 +282,7 @@ export default function PublicLandingPage() {
       </div>
 
       {/* STICKY HEADER & NAV TAB BAR */}
-      <div className="sticky top-0 z-50 flex flex-col w-full">
+      <div className="sticky top-0 z-50 flex flex-col w-full max-w-full overflow-hidden">
         {/* Header Bar */}
         <div
           className="flex items-center justify-between px-4 py-3 bg-[rgba(10,10,12,0.85)] border-b border-[rgba(255,255,255,0.05)]"
@@ -333,12 +333,12 @@ export default function PublicLandingPage() {
 
         {/* Dynamic Sticky Tab Navigation Bar */}
         <div
-          className="relative w-full bg-[rgba(10,10,12,0.95)] border-b border-[rgba(255,255,255,0.03)]"
+          className="relative w-full max-w-full bg-[rgba(10,10,12,0.95)] border-b border-[rgba(255,255,255,0.03)] overflow-hidden"
           style={{ backdropFilter: "blur(15px)", WebkitBackdropFilter: "blur(15px)" }}
         >
           <div
             ref={tabContainerRef}
-            className="tab-scroll flex gap-2 overflow-x-auto px-4 py-2"
+            className="tab-scroll flex gap-2 overflow-x-auto px-4 py-2 w-full min-w-0"
             style={{
               scrollBehavior: "smooth",
               scrollbarWidth: "none",
