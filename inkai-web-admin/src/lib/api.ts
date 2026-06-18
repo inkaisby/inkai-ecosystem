@@ -132,5 +132,17 @@ export const api = {
     getAll: () => request('/roles'),
     getPermissions: () => request('/roles/permissions'),
     updatePermissions: (roleId: string, data: any) => request(`/roles/${roleId}/permissions`, { method: 'PUT', body: JSON.stringify(data) }),
+  },
+  navTabs: {
+    getAll: (all: boolean = true) => request(`/nav-tabs?all=${all}`),
+    create: (data: any) => request('/nav-tabs', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => request(`/nav-tabs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request(`/nav-tabs/${id}`, { method: 'DELETE' }),
+  },
+  newsCarousel: {
+    getAll: (all: boolean = true) => request(`/news-carousel?all=${all}`),
+    create: (data: any) => request('/news-carousel', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => request(`/news-carousel/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request(`/news-carousel/${id}`, { method: 'DELETE' }),
   }
 };

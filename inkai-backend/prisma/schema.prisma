@@ -326,3 +326,25 @@ model AppSetting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model NavTab {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  content   String   @db.Text
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NewsCarousel {
+  id        String   @id @default(uuid())
+  title     String
+  imageUrl  String
+  targetUrl String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

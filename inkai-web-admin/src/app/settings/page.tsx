@@ -123,6 +123,39 @@ export default function SettingsPage() {
               </div>
               <ChevronRight size={20} className="text-gray-600 group-hover:text-white transition-all" />
             </div>
+
+            <div 
+              onClick={() => router.push('/settings/navigation')}
+              className="glass-card group hover:bg-white/[0.04] transition-all flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/5 text-gray-400 group-hover:text-amber-500 group-hover:bg-amber-500/10 rounded-xl transition-all">
+                  <Globe size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold">Tab Navigasi Publik</h4>
+                  <p className="text-xs text-gray-500 mt-1">Kelola konten Home, Sejarah, Makna, dll.</p>
+                </div>
+              </div>
+              <ChevronRight size={20} className="text-gray-600 group-hover:text-white transition-all" />
+            </div>
+
+            <div 
+              onClick={() => router.push('/settings/carousel')}
+              className="glass-card group hover:bg-white/[0.04] transition-all flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/5 text-gray-400 group-hover:text-amber-500 group-hover:bg-amber-500/10 rounded-xl transition-all">
+                  <Bell size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold">Berita Carousel</h4>
+                  <p className="text-xs text-gray-500 mt-1">Kelola banner slide berita beranda publik</p>
+                </div>
+              </div>
+              <ChevronRight size={20} className="text-gray-600 group-hover:text-white transition-all" />
+            </div>
+
             <div className="glass-card group hover:bg-white/[0.04] transition-all flex items-center justify-between cursor-pointer">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white/5 text-gray-400 group-hover:text-amber-500 group-hover:bg-amber-500/10 rounded-xl transition-all">

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-const PUBLIC_PATHS = new Set(["/", "/register", "/forgot-password"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/forgot-password"]);
 
 function normalizePathname(path: string): string {
   if (path.length > 1 && path.endsWith("/")) {

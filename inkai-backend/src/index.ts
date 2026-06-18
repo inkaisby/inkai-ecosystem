@@ -18,6 +18,8 @@ import syncRoutes from './routes/syncRoutes';
 import roleRoutes from './routes/roleRoutes';
 import chatRoutes from './routes/chatRoutes';
 import memberGuideRoutes from './routes/memberGuideRoutes';
+import navTabRoutes from './routes/navTabRoutes';
+import newsCarouselRoutes from './routes/newsCarouselRoutes';
 import { createServer } from 'http';
 import prisma from './utils/prisma';
 import { initSentryBackend, captureSafeException } from './utils/sentry';
@@ -68,6 +70,8 @@ app.use('/v1/verifications', verificationRoutes);
 app.use('/v1/sync', syncRoutes);
 app.use('/v1/roles', roleRoutes);
 app.use('/v1/chat', chatRoutes);
+app.use('/v1/nav-tabs', navTabRoutes);
+app.use('/v1/news-carousel', newsCarouselRoutes);
 app.use('/v1', memberGuideRoutes);
 
 // Health Check
