@@ -11,6 +11,9 @@ import {
   LogOut,
   LayoutDashboard,
   Menu,
+  Compass,
+  MapPin,
+  Download,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
@@ -205,30 +208,71 @@ export default function PublicLandingPage() {
       }
       if (paragraph.startsWith("### ")) {
         return (
-          <h3 key={index} className="text-base font-bold tracking-wider uppercase text-white mt-4 mb-2">
+          <h3 key={index} className="text-base font-black tracking-wider uppercase text-white mt-6 mb-3 flex items-center gap-2">
+            <span className="w-1.5 h-4 bg-amber-500 rounded-full"></span>
             {paragraph.replace("### ", "")}
           </h3>
         );
       }
       if (paragraph.startsWith("- ")) {
+        const isAnnouncement = text.toLowerCase().includes("pengumuman");
+        const isAchievement = text.toLowerCase().includes("prestasi");
+
         return (
-          <ul key={index} className="list-disc list-inside space-y-2 text-gray-300 text-sm pl-2 mb-4">
+          <div key={index} className="flex flex-col gap-3 my-3">
             {paragraph
               .split("\n")
               .filter((line) => line.trim() !== "")
               .map((line, idx) => {
-                // simple strong parser
                 const cleanLine = line.replace("- ", "");
                 const parts = cleanLine.split("**");
+                
+                // Select appropriate icon
+                let iconEmoji = "📝";
+                if (isAnnouncement) {
+                  if (cleanLine.toLowerCase().includes("ujian") || cleanLine.toLowerCase().includes("jadwal") || cleanLine.toLowerCase().includes("wilayah")) {
+                    iconEmoji = "📅"; // Calendar/Schedule
+                  } else if (cleanLine.toLowerCase().includes("rakernas") || cleanLine.toLowerCase().includes("rapat")) {
+                    iconEmoji = "🏢"; // Meeting/Office
+                  } else {
+                    iconEmoji = "📢"; // General Announcement
+                  }
+                } else if (isAchievement) {
+                  if (cleanLine.toLowerCase().includes("juara") || cleanLine.toLowerCase().includes("piala") || cleanLine.toLowerCase().includes("emas")) {
+                    iconEmoji = "🏆"; // Trophy
+                  } else {
+                    iconEmoji = "🏅"; // Medal
+                  }
+                }
+
                 return (
-                  <li key={idx}>
-                    {parts.map((part, pIdx) =>
-                      pIdx % 2 === 1 ? <strong key={pIdx} className="text-white font-semibold">{part}</strong> : part
-                    )}
-                  </li>
+                  <div 
+                    key={idx}
+                    className="flex items-start gap-3 p-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.01]"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.02)",
+                      border: "1px solid rgba(255, 255, 255, 0.04)",
+                      boxShadow: "0 4px 20px -2px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <span className="text-lg shrink-0 mt-0.5 filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)]">
+                      {iconEmoji}
+                    </span>
+                    <div className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+                      {parts.map((part, pIdx) =>
+                        pIdx % 2 === 1 ? (
+                          <strong key={pIdx} className="text-white font-extrabold tracking-wide">
+                            {part}
+                          </strong>
+                        ) : (
+                          part
+                        )
+                      )}
+                    </div>
+                  </div>
                 );
               })}
-          </ul>
+          </div>
         );
       }
       return (
@@ -365,7 +409,7 @@ export default function PublicLandingPage() {
       </div>
 
       {/* MAIN CONTENT VIEWPORT */}
-      <div className="relative z-10 w-full max-w-[480px] mx-auto px-4 pt-6 pb-20 flex flex-col flex-grow">
+      <div className="relative z-10 w-full max-w-[480px] mx-auto px-4 pt-6 pb-24 flex flex-col flex-grow">
         {/* CAROUSEL BERITA SECTION */}
         <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl border border-[rgba(255,255,255,0.03)] mb-8 bg-[#111115]">
           <div className="relative w-full aspect-[16/9] overflow-hidden">
@@ -442,6 +486,68 @@ export default function PublicLandingPage() {
           )}
         </div>
 
+        {/* CTA QUICK ACTIONS SECTION */}
+        <div className="grid grid-cols-3 gap-3.5 mb-8">
+          <button
+            onClick={() => router.push("/register")}
+            className="flex flex-col items-center justify-between p-4.5 rounded-3xl transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] group relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, #dc2626 0%, #991b1b 100%)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              boxShadow: "0 10px 25px -5px rgba(220, 38, 38, 0.3)",
+              height: "100px",
+            }}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full blur-xl translate-x-4 -translate-y-4" />
+            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+              <User size={20} className="stroke-[2.5]" />
+            </div>
+            <span className="text-[10px] font-black tracking-wider uppercase text-white text-center w-full leading-tight">
+              Daftar Anggota
+            </span>
+          </button>
+
+          <button
+            onClick={() => router.push("/dojo")}
+            className="flex flex-col items-center justify-between p-4.5 rounded-3xl transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] group relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, #1e1b4b 0%, #311042 100%)",
+              border: "1px solid rgba(255, 255, 255, 0.05)",
+              boxShadow: "0 10px 25px -5px rgba(30, 27, 75, 0.4)",
+              height: "100px",
+            }}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/5 rounded-full blur-xl translate-x-4 -translate-y-4" />
+            <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-amber-400 shrink-0 group-hover:scale-110 transition-transform">
+              <MapPin size={20} className="stroke-[2.5]" />
+            </div>
+            <span className="text-[10px] font-black tracking-wider uppercase text-gray-200 text-center w-full leading-tight">
+              Cari Dojo
+            </span>
+          </button>
+
+          <a
+            href="https://inkai.or.id"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center justify-between p-4.5 rounded-3xl transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] group relative overflow-hidden text-center"
+            style={{
+              background: "linear-gradient(135deg, #111115 0%, #1c1917 100%)",
+              border: "1px solid rgba(255, 255, 255, 0.05)",
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.4)",
+              height: "100px",
+            }}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full blur-xl translate-x-4 -translate-y-4" />
+            <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 shrink-0 group-hover:scale-110 transition-transform">
+              <Download size={20} className="stroke-[2.5]" />
+            </div>
+            <span className="text-[10px] font-black tracking-wider uppercase text-gray-400 text-center w-full leading-tight">
+              Situs Pusat
+            </span>
+          </a>
+        </div>
+
         {/* SCROLLABLE SECTIONS (Tabs content vertically stacked) */}
         <div className="flex flex-col gap-12 mt-4">
           {tabs.map((tab) => (
@@ -468,7 +574,7 @@ export default function PublicLandingPage() {
       </div>
 
       {/* FOOTER SECTION */}
-      <footer className="mt-auto py-8 bg-[#08080a] border-t border-[rgba(255,255,255,0.03)] text-center relative z-20">
+      <footer className="mt-auto py-8 pb-28 bg-[#08080a] border-t border-[rgba(255,255,255,0.03)] text-center relative z-20">
         <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">
           © 2026 Institut Karate-Do Indonesia (INKAI)
         </p>
@@ -476,6 +582,66 @@ export default function PublicLandingPage() {
           All Rights Reserved.
         </p>
       </footer>
+
+      {/* BOTTOM NAVIGATION BAR FOR VISITOR */}
+      <nav 
+        className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-[480px] flex justify-around items-center z-50 py-3"
+        style={{
+          backgroundColor: "rgba(10, 10, 12, 0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+          paddingLeft: "max(16px, env(safe-area-inset-left, 0px))",
+          paddingRight: "max(16px, env(safe-area-inset-right, 0px))",
+          paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
+        <button
+          onClick={() => handleTabClick("home")}
+          className={`flex flex-col items-center gap-1 flex-1 transition-all duration-300 ${
+            activeTab === "home" ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
+          }`}
+        >
+          <div className="flex items-center justify-center p-1 rounded-xl">
+            <User size={20} className={activeTab === "home" ? "stroke-[2.5]" : "stroke-[2]"} />
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider">Home</span>
+        </button>
+
+        <button
+          onClick={() => handleTabClick("home")} // Scroll to home card which contains announcements/info
+          className={`flex flex-col items-center gap-1 flex-1 transition-all duration-300 ${
+            activeTab === "home" && (typeof window !== "undefined" && window.scrollY > 300) ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
+          }`}
+        >
+          <div className="flex items-center justify-center p-1 rounded-xl">
+            <Compass size={20} className="stroke-[2]" />
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider">Informasi</span>
+        </button>
+
+        <button
+          onClick={() => handleTabClick("struktur-organisasi")}
+          className={`flex flex-col items-center gap-1 flex-1 transition-all duration-300 ${
+            activeTab === "struktur-organisasi" || activeTab === "visi-misi" ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
+          }`}
+        >
+          <div className="flex items-center justify-center p-1 rounded-xl">
+            <LayoutDashboard size={20} className={activeTab === "struktur-organisasi" || activeTab === "visi-misi" ? "stroke-[2.5]" : "stroke-[2]"} />
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider">Organisasi</span>
+        </button>
+
+        <button
+          onClick={() => router.push("/dojo")}
+          className="flex flex-col items-center gap-1 flex-1 transition-all duration-300 text-gray-400 hover:text-gray-200"
+        >
+          <div className="flex items-center justify-center p-1 rounded-xl">
+            <MapPin size={20} className="stroke-[2]" />
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider">Dojo</span>
+        </button>
+      </nav>
     </div>
   );
 }
