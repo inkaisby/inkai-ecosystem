@@ -14,6 +14,11 @@ import {
   Compass,
   MapPin,
   Download,
+  BookOpen,
+  Award,
+  Users,
+  Target,
+  Home as HomeIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
@@ -603,43 +608,57 @@ export default function PublicLandingPage() {
           }`}
         >
           <div className="flex items-center justify-center p-1 rounded-xl">
-            <User size={20} className={activeTab === "home" ? "stroke-[2.5]" : "stroke-[2]"} />
+            <HomeIcon size={18} className={activeTab === "home" ? "stroke-[2.5]" : "stroke-[2]"} />
           </div>
-          <span className="text-[9px] font-black uppercase tracking-wider">Home</span>
+          <span className="text-[8px] font-black uppercase tracking-wider text-center">Home</span>
         </button>
 
         <button
-          onClick={() => handleTabClick("home")} // Scroll to home card which contains announcements/info
+          onClick={() => handleTabClick("sejarah")}
           className={`flex flex-col items-center gap-1 flex-1 transition-all duration-300 ${
-            activeTab === "home" && (typeof window !== "undefined" && window.scrollY > 300) ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
+            activeTab === "sejarah" ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
           }`}
         >
           <div className="flex items-center justify-center p-1 rounded-xl">
-            <Compass size={20} className="stroke-[2]" />
+            <BookOpen size={18} className={activeTab === "sejarah" ? "stroke-[2.5]" : "stroke-[2]"} />
           </div>
-          <span className="text-[9px] font-black uppercase tracking-wider">Informasi</span>
+          <span className="text-[8px] font-black uppercase tracking-wider text-center">Sejarah</span>
+        </button>
+
+        <button
+          onClick={() => handleTabClick("makna-lambang")}
+          className={`flex flex-col items-center gap-1 flex-1 transition-all duration-300 ${
+            activeTab === "makna-lambang" ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
+          }`}
+        >
+          <div className="flex items-center justify-center p-1 rounded-xl">
+            <Award size={18} className={activeTab === "makna-lambang" ? "stroke-[2.5]" : "stroke-[2]"} />
+          </div>
+          <span className="text-[8px] font-black uppercase tracking-wider text-center">Lambang</span>
         </button>
 
         <button
           onClick={() => handleTabClick("struktur-organisasi")}
           className={`flex flex-col items-center gap-1 flex-1 transition-all duration-300 ${
-            activeTab === "struktur-organisasi" || activeTab === "visi-misi" ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
+            activeTab === "struktur-organisasi" ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
           }`}
         >
           <div className="flex items-center justify-center p-1 rounded-xl">
-            <LayoutDashboard size={20} className={activeTab === "struktur-organisasi" || activeTab === "visi-misi" ? "stroke-[2.5]" : "stroke-[2]"} />
+            <Users size={18} className={activeTab === "struktur-organisasi" ? "stroke-[2.5]" : "stroke-[2]"} />
           </div>
-          <span className="text-[9px] font-black uppercase tracking-wider">Organisasi</span>
+          <span className="text-[8px] font-black uppercase tracking-wider text-center">Struktur</span>
         </button>
 
         <button
-          onClick={() => router.push("/dojo")}
-          className="flex flex-col items-center gap-1 flex-1 transition-all duration-300 text-gray-400 hover:text-gray-200"
+          onClick={() => handleTabClick("visi-misi")}
+          className={`flex flex-col items-center gap-1 flex-1 transition-all duration-300 ${
+            activeTab === "visi-misi" ? "text-amber-500 scale-105" : "text-gray-400 hover:text-gray-200"
+          }`}
         >
           <div className="flex items-center justify-center p-1 rounded-xl">
-            <MapPin size={20} className="stroke-[2]" />
+            <Target size={18} className={activeTab === "visi-misi" ? "stroke-[2.5]" : "stroke-[2]"} />
           </div>
-          <span className="text-[9px] font-black uppercase tracking-wider">Dojo</span>
+          <span className="text-[8px] font-black uppercase tracking-wider text-center">Visi Misi</span>
         </button>
       </nav>
     </div>
