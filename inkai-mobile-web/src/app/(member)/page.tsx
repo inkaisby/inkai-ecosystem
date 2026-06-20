@@ -590,7 +590,7 @@ export default function PublicLandingPage() {
 
       {/* BOTTOM NAVIGATION BAR FOR VISITOR */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-[480px] flex justify-around items-center z-50 py-3"
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] flex justify-around items-center z-50 py-3"
         style={{
           backgroundColor: "rgba(10, 10, 12, 0.85)",
           backdropFilter: "blur(20px)",
