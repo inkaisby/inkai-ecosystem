@@ -1,0 +1,400 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: calc(
+    100% + max(16px, env(safe-area-inset-left, 0px)) +
+      max(16px, env(safe-area-inset-right, 0px))
+  );
+  max-width: 480px;
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  background-color: var(--background-dark);
+  color: var(--text-light);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ambientOrbAmber {
+  position: absolute;
+  top: -12%;
+  left: -15%;
+  width: 75%;
+  height: 55%;
+  background-color: var(--ambient-orb-amber);
+  filter: blur(120px);
+  border-radius: 50%;
+  opacity: 0.14;
+  animation: loginOrbPulse 5s ease-in-out infinite;
+}
+
+.ambientOrbBlue {
+  position: absolute;
+  bottom: 5%;
+  right: -15%;
+  width: 55%;
+  height: 40%;
+  background-color: var(--ambient-orb-blue);
+  filter: blur(100px);
+  border-radius: 50%;
+  opacity: 0.1;
+}
+
+@keyframes loginOrbPulse {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.16;
+  }
+}
+
+.headerBar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--background-dark) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 2px solid var(--hairline);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--primary-gold) 8%, transparent);
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  background: var(--surface-row-bg);
+  border: 1px solid var(--surface-row-border);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.backBtn:active {
+  color: var(--primary-gold);
+  border-color: color-mix(in srgb, var(--primary-gold) 35%, transparent);
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.headerTitle {
+  font-size: 0.8125rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-light);
+  line-height: 1.2;
+}
+
+.headerSubtitle {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 0.125rem;
+}
+
+.main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem 2rem;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.75rem;
+}
+
+.logoWrap {
+  position: relative;
+}
+
+.logoGlow {
+  position: absolute;
+  inset: -6px;
+  background: var(--gradient-gold);
+  border-radius: 50%;
+  opacity: 0.22;
+  filter: blur(10px);
+}
+
+.logoCircle {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--primary-gold) 25%, transparent);
+  box-shadow: 0 12px 32px -8px rgba(245, 158, 11, 0.25);
+}
+
+.brandName {
+  margin-top: 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-light);
+  line-height: 1.35;
+  max-width: 16rem;
+}
+
+.brandTagline {
+  margin-top: 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.formCard {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 1.75rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+html[data-clock-phase="day"] .formCard {
+  box-shadow: 0 12px 32px -10px rgba(15, 23, 42, 0.1);
+}
+
+.formAccent {
+  position: absolute;
+  top: 0;
+  left: 1.5rem;
+  right: 1.5rem;
+  height: 2px;
+  background: var(--gradient-gold);
+  border-radius: 9999px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-left: 0.25rem;
+}
+
+.inputWrap {
+  position: relative;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding: 0.9375rem 1rem 0.9375rem 2.75rem;
+  font-size: 0.875rem;
+  border-radius: 1rem;
+  background: var(--surface-row-bg);
+  border: 1px solid var(--surface-row-border);
+  color: var(--text-light);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.inputPassword {
+  padding-right: 2.75rem;
+}
+
+.input::placeholder {
+  color: color-mix(in srgb, var(--text-muted) 65%, transparent);
+}
+
+.input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary-gold) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-gold) 12%, transparent);
+}
+
+.togglePassword {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+}
+
+.togglePassword:active {
+  color: var(--primary-gold);
+}
+
+.forgotRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.25rem;
+}
+
+.forgotBtn {
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary-gold);
+  padding: 0.25rem 0;
+}
+
+.submitBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  margin-top: 0.25rem;
+  border-radius: 1rem;
+  background: var(--gradient-gold);
+  color: #000;
+  font-size: 0.6875rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 24px -6px rgba(245, 158, 11, 0.4);
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.dividerText {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.registerBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  border-radius: 1rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary-gold);
+  background: color-mix(in srgb, var(--primary-gold) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-gold) 22%, transparent);
+  transition: background 0.2s, transform 0.15s;
+}
+
+.registerBtn:active {
+  transform: scale(0.98);
+  background: color-mix(in srgb, var(--primary-gold) 14%, transparent);
+}
+
+.footer {
+  position: relative;
+  z-index: 1;
+  padding: 1.25rem 1rem 1.75rem;
+  padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  border-top: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--background-dark) 96%, transparent);
+}
+
+.footerAccent {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2.5rem;
+  height: 2px;
+  background: var(--gradient-gold);
+  border-radius: 9999px;
+}
+
+.footerCopy {
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text-muted) 80%, transparent);
+  line-height: 1.5;
+}
