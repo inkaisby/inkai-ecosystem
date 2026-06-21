@@ -331,7 +331,7 @@ export default function PublicLandingPage() {
       </div>
 
       {/* STICKY HEADER & NAV TAB BAR */}
-      <div className="sticky top-0 z-50 flex flex-col w-full max-w-full overflow-hidden">
+      <div className="sticky top-0 z-50 flex flex-col w-full max-w-[480px] mx-auto overflow-hidden">
         {/* Header Bar */}
         <div
           className="flex items-center justify-between px-4 py-3 bg-[rgba(10,10,12,0.85)] border-b border-[rgba(255,255,255,0.05)]"
