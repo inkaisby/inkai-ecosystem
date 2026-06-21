@@ -15,7 +15,11 @@ import {
   Download,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { PublicMarkdownPreview } from "@/components/PublicMarkdown/PublicMarkdown";
+import PublicMarkdown, {
+  PublicMarkdownPreview,
+  shouldShowReadMore,
+  stripMarkdownTitle,
+} from "@/components/PublicMarkdown/PublicMarkdown";
 import PublicBottomNav from "@/components/PublicBottomNav/PublicBottomNav";
 import ScrollButtons from "@/components/ScrollButtons/ScrollButtons";
 import {
@@ -290,15 +294,21 @@ export default function PublicLandingPage() {
                 <h2 className={styles.sectionTitle}>
                   {getTabTitle(tab.content) || tab.name}
                 </h2>
-                <PublicMarkdownPreview content={tab.content} />
-                <Link
-                  href={halamanPath(tab.slug)}
-                  prefetch
-                  className={styles.readMoreLink}
-                >
-                  Baca Selengkapnya
-                  <ReadMoreIcon size={14} />
-                </Link>
+                {shouldShowReadMore(tab.content) ? (
+                  <>
+                    <PublicMarkdownPreview content={tab.content} />
+                    <Link
+                      href={halamanPath(tab.slug)}
+                      prefetch
+                      className={styles.readMoreLink}
+                    >
+                      Baca Selengkapnya
+                      <ReadMoreIcon size={14} />
+                    </Link>
+                  </>
+                ) : (
+                  <PublicMarkdown content={stripMarkdownTitle(tab.content)} />
+                )}
               </div>
             </article>
           ))}

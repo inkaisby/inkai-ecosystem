@@ -7,24 +7,67 @@ interface PublicMarkdownProps {
   content: string;
 }
 
-export function getContentPreviewText(content: string, maxLen = 200): string {
-  const blocks = content.split("\n\n");
+const PREVIEW_MAX_LEN = 200;
+
+function getBodyBlocks(content: string): string[] {
+  return content
+    .split("\n\n")
+    .map((b) => b.trim())
+    .filter((b) => b && !b.startsWith("# "));
+}
+
+function blockToPlainText(block: string): string {
+  return block
+    .replace(/^###\s+/gm, "")
+    .replace(/\*\*/g, "")
+    .replace(/^-\s+/gm, "")
+    .replace(/^\d+\.\s+/gm, "")
+    .replace(/\n+/g, " ")
+    .trim();
+}
+
+/** Tampilkan "Baca Selengkapnya" hanya jika konten panjang atau punya banyak blok. */
+export function shouldShowReadMore(content: string, maxLen = PREVIEW_MAX_LEN): boolean {
+  const blocks = getBodyBlocks(content);
+  if (blocks.length === 0) return false;
+  if (blocks.length > 1) return true;
+  return blockToPlainText(blocks[0]).length > maxLen;
+}
+
+export function stripMarkdownTitle(content: string): string {
+  return content.replace(/^#\s+.+\n\n?/, "").trim();
+}
+
+export function getContentPreviewText(content: string, maxLen = PREVIEW_MAX_LEN): string {
+  const blocks = getBodyBlocks(content);
+  if (blocks.length === 0) return "";
+
+  let collected = "";
   for (const block of blocks) {
-    const trimmed = block.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-
-    const text = trimmed
-      .replace(/\*\*/g, "")
-      .replace(/^-\s+/gm, "")
-      .replace(/^\d+\.\s+/gm, "")
-      .replace(/\n+/g, " ")
-      .trim();
-
+    const text = blockToPlainText(block);
     if (!text) continue;
-    if (text.length <= maxLen) return text;
-    return `${text.slice(0, maxLen).trim()}…`;
+    if (collected.length + text.length + 1 <= maxLen) {
+      collected = collected ? `${collected} ${text}` : text;
+    } else {
+      const remaining = maxLen - collected.length - (collected ? 1 : 0);
+      if (remaining > 0) {
+        collected = collected
+          ? `${collected} ${text.slice(0, remaining).trim()}…`
+          : `${text.slice(0, maxLen).trim()}…`;
+      } else if (!collected) {
+        collected = `${text.slice(0, maxLen).trim()}…`;
+      } else {
+        collected = `${collected}…`;
+      }
+      break;
+    }
   }
-  return "";
+
+  if (blocks.length > 1 && collected && !collected.endsWith("…")) {
+    collected = `${collected}…`;
+  }
+
+  return collected;
 }
 
 export default function PublicMarkdown({ content }: PublicMarkdownProps) {
