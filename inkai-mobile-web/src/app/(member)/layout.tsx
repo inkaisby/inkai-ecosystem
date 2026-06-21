@@ -7,6 +7,12 @@ import { useAuth } from "@/context/AuthContext";
 
 const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/forgot-password"]);
 
+function isPublicPath(path: string): boolean {
+  if (PUBLIC_PATHS.has(path)) return true;
+  if (path.startsWith("/halaman/")) return true;
+  return false;
+}
+
 function normalizePathname(path: string): string {
   if (path.length > 1 && path.endsWith("/")) {
     return path.slice(0, -1);
@@ -24,7 +30,7 @@ export default function MemberSegmentLayout({
   const { user, isLoading: isAuthLoading } = useAuth();
 
   const normalized = normalizePathname(pathname ?? "/");
-  const isPublic = PUBLIC_PATHS.has(normalized);
+  const isPublic = isPublicPath(normalized);
 
   useEffect(() => {
     if (isPublic) return;

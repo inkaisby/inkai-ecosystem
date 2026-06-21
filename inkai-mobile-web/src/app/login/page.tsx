@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -19,7 +19,6 @@ import CustomToast from "@/components/CustomToast/CustomToast";
 import styles from "./Login.module.css";
 
 export default function Login() {
-  const [mounted, setMounted] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -30,10 +29,6 @@ export default function Login() {
   });
   const { login, isLoading } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +43,6 @@ export default function Login() {
       });
     }
   };
-
-  if (!mounted) return null;
 
   return (
     <div className={styles.shell}>
