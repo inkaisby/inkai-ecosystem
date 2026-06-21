@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import styles from "./ScrollButtons.module.css";
 
-export default function ScrollButtons() {
+export default function ScrollButtons({ compact = false }: { compact?: boolean }) {
   const [canScrollUp, setCanScrollUp] = useState(false);
   const [canScrollDown, setCanScrollDown] = useState(false);
 
@@ -32,7 +32,10 @@ export default function ScrollButtons() {
   };
 
   return (
-    <div className={styles.wrap} aria-label="Navigasi scroll">
+    <div
+      className={`${styles.wrap} ${compact ? styles.wrapCompact : ""}`}
+      aria-label="Navigasi scroll"
+    >
       <button
         type="button"
         className={`${styles.btn} ${!canScrollUp ? styles.btnHidden : ""}`}

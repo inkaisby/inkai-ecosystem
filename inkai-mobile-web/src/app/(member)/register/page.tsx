@@ -2,47 +2,66 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Eye, EyeOff, User, Mail, Smartphone, Lock, ShieldCheck, MapPin } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Eye,
+  EyeOff,
+  User,
+  Mail,
+  Smartphone,
+  Lock,
+  ShieldCheck,
+  MapPin,
+  LogIn,
+} from "lucide-react";
 import CustomToast from "@/components/CustomToast/CustomToast";
+import ScrollButtons from "@/components/ScrollButtons/ScrollButtons";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import styles from "./Register.module.css";
 
 export default function Register() {
-  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
-  const [toast, setToast] = useState({ show: false, message: '', type: 'info' as 'success' | 'error' | 'info' });
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '' });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "info" as "success" | "error" | "info",
+  });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [dojos, setDojos] = useState<{ id: string; name: string }[]>([]);
-  const [provinceId, setProvinceId] = useState('');
-  const [branchId, setBranchId] = useState('');
-  const [dojoId, setDojoId] = useState('');
+  const [provinceId, setProvinceId] = useState("");
+  const [branchId, setBranchId] = useState("");
+  const [dojoId, setDojoId] = useState("");
   const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const [isLoadingDojos, setIsLoadingDojos] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    router.prefetch("/login");
+  }, [router]);
 
   useEffect(() => {
-    if (!mounted) return;
     let cancelled = false;
     (async () => {
       setIsLoadingProvinces(true);
       try {
         const res = await api.org.getProvinces();
-        if (!cancelled && res.status === 'success' && Array.isArray(res.data)) {
+        if (!cancelled && res.status === "success" && Array.isArray(res.data)) {
           setProvinces(res.data);
         }
       } catch {
-        if (!cancelled) setToast({ show: true, message: 'Gagal memuat daftar provinsi.', type: 'error' });
+        if (!cancelled) {
+          setToast({ show: true, message: "Gagal memuat daftar provinsi.", type: "error" });
+        }
       } finally {
         if (!cancelled) setIsLoadingProvinces(false);
       }
@@ -50,17 +69,17 @@ export default function Register() {
     return () => {
       cancelled = true;
     };
-  }, [mounted]);
+  }, []);
 
   const fetchBranches = async (pid: string) => {
     setIsLoadingBranches(true);
     try {
       const res = await api.org.getBranches(pid);
-      if (res.status === 'success' && Array.isArray(res.data)) setBranches(res.data);
+      if (res.status === "success" && Array.isArray(res.data)) setBranches(res.data);
       else setBranches([]);
     } catch {
       setBranches([]);
-      setToast({ show: true, message: 'Gagal memuat cabang.', type: 'error' });
+      setToast({ show: true, message: "Gagal memuat cabang.", type: "error" });
     } finally {
       setIsLoadingBranches(false);
     }
@@ -70,11 +89,11 @@ export default function Register() {
     setIsLoadingDojos(true);
     try {
       const res = await api.org.getDojos(bid);
-      if (res.status === 'success' && Array.isArray(res.data)) setDojos(res.data);
+      if (res.status === "success" && Array.isArray(res.data)) setDojos(res.data);
       else setDojos([]);
     } catch {
       setDojos([]);
-      setToast({ show: true, message: 'Gagal memuat dojo.', type: 'error' });
+      setToast({ show: true, message: "Gagal memuat dojo.", type: "error" });
     } finally {
       setIsLoadingDojos(false);
     }
@@ -83,8 +102,8 @@ export default function Register() {
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setProvinceId(val);
-    setBranchId('');
-    setDojoId('');
+    setBranchId("");
+    setDojoId("");
     setBranches([]);
     setDojos([]);
     if (val) void fetchBranches(val);
@@ -93,7 +112,7 @@ export default function Register() {
   const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setBranchId(val);
-    setDojoId('');
+    setDojoId("");
     setDojos([]);
     if (val) void fetchDojos(val);
   };
@@ -101,14 +120,18 @@ export default function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
-      setToast({ show: true, message: 'Harap lengkapi semua kolom pendaftaran.', type: 'error' });
+      setToast({ show: true, message: "Harap lengkapi semua kolom pendaftaran.", type: "error" });
       return;
     }
     if (!dojoId) {
-      setToast({ show: true, message: 'Silakan pilih Provinsi, Cabang, dan Dojo/Ranting.', type: 'error' });
+      setToast({
+        show: true,
+        message: "Silakan pilih Provinsi, Cabang, dan Dojo/Ranting.",
+        type: "error",
+      });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await api.auth.register({
@@ -118,101 +141,98 @@ export default function Register() {
         password: formData.password,
         dojoId,
       });
-      
+
       const loginResult = await login(formData.email, formData.password);
-      
+
       if (loginResult.ok) {
-        setToast({ show: true, message: 'Pendaftaran berhasil! Mengarahkan ke profil...', type: 'success' });
+        setToast({
+          show: true,
+          message: "Pendaftaran berhasil! Mengarahkan ke profil…",
+          type: "success",
+        });
         setTimeout(() => {
-          router.push('/profile/edit?new_user=true');
+          router.push("/profile/edit?new_user=true");
         }, 1500);
       } else {
-        setToast({ show: true, message: 'Pendaftaran berhasil! Silakan login.', type: 'success' });
+        setToast({ show: true, message: "Pendaftaran berhasil! Silakan login.", type: "success" });
         setTimeout(() => {
-          router.push('/');
+          router.push("/login");
         }, 1500);
       }
-    } catch (error: any) {
-      setToast({ show: true, message: error.response?.data?.message || 'Gagal mendaftar. Silakan coba lagi.', type: 'error' });
+    } catch (error: unknown) {
+      const message =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "message" in error.response.data &&
+        typeof error.response.data.message === "string"
+          ? error.response.data.message
+          : "Gagal mendaftar. Silakan coba lagi.";
+      setToast({ show: true, message, type: "error" });
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!mounted) return null;
-
   return (
-    <div className="flex flex-col" style={{ minHeight: '100vh', backgroundColor: 'var(--background-dark)', position: 'relative', overflow: 'hidden' }}>
-      {/* Background Blurs */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '70%', height: '70%', backgroundColor: 'var(--ambient-orb-amber)', filter: 'blur(100px)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', backgroundColor: 'var(--ambient-orb-blue)', filter: 'blur(100px)', borderRadius: '50%' }} />
+    <div className={styles.shell}>
+      <div className={styles.ambient} aria-hidden="true">
+        <div className={styles.ambientOrbAmber} />
+        <div className={styles.ambientOrbBlue} />
       </div>
 
-      <div className="flex flex-col py-6" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '480px', margin: '0 auto', flex: 1 }}>
-        
-        {/* Header Section */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-8"
-        >
-          <button 
-            onClick={() => router.back()} 
-            className="flex items-center gap-2 text-10 font-black uppercase tracking-widest"
-            style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}
-            disabled={isLoading}
-          >
-            <ArrowLeft size={16} /> Kembali
-          </button>
+      <header className={styles.headerBar}>
+        <Link href="/" className={styles.backBtn} aria-label="Kembali ke beranda">
+          <ArrowLeft size={18} />
+        </Link>
+        <div className={styles.headerText}>
+          <p className={styles.headerTitle}>Daftar Anggota</p>
+          <p className={styles.headerSubtitle}>Registrasi Keanggotaan INKAI</p>
+        </div>
+      </header>
 
-          <h1 className="text-2xl font-black text-white mb-2">Pendaftaran Anggota</h1>
-          <p className="text-gray-500 text-10 font-bold uppercase tracking-widest">Pilih dojo, lalu lengkapi kontak dan kata sandi</p>
-          <p className="text-gray-400 text-xs leading-relaxed mt-3">
-            Nomor Induk Anggota (NIA) mengikuti proses verifikasi pengurus setelah Anda melengkapi profil dan dokumen di langkah berikutnya.
-          </p>
-        </motion.div>
-        
-        {/* Form Container */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+      <main className={styles.main}>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="glass-card p-6 shadow-2xl"
-          style={{ borderRadius: '2rem' }}
+          transition={{ duration: 0.45 }}
+          className={styles.infoBanner}
         >
-          <form className="space-y-6" onSubmit={handleRegister}>
-            {/* Full Name */}
-            <div className="space-y-2">
-              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Nama Lengkap</label>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
-                  <User size={18} />
-                </div>
-                <input 
-                  type="text" 
-                  className="glass-input w-full py-4 pl-12 pr-4 text-sm" 
-                  placeholder="Masukkan nama lengkap" 
-                  required 
-                  value={formData.name} 
-                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                  disabled={isLoading} 
-                />
-              </div>
-            </div>
+          <strong>NIA (Nomor Induk Anggota)</strong> akan diterbitkan setelah verifikasi pengurus,
+          setelah Anda melengkapi profil dan dokumen pada langkah berikutnya.
+        </motion.div>
 
-            {/* Wilayah latihan */}
-            <div className="space-y-4 pb-2 border-b border-white/5">
-              <p className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Wilayah latihan</p>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.08 }}
+          className={styles.formCard}
+        >
+          <div className={styles.formAccent} aria-hidden="true" />
 
-              <div className="space-y-2">
-                <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Provinsi</label>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2, pointerEvents: 'none' }}>
+          <form className={styles.form} onSubmit={handleRegister}>
+            <section className={styles.sectionBlock} aria-labelledby="register-wilayah">
+              <h2 id="register-wilayah" className={styles.sectionTitle}>
+                <span className={styles.sectionTitleBar} />
+                Wilayah Latihan
+              </h2>
+
+              <div className={styles.field}>
+                <label htmlFor="register-province" className={styles.label}>
+                  Provinsi
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon} aria-hidden="true">
                     <MapPin size={18} />
-                  </div>
+                  </span>
                   <select
-                    className="glass-input w-full py-4 pl-12 pr-10 text-sm appearance-none cursor-pointer disabled:opacity-40"
+                    id="register-province"
+                    className={`${styles.input} ${styles.select} ${styles.inputWithAction}`}
                     value={provinceId}
                     onChange={handleProvinceChange}
                     required
@@ -220,23 +240,30 @@ export default function Register() {
                   >
                     <option value="">Pilih provinsi</option>
                     {provinces.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
                     ))}
                   </select>
                   {isLoadingProvinces && (
-                    <Loader2 className="animate-spin" size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }} />
+                    <span className={styles.inputLoader} aria-hidden="true">
+                      <Loader2 className="animate-spin" size={18} />
+                    </span>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Cabang</label>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2, pointerEvents: 'none' }}>
+              <div className={styles.field}>
+                <label htmlFor="register-branch" className={styles.label}>
+                  Cabang
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon} aria-hidden="true">
                     <MapPin size={18} />
-                  </div>
+                  </span>
                   <select
-                    className="glass-input w-full py-4 pl-12 pr-10 text-sm appearance-none cursor-pointer disabled:opacity-40"
+                    id="register-branch"
+                    className={`${styles.input} ${styles.select} ${styles.inputWithAction}`}
                     value={branchId}
                     onChange={handleBranchChange}
                     required
@@ -244,23 +271,30 @@ export default function Register() {
                   >
                     <option value="">Pilih cabang</option>
                     {branches.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
                     ))}
                   </select>
                   {isLoadingBranches && (
-                    <Loader2 className="animate-spin" size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }} />
+                    <span className={styles.inputLoader} aria-hidden="true">
+                      <Loader2 className="animate-spin" size={18} />
+                    </span>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Dojo / Ranting</label>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2, pointerEvents: 'none' }}>
+              <div className={styles.field}>
+                <label htmlFor="register-dojo" className={styles.label}>
+                  Dojo / Ranting
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon} aria-hidden="true">
                     <MapPin size={18} />
-                  </div>
+                  </span>
                   <select
-                    className="glass-input w-full py-4 pl-12 pr-10 text-sm appearance-none cursor-pointer disabled:opacity-40"
+                    id="register-dojo"
+                    className={`${styles.input} ${styles.select} ${styles.inputWithAction}`}
                     value={dojoId}
                     onChange={(e) => setDojoId(e.target.value)}
                     required
@@ -268,113 +302,168 @@ export default function Register() {
                   >
                     <option value="">Pilih dojo atau ranting</option>
                     {dojos.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
                     ))}
                   </select>
                   {isLoadingDojos && (
-                    <Loader2 className="animate-spin" size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }} />
+                    <span className={styles.inputLoader} aria-hidden="true">
+                      <Loader2 className="animate-spin" size={18} />
+                    </span>
                   )}
                 </div>
               </div>
 
-              <p className="text-gray-500 text-[11px] italic ml-1 leading-snug -mt-1">
-                Pilihan dojo tidak dapat diubah sendiri setelah pendaftaran.
-              </p>
-            </div>
+              <p className={styles.hint}>Pilihan dojo tidak dapat diubah sendiri setelah pendaftaran.</p>
+            </section>
 
-            {/* Email */}
-            <div className="space-y-2">
-              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Email</label>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
-                  <Mail size={18} />
+            <section className={styles.sectionBlock} aria-labelledby="register-data">
+              <h2 id="register-data" className={styles.sectionTitle}>
+                <span className={styles.sectionTitleBar} />
+                Data Anggota
+              </h2>
+
+              <div className={styles.field}>
+                <label htmlFor="register-name" className={styles.label}>
+                  Nama Lengkap
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon} aria-hidden="true">
+                    <User size={18} />
+                  </span>
+                  <input
+                    id="register-name"
+                    type="text"
+                    className={styles.input}
+                    placeholder="Masukkan nama lengkap"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    disabled={isLoading}
+                    autoComplete="name"
+                  />
                 </div>
-                <input 
-                  type="email" 
-                  className="glass-input w-full py-4 pl-12 pr-4 text-sm" 
-                  placeholder="email@contoh.com" 
-                  required 
-                  value={formData.email} 
-                  onChange={(e) => setFormData({...formData, email: e.target.value})} 
-                  disabled={isLoading} 
-                />
               </div>
-            </div>
 
-            {/* Phone */}
-            <div className="space-y-2">
-              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Nomor WhatsApp</label>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
-                  <Smartphone size={18} />
+              <div className={styles.field}>
+                <label htmlFor="register-email" className={styles.label}>
+                  Email
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon} aria-hidden="true">
+                    <Mail size={18} />
+                  </span>
+                  <input
+                    id="register-email"
+                    type="email"
+                    className={styles.input}
+                    placeholder="email@contoh.com"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled={isLoading}
+                    autoComplete="email"
+                  />
                 </div>
-                <input 
-                  type="tel" 
-                  className="glass-input w-full py-4 pl-12 pr-4 text-sm" 
-                  placeholder="Contoh: 08123456789" 
-                  required 
-                  value={formData.phone} 
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})} 
-                  disabled={isLoading} 
-                />
               </div>
-            </div>
 
-            {/* Password */}
-            <div className="space-y-2">
-              <label className="text-10 font-black text-gray-500 uppercase tracking-widest ml-1">Kata Sandi</label>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}>
-                  <Lock size={18} />
+              <div className={styles.field}>
+                <label htmlFor="register-phone" className={styles.label}>
+                  Nomor WhatsApp
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon} aria-hidden="true">
+                    <Smartphone size={18} />
+                  </span>
+                  <input
+                    id="register-phone"
+                    type="tel"
+                    className={styles.input}
+                    placeholder="Contoh: 08123456789"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    disabled={isLoading}
+                    autoComplete="tel"
+                  />
                 </div>
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  className="glass-input w-full py-4 pl-12 pr-12 text-sm" 
-                  placeholder="••••••••" 
-                  required 
-                  value={formData.password} 
-                  onChange={(e) => setFormData({...formData, password: e.target.value})} 
-                  disabled={isLoading} 
-                />
-                <button 
-                  type="button" 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
-                  style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 2 }}
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
-            </div>
 
-            <motion.button 
+              <div className={styles.field}>
+                <label htmlFor="register-password" className={styles.label}>
+                  Kata Sandi
+                </label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon} aria-hidden="true">
+                    <Lock size={18} />
+                  </span>
+                  <input
+                    id="register-password"
+                    type={showPassword ? "text" : "password"}
+                    className={`${styles.input} ${styles.inputWithAction}`}
+                    placeholder="••••••••"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    disabled={isLoading}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className={styles.togglePassword}
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <motion.button
               whileTap={{ scale: 0.98 }}
-              type="submit" 
-              className="btn-primary w-full py-4 rounded-xl font-black uppercase tracking-widest"
-              style={{ marginTop: '2rem', fontSize: '0.7rem', padding: '1.2rem', boxShadow: '0 8px 20px -6px rgba(245, 158, 11, 0.3)' }}
+              type="submit"
+              className={styles.submitBtn}
               disabled={isLoading}
             >
-              <div className="flex items-center justify-center gap-2">
-                {isLoading ? (
-                  <Loader2 className="animate-spin" size={18} />
-                ) : (
-                  <>
-                    <ShieldCheck size={16} />
-                    <span>DAFTAR SEKARANG</span>
-                  </>
-                )}
-              </div>
+              {isLoading ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <>
+                  <ShieldCheck size={16} />
+                  <span>Daftar Sekarang</span>
+                </>
+              )}
             </motion.button>
+
+            <div className={styles.divider}>
+              <div className={styles.dividerLine} />
+              <span className={styles.dividerText}>Sudah punya akun?</span>
+              <div className={styles.dividerLine} />
+            </div>
+
+            <Link href="/login" prefetch className={styles.loginLink}>
+              <LogIn size={14} />
+              <span>Masuk ke Portal</span>
+            </Link>
           </form>
         </motion.div>
-      </div>
+      </main>
 
-      <CustomToast 
-        isVisible={toast.show} 
-        message={toast.message} 
-        type={toast.type} 
-        onClose={() => setToast({ ...toast, show: false })} 
+      <footer className={styles.footer}>
+        <div className={styles.footerAccent} aria-hidden="true" />
+        <p className={styles.footerCopy}>© 2026 Institut Karate-Do Indonesia (INKAI)</p>
+      </footer>
+
+      <ScrollButtons compact />
+
+      <CustomToast
+        isVisible={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
       />
     </div>
   );
