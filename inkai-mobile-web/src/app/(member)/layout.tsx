@@ -10,6 +10,7 @@ const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/forgot-password"]);
 function isPublicPath(path: string): boolean {
   if (PUBLIC_PATHS.has(path)) return true;
   if (path.startsWith("/halaman/")) return true;
+  if (path === "/store") return true;
   return false;
 }
 

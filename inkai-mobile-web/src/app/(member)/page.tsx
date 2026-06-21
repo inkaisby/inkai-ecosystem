@@ -12,7 +12,7 @@ import {
   User,
   LayoutDashboard,
   MapPin,
-  Download,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import PublicMarkdown, {
@@ -48,6 +48,7 @@ export default function PublicLandingPage() {
     router.prefetch("/login");
     router.prefetch("/register");
     router.prefetch("/dashboard");
+    router.prefetch("/store");
   }, [router]);
 
   useEffect(() => {
@@ -267,17 +268,12 @@ export default function PublicLandingPage() {
             <span className={`${styles.ctaLabel} ${styles.ctaLabelMuted}`}>Cari Dojo</span>
           </Link>
 
-          <a
-            href="https://inkai.or.id"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${styles.ctaCard} ${styles.ctaSite}`}
-          >
+          <Link href="/store" prefetch className={`${styles.ctaCard} ${styles.ctaStore}`}>
             <div className={styles.ctaIconWrap}>
-              <Download size={20} color="#a1a1aa" strokeWidth={2.5} />
+              <ShoppingBag size={20} color="#fbbf24" strokeWidth={2.5} />
             </div>
-            <span className={`${styles.ctaLabel} ${styles.ctaLabelMuted}`}>Situs Pusat</span>
-          </a>
+            <span className={`${styles.ctaLabel} ${styles.ctaLabelMuted}`}>INKAI Store</span>
+          </Link>
         </div>
 
         <div className={styles.sections}>

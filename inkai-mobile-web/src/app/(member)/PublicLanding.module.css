@@ -362,14 +362,14 @@ html[data-clock-phase="day"] .carousel {
   box-shadow: 0 10px 25px -5px rgba(30, 27, 75, 0.35);
 }
 
-.ctaSite {
-  background: linear-gradient(135deg, #111115 0%, #1c1917 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+.ctaStore {
+  background: linear-gradient(135deg, #b45309 0%, #78350f 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(180, 83, 9, 0.35);
 }
 
-html[data-clock-phase="day"] .ctaSite {
-  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+html[data-clock-phase="day"] .ctaStore {
+  background: linear-gradient(135deg, #d97706 0%, #92400e 100%);
 }
 
 .ctaIconWrap {

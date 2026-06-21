@@ -34,7 +34,13 @@ export default function Login() {
     e.preventDefault();
     const result = await login(identifier, password);
     if (result.ok) {
-      router.push("/dashboard");
+      const params = new URLSearchParams(window.location.search);
+      const nextPath = params.get("next");
+      const safeNext =
+        nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
+          ? nextPath
+          : "/dashboard";
+      router.push(safeNext);
     } else {
       setToast({
         show: true,
