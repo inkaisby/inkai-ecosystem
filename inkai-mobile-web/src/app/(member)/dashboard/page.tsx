@@ -21,6 +21,7 @@ import {
   ScrollText,
   X,
   Wallet,
+  History,
 } from "lucide-react";
 import styles from "./Dashboard.module.css";
 import MemberCard from "@/components/MemberCard/MemberCard";
@@ -235,6 +236,7 @@ export default function Dashboard() {
     { icon: <ArrowRightLeft />, label: "Pindah", path: "/transfer" },
     { icon: <FileText />, label: "Dokumen", path: "/documents" },
     { icon: <CalendarCheck />, label: "Event", path: "/events" },
+    { icon: <History />, label: "Riwayat", path: "/absensi#riwayat" },
   ];
 
   if (!mounted || isAuthLoading || !user) {
@@ -611,24 +613,6 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {(user.nia || isAdmin) &&
-        pastEvents.length > 0 &&
-        !isEventsLoading && (
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Riwayat agenda</h2>
-              <button
-                className={styles.seeAll}
-                onClick={() => router.push("/absensi#riwayat")}
-              >
-                Lihat riwayat
-              </button>
-            </div>
-            <div className={styles.eventList}>
-              {pastEvents.map((event) => renderEventItem(event, true))}
-            </div>
-          </section>
-        )}
 
       <div style={{ height: "100px" }} />
       <BottomNav />
