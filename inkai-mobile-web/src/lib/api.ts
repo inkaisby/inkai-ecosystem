@@ -274,6 +274,17 @@ export const api = Object.assign(apiInstance, {
     save: (data: Record<string, unknown>) =>
       apiInstance.put('/member-mobile-welcome', data).then((res) => res.data),
   },
+  navTabs: {
+    getAll: (params?: Record<string, any>) => apiInstance.get('/nav-tabs', { params }).then(res => res.data),
+    getDetail: (slug: string) => apiInstance.get(`/nav-tabs/${slug}`).then(res => res.data),
+    update: (id: string, data: any) => apiInstance.put(`/nav-tabs/${id}`, data).then(res => res.data),
+  },
+  newsCarousel: {
+    getAll: (params?: Record<string, any>) => apiInstance.get('/news-carousel', { params }).then(res => res.data),
+    create: (data: any) => apiInstance.post('/news-carousel', data).then(res => res.data),
+    update: (id: string, data: any) => apiInstance.put(`/news-carousel/${id}`, data).then(res => res.data),
+    delete: (id: string) => apiInstance.delete(`/news-carousel/${id}`).then(res => res.data),
+  },
 });
 
 export default api;

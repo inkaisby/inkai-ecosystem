@@ -125,31 +125,74 @@ async function main() {
     {
       name: 'Home',
       slug: 'home',
-      content: '# Selamat Datang di INKAI\n\nInstitut Karate-Do Indonesia (INKAI) adalah salah satu perguruan karate tertua dan terbesar di Indonesia. Website ini merupakan portal resmi publik dan keanggotaan.\n\n### Pengumuman Terbaru\n- **Ujian DAN Wilayah Jawa Barat**: Bandung, 15 Juli 2026\n- **Rakernas PP INKAI**: Jakarta, 22 Agustus 2026\n\n### Prestasi Utama\n- Juara Umum Piala Panglima TNI 2025\n- 5 Medali Emas Kejuaraan Karate Asia Pasifik 2026',
+      content: JSON.stringify({
+        heroTitle: "Selamat Datang di INKAI",
+        subtitle: "Institut Karate-Do Indonesia",
+        teksSambutan: "Institut Karate-Do Indonesia (INKAI) adalah salah satu perguruan karate tertua dan terbesar di Indonesia. Website ini merupakan portal resmi publik dan keanggotaan.\n\nWebsite ini dirancang untuk memudahkan manajemen dojo, anggota, iuran, ujian, absensi, serta agenda kegiatan penting perguruan."
+      }),
       order: 0,
     },
     {
       name: 'Sejarah',
       slug: 'sejarah',
-      content: '# Sejarah INKAI\n\nInstitut Karate-Do Indonesia (INKAI) didirikan pada tanggal **15 April 1971** oleh para tokoh karate nasional seperti Sabeth Mukhsin dan rekan-rekan.\n\nSejak awal berdirinya, INKAI bertujuan untuk membentuk karakter bangsa yang tangguh melalui latihan bela diri karate-do yang berdisiplin tinggi dan berlandaskan Sumpah Prajurit serta Janji INKAI.\n\nPerkembangan INKAI dari tahun ke tahun terus melahirkan atlet-atlet handal yang mengharumkan nama bangsa di kancah regional maupun dunia.',
+      content: JSON.stringify({
+        timeline: [
+          { tahun: "1971", judul: "Pendirian INKAI", deskripsi: "Didirikan pada tanggal 15 April 1971 oleh para tokoh karate senior di Indonesia." },
+          { tahun: "1980-an", judul: "Ekspansi Nasional", deskripsi: "INKAI mulai dibina secara massal ke jajaran militer dan sekolah-sekolah di seluruh provinsi." },
+          { tahun: "2025", judul: "Juara Umum Piala Panglima TNI", deskripsi: "Meraih prestasi gemilang sebagai juara umum kejuaraan nasional bergengsi." }
+        ]
+      }),
       order: 1,
     },
     {
       name: 'Makna Lambang',
       slug: 'makna-lambang',
-      content: '# Makna Lambang INKAI\n\nLambang Perguruan INKAI memiliki filosofi yang mendalam:\n\n1. **Bulatan Merah (Hinomaru)**\n   Melambangkan keberanian yang suci, kebenaran, serta tekad yang tak tergoyahkan.\n2. **Karateka yang Berlutut**\n   Melambangkan kesetiaan, kerendahan hati, rasa hormat (*rei*), serta kedisiplinan yang tinggi.\n3. **Tulisan INKAI**\n   Merupakan identitas resmi Institut Karate-Do Indonesia sebagai pemersatu seluruh anggota secara nasional.',
+      content: JSON.stringify({
+        simbolMakna: [
+          { simbol: "Bulatan Merah (Hinomaru)", makna: "Melambangkan keberanian yang suci, kebenaran, serta tekad yang tak tergoyahkan." },
+          { simbol: "Karateka yang Berlutut", makna: "Melambangkan kesetiaan, kerendahan hati, rasa hormat (rei), serta kedisiplinan yang tinggi." },
+          { simbol: "Tulisan INKAI", makna: "Merupakan identitas resmi Institut Karate-Do Indonesia sebagai pemersatu secara nasional." }
+        ]
+      }),
       order: 2,
     },
     {
       name: 'Struktur Organisasi',
       slug: 'struktur-organisasi',
-      content: '# Struktur Organisasi PP INKAI (2026 - 2030)\n\n### Dewan Guru\n- **Ketua Dewan Guru:** Shihan H. Syahril\n- **Anggota:** Shihan Agus, Shihan Bambang\n\n### Pengurus Pusat (PP)\n- **Ketua Umum:** Laksdya TNI Shihan Ivan\n- **Sekretaris Umum:** Sensei Dedi\n- **Bendahara Umum:** Sensei Rika\n- **Kabid Pembinaan Prestasi:** Sensei Hendra',
+      content: JSON.stringify({
+        struktur: [
+          {
+            level: "Dewan Guru",
+            anggota: [
+              { nama: "Shihan H. Syahril", jabatan: "Ketua Dewan Guru", foto: "" },
+              { nama: "Shihan Agus", jabatan: "Anggota Dewan Guru", foto: "" },
+              { nama: "Shihan Bambang", jabatan: "Anggota Dewan Guru", foto: "" }
+            ]
+          },
+          {
+            level: "Pengurus Pusat (PP)",
+            anggota: [
+              { nama: "Laksdya TNI Shihan Ivan", jabatan: "Ketua Umum", foto: "" },
+              { nama: "Sensei Dedi", jabatan: "Sekretaris Umum", foto: "" },
+              { nama: "Sensei Rika", jabatan: "Bendahara Umum", foto: "" },
+              { nama: "Sensei Hendra", jabatan: "Kabid Pembinaan Prestasi", foto: "" }
+            ]
+          }
+        ]
+      }),
       order: 3,
     },
     {
       name: 'Visi & Misi',
       slug: 'visi-misi',
-      content: '# Visi & Misi INKAI\n\n### Visi\nMenjadikan INKAI sebagai perguruan karate-do terdepan di Indonesia yang unggul, berkarakter, berprestasi dunia, dan solid secara organisasi.\n\n### Misi\n1. Membina fisik dan mental karateka berlandaskan nilai luhur budi pekerti.\n2. Melaksanakan tata kelola organisasi modern secara transparan, akuntabel, dan profesional.\n3. Melahirkan atlet-atlet berprestasi internasional secara berkelanjutan.',
+      content: JSON.stringify({
+        visi: "Menjadikan INKAI sebagai perguruan karate-do terdepan di Indonesia yang unggul, berkarakter, berprestasi dunia, dan solid secara organisasi.",
+        misi: [
+          "Membina fisik dan mental karateka berlandaskan nilai luhur budi pekerti.",
+          "Melaksanakan tata kelola organisasi modern secara transparan, akuntabel, dan profesional.",
+          "Melahirkan atlet-atlet berprestasi internasional secara berkelanjutan."
+        ]
+      }),
       order: 4,
     },
   ];
