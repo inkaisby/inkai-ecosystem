@@ -7,6 +7,8 @@ import TopBar from "@/components/admin/TopBar";
 import BottomNav from "@/components/BottomNav/BottomNav";
 import { useAuth } from "@/context/AuthContext";
 
+import Sidebar from "@/components/admin/Sidebar";
+
 const ADMIN_LOGIN = "/admin/login";
 
 function normalizePathname(path: string): string {
@@ -45,12 +47,12 @@ export default function AdminLayout({
   }, [isLoginRoute, isAuthLoading, user, isAdmin, router]);
 
   const shellClass =
-    "min-h-screen bg-[var(--background-dark)] text-[var(--text-light)] flex flex-col min-w-0";
+    "min-h-screen bg-[var(--background-dark)] text-[var(--text-light)] flex flex-col min-w-0 w-full";
 
   if (isLoginRoute) {
     return (
       <div data-admin-shell className={shellClass}>
-        <main className="relative min-w-0 flex-1 flex flex-col p-0">
+        <main className="relative min-w-0 flex-1 flex flex-col p-0 w-full">
           {children}
         </main>
       </div>
@@ -74,14 +76,26 @@ export default function AdminLayout({
 
   return (
     <div data-admin-shell className={shellClass}>
-      <>
-        <div className="admin-topbar-spacer" aria-hidden />
-        <TopBar />
-      </>
-      <main className="relative min-w-0 flex-1 flex flex-col px-0 pt-4 pb-32">
-        {children}
-      </main>
-      <BottomNav />
+      <div className="flex w-full min-h-screen">
+        {/* Sidebar on desktop/tablet */}
+        <div className="hidden lg:block">
+          <Sidebar />
+        </div>
+
+        {/* Content Panel */}
+        <div className="flex-1 flex flex-col min-w-0 lg:pl-64 w-full">
+          <div className="admin-topbar-spacer lg:hidden" aria-hidden />
+          <TopBar />
+          <main className="relative min-w-0 flex-1 flex flex-col px-4 md:px-8 pt-4 pb-32 lg:pb-8 max-w-7xl mx-auto w-full">
+            {children}
+          </main>
+        </div>
+      </div>
+
+      {/* Bottom Nav on mobile/tablet */}
+      <div className="lg:hidden">
+        <BottomNav />
+      </div>
     </div>
   );
 }

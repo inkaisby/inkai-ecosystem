@@ -1798,3 +1798,92 @@ input::-ms-reveal,
 input::-ms-clear {
   display: none;
 }
+
+/* ==========================================
+   Responsive Overrides for Admin Shell
+   ========================================== */
+
+/* Remove mobile wrapper & content constraints on large viewports when inside Admin */
+@media (min-width: 1024px) {
+  .mobile-wrapper:has([data-admin-shell]) {
+    background-color: var(--background-dark);
+  }
+  
+  .mobile-content:has([data-admin-shell]) {
+    max-width: 100% !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .admin-topbar-fixed {
+    max-width: none !important;
+    left: 16rem !important; /* w-64 is 16rem */
+    width: calc(100% - 16rem) !important;
+    border-bottom: 1px solid var(--border-light);
+  }
+  
+  .admin-notif-sheet,
+  .admin-account-sheet {
+    max-width: 320px !important;
+  }
+}
+
+/* Mock Tailwind Utility Classes for Responsive Layouts */
+.hidden {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .lg\:block {
+    display: block !important;
+  }
+  .lg\:flex {
+    display: flex !important;
+  }
+  .lg\:hidden {
+    display: none !important;
+  }
+  .lg\:pl-64 {
+    padding-left: 16rem !important;
+  }
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  .md\:flex-row {
+    flex-direction: row !important;
+  }
+  .md\:px-8 {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+}
+
+.mx-auto {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.w-full {
+  width: 100% !important;
+}
+
+.max-w-7xl {
+  max-width: 80rem !important;
+}
+
+.px-4 {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}

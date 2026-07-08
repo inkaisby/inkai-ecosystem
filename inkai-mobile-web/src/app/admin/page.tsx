@@ -240,9 +240,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-6">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-6 w-full">
       {/* Header - Simplified as TopBar is now in Layout */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <button
           onClick={() => router.push("/admin/members?showAdd=true")}
           className="btn-primary w-full text-sm py-4 rounded-2xl shadow-xl shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-3"
@@ -376,7 +376,7 @@ export default function Dashboard() {
         </div>
 
         {showStats && (
-          <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in slide-in-from-top-2 duration-300">
             <StatCard
               label="Total Anggota"
               value={stats?.totalMembers?.toLocaleString() || "0"}
