@@ -22,6 +22,38 @@ import styles from "./MobileContent.module.css";
 
 type TabId = "home" | "sejarah" | "lambang" | "organisasi" | "visi-misi" | "carousel";
 
+interface AutoResizeTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  value: string;
+}
+
+function AutoResizeTextarea({ value, onChange, className, ...props }: AutoResizeTextareaProps) {
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight + 2}px`;
+    }
+  };
+
+  useEffect(() => {
+    adjustHeight();
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={value}
+      onChange={onChange}
+      className={className}
+      onInput={adjustHeight}
+      style={{ overflowY: "hidden", resize: "vertical" }}
+      {...props}
+    />
+  );
+}
+
 export default function MobileContentEditor() {
   const router = useRouter();
   const { user, isAdmin, isLoading: authLoading } = useAuth();
@@ -463,7 +495,7 @@ export default function MobileContentEditor() {
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.label}>Teks Sambutan</label>
-                  <textarea
+                  <AutoResizeTextarea
                     rows={6}
                     value={homeForm.teksSambutan}
                     onChange={(e) => setHomeForm({ ...homeForm, teksSambutan: e.target.value })}
@@ -535,7 +567,7 @@ export default function MobileContentEditor() {
                       </div>
                       <div className={styles.formGroup}>
                         <label className={styles.label}>Deskripsi Lengkap</label>
-                        <textarea
+                        <AutoResizeTextarea
                           rows={2}
                           value={item.deskripsi}
                           onChange={(e) => updateTimelineItem(idx, "deskripsi", e.target.value)}
@@ -599,7 +631,7 @@ export default function MobileContentEditor() {
                       </div>
                       <div className={styles.formGroup}>
                         <label className={styles.label}>Arti & Filosofi</label>
-                        <textarea
+                        <AutoResizeTextarea
                           rows={2}
                           value={item.makna}
                           onChange={(e) => updateLambangItem(idx, "makna", e.target.value)}
@@ -733,7 +765,7 @@ export default function MobileContentEditor() {
               <div className={styles.formList}>
                 <div className={styles.formGroup}>
                   <label className={styles.label}>Pernyataan Visi</label>
-                  <textarea
+                  <AutoResizeTextarea
                     rows={3}
                     value={visiMisiForm.visi}
                     onChange={(e) => setVisiMisiForm({ ...visiMisiForm, visi: e.target.value })}
