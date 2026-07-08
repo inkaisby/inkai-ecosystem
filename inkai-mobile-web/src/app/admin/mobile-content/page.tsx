@@ -44,6 +44,35 @@ export default function MobileContentEditor() {
   const [carouselForm, setCarouselForm] = useState({ id: "", title: "", imageUrl: "", targetUrl: "", order: 0, isActive: true });
   const [isEditingCarousel, setIsEditingCarousel] = useState(false);
 
+  // Mouse drag scroll support for desktop/simulator
+  const tabRef = React.useRef<HTMLDivElement>(null);
+  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!tabRef.current) return;
+    setIsMouseDown(true);
+    setStartX(e.pageX - tabRef.current.offsetLeft);
+    setScrollLeftState(tabRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsMouseDown(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsMouseDown(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown || !tabRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - tabRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    tabRef.current.scrollLeft = scrollLeftState - walk;
+  };
+
   useEffect(() => {
     if (authLoading) return;
     const hasAccess = isAdmin && Array.isArray(user?.roles) && user.roles.some((r: any) => {
@@ -292,7 +321,15 @@ export default function MobileContentEditor() {
       </div>
 
       {/* Tab Navigation */}
-      <div className={styles.tabScroll}>
+      <div 
+        ref={tabRef}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        style={{ cursor: isMouseDown ? "grabbing" : "grab" }}
+        className={styles.tabScroll}
+      >
         {(
           [
             { id: "home", label: "Home", icon: Compass },
