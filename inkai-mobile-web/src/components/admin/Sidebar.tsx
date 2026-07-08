@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin', slug: 'dashboard' },
@@ -31,6 +32,7 @@ const menuItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = React.useState<any>(null);
+  const { logout } = useAuth();
 
   React.useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -40,8 +42,7 @@ export default function Sidebar() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    logout();
     window.location.href = '/admin/login';
   };
 
