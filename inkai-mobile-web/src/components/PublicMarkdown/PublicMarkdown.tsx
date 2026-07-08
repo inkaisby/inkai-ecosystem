@@ -237,14 +237,22 @@ export default function PublicMarkdown({ content }: PublicMarkdownProps) {
     // 1. HOME SCREEN
     if (data.heroTitle !== undefined) {
       return (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="bg-gradient-to-br from-amber-500/20 to-transparent border border-amber-500/10 rounded-3xl p-6 space-y-2">
             <h2 className="text-xl font-black text-amber-500 uppercase tracking-wide leading-tight">{data.heroTitle}</h2>
             {data.subtitle && <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{data.subtitle}</p>}
           </div>
+          {data.foto && (
+            <div className="w-full overflow-hidden rounded-2xl border border-white/10 my-4 shadow-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={data.foto} alt="Home Banner" className="w-full object-cover max-h-[300px]" />
+            </div>
+          )}
           {data.teksSambutan && (
-            <div className="p-2">
-              <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">{data.teksSambutan}</p>
+            <div className="p-1">
+              <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line" style={{ lineHeight: "1.7", letterSpacing: "0.01em" }}>
+                {data.teksSambutan}
+              </p>
             </div>
           )}
         </div>
@@ -254,13 +262,21 @@ export default function PublicMarkdown({ content }: PublicMarkdownProps) {
     // 2. TIMELINE SEJARAH
     if (data.timeline !== undefined) {
       return (
-        <div className="space-y-6 relative border-l-2 border-amber-500/20 ml-3 pl-6 my-2">
+        <div className="relative border-l-2 border-amber-500/20 ml-4 pl-6 my-4 space-y-8">
           {data.timeline.map((item: any, idx: number) => (
-            <div key={idx} className="relative space-y-1">
-              <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-amber-500 border-4 border-[var(--background-dark)]" />
+            <div key={idx} className="relative space-y-2 pb-2">
+              <div className="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-amber-500 border-4 border-[var(--background-dark)]" />
               <div className="text-xs font-black text-amber-500 uppercase tracking-widest">{item.tahun}</div>
-              <h4 className="text-sm font-black text-white uppercase">{item.judul}</h4>
-              <p className="text-xs text-gray-400 leading-relaxed">{item.deskripsi}</p>
+              <h4 className="text-sm font-black text-white uppercase tracking-wide">{item.judul}</h4>
+              {item.foto && (
+                <div className="w-full overflow-hidden rounded-xl border border-white/5 bg-white/5 my-3 shadow-md">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.foto} alt={item.judul} className="w-full object-cover max-h-[220px]" />
+                </div>
+              )}
+              <p className="text-xs text-gray-300 leading-relaxed" style={{ lineHeight: "1.65", letterSpacing: "0.015em" }}>
+                {item.deskripsi}
+              </p>
             </div>
           ))}
         </div>
@@ -270,14 +286,22 @@ export default function PublicMarkdown({ content }: PublicMarkdownProps) {
     // 3. MAKNA LAMBANG
     if (data.simbolMakna !== undefined) {
       return (
-        <div className="grid grid-cols-1 gap-4 my-2">
+        <div className="grid grid-cols-1 gap-5 my-4">
           {data.simbolMakna.map((item: any, idx: number) => (
-            <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl space-y-2">
+            <div key={idx} className="p-5 bg-white/5 border border-white/5 rounded-2xl space-y-3">
               <h4 className="text-sm font-black text-amber-500 uppercase tracking-wide flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                 {item.simbol}
               </h4>
-              <p className="text-xs text-gray-300 leading-relaxed pl-3.5">{item.makna}</p>
+              {item.foto && (
+                <div className="w-full overflow-hidden rounded-xl border border-white/5 bg-white/5 max-h-[180px] shadow-sm my-2 flex justify-start">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.foto} alt={item.simbol} className="object-contain max-h-[180px]" />
+                </div>
+              )}
+              <p className="text-xs text-gray-300 leading-relaxed pl-3.5" style={{ lineHeight: "1.6", letterSpacing: "0.01em" }}>
+                {item.makna}
+              </p>
             </div>
           ))}
         </div>
