@@ -128,7 +128,8 @@ async function main() {
       content: JSON.stringify({
         heroTitle: "Selamat Datang di INKAI",
         subtitle: "Institut Karate-Do Indonesia",
-        teksSambutan: "Institut Karate-Do Indonesia (INKAI) adalah salah satu perguruan karate tertua dan terbesar di Indonesia. Website ini merupakan portal resmi publik dan keanggotaan.\n\nWebsite ini dirancang untuk memudahkan manajemen dojo, anggota, iuran, ujian, absensi, serta agenda kegiatan penting perguruan."
+        teksSambutan: "Institut Karate-Do Indonesia (INKAI) adalah salah satu perguruan karate tertua dan terbesar di Indonesia. Website ini merupakan portal resmi publik dan keanggotaan.\n\nWebsite ini dirancang untuk memudahkan manajemen dojo, anggota, iuran, ujian, absensi, serta agenda kegiatan penting perguruan.",
+        foto: ""
       }),
       order: 0,
     },
@@ -137,9 +138,9 @@ async function main() {
       slug: 'sejarah',
       content: JSON.stringify({
         timeline: [
-          { tahun: "1971", judul: "Pendirian INKAI", deskripsi: "Didirikan pada tanggal 15 April 1971 oleh para tokoh karate senior di Indonesia." },
-          { tahun: "1980-an", judul: "Ekspansi Nasional", deskripsi: "INKAI mulai dibina secara massal ke jajaran militer dan sekolah-sekolah di seluruh provinsi." },
-          { tahun: "2025", judul: "Juara Umum Piala Panglima TNI", deskripsi: "Meraih prestasi gemilang sebagai juara umum kejuaraan nasional bergengsi." }
+          { tahun: "1971", judul: "Pendirian INKAI", deskripsi: "Didirikan pada tanggal 15 April 1971 oleh para tokoh karate senior di Indonesia.", foto: "" },
+          { tahun: "1980-an", judul: "Ekspansi Nasional", deskripsi: "INKAI mulai dibina secara massal ke jajaran militer dan sekolah-sekolah di seluruh provinsi.", foto: "" },
+          { tahun: "2025", judul: "Juara Umum Piala Panglima TNI", deskripsi: "Meraih prestasi gemilang sebagai juara umum kejuaraan nasional bergengsi.", foto: "" }
         ]
       }),
       order: 1,
@@ -149,9 +150,9 @@ async function main() {
       slug: 'makna-lambang',
       content: JSON.stringify({
         simbolMakna: [
-          { simbol: "Bulatan Merah (Hinomaru)", makna: "Melambangkan keberanian yang suci, kebenaran, serta tekad yang tak tergoyahkan." },
-          { simbol: "Karateka yang Berlutut", makna: "Melambangkan kesetiaan, kerendahan hati, rasa hormat (rei), serta kedisiplinan yang tinggi." },
-          { simbol: "Tulisan INKAI", makna: "Merupakan identitas resmi Institut Karate-Do Indonesia sebagai pemersatu secara nasional." }
+          { simbol: "Bulatan Merah (Hinomaru)", makna: "Melambangkan keberanian yang suci, kebenaran, serta tekad yang tak tergoyahkan.", foto: "" },
+          { simbol: "Karateka yang Berlutut", makna: "Melambangkan kesetiaan, kerendahan hati, rasa hormat (rei), serta kedisiplinan yang tinggi.", foto: "" },
+          { simbol: "Tulisan INKAI", makna: "Merupakan identitas resmi Institut Karate-Do Indonesia sebagai pemersatu secara nasional.", foto: "" }
         ]
       }),
       order: 2,
