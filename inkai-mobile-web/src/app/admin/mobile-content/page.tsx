@@ -13,20 +13,14 @@ import {
   Calendar,
   Compass,
   Users,
-  Eye,
-  FileText,
-  AlertCircle
+  FileText
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import styles from "./MobileContent.module.css";
 
 type TabId = "home" | "sejarah" | "lambang" | "organisasi" | "visi-misi" | "carousel";
-
-const inputClass =
-  "w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-amber-500/50";
-const labelClass =
-  "text-xs text-gray-500 uppercase font-bold tracking-widest mb-2 block";
 
 export default function MobileContentEditor() {
   const router = useRouter();
@@ -288,19 +282,17 @@ export default function MobileContentEditor() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-16 px-4">
+    <div className={styles.container}>
       {/* Title */}
-      <div className="space-y-1">
-        <h2 className="text-xl font-black text-white uppercase tracking-wider">
-          Kelola Konten Mobile
-        </h2>
-        <p className="text-xs text-gray-500">
+      <div className={styles.titleSection}>
+        <h2 className={styles.title}>Kelola Konten Mobile</h2>
+        <p className={styles.subtitle}>
           Ubah konten visual dan informasi yang ditampilkan pada aplikasi mobile anggota INKAI.
         </p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none border-b border-white/5">
+      <div className={styles.tabScroll}>
         {(
           [
             { id: "home", label: "Home", icon: Compass },
@@ -312,15 +304,12 @@ export default function MobileContentEditor() {
           ] as const
         ).map((tab) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider shrink-0 transition-all border ${
-                activeTab === tab.id
-                  ? "bg-amber-500 text-black border-amber-500"
-                  : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
-              }`}
+              className={`${styles.tabBtn} ${isActive ? styles.tabBtnActive : ""}`}
             >
               <Icon size={14} />
               {tab.label}
@@ -330,537 +319,490 @@ export default function MobileContentEditor() {
       </div>
 
       {/* Tab Panel */}
-      <div className="glass-card p-6 border-white/5 space-y-6">
-        {/* 1. HOME TAB */}
-        {activeTab === "home" && (
-          <div className="space-y-6">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Editor Home Screen</h3>
-            <div className="space-y-4">
-              <div>
-                <label className={labelClass}>Hero Title</label>
-                <input
-                  type="text"
-                  value={homeForm.heroTitle}
-                  onChange={(e) => setHomeForm({ ...homeForm, heroTitle: e.target.value })}
-                  className={inputClass}
-                  placeholder="Contoh: Selamat Datang di INKAI"
-                />
+      <div className="glass-card p-6 border-white/5">
+        <div className={styles.panel}>
+          {/* 1. HOME TAB */}
+          {activeTab === "home" && (
+            <>
+              <h3 className={styles.sectionTitle}>Editor Home Screen</h3>
+              <div className={styles.formList}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Hero Title</label>
+                  <input
+                    type="text"
+                    value={homeForm.heroTitle}
+                    onChange={(e) => setHomeForm({ ...homeForm, heroTitle: e.target.value })}
+                    className={styles.input}
+                    placeholder="Contoh: Selamat Datang di INKAI"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Hero Subtitle</label>
+                  <input
+                    type="text"
+                    value={homeForm.subtitle}
+                    onChange={(e) => setHomeForm({ ...homeForm, subtitle: e.target.value })}
+                    className={styles.input}
+                    placeholder="Contoh: Perguruan Karate Tertua & Terbesar"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Teks Sambutan</label>
+                  <textarea
+                    rows={6}
+                    value={homeForm.teksSambutan}
+                    onChange={(e) => setHomeForm({ ...homeForm, teksSambutan: e.target.value })}
+                    className={styles.textarea}
+                    placeholder="Kalimat pembuka & selamat datang untuk anggota..."
+                  />
+                </div>
               </div>
-              <div>
-                <label className={labelClass}>Hero Subtitle</label>
-                <input
-                  type="text"
-                  value={homeForm.subtitle}
-                  onChange={(e) => setHomeForm({ ...homeForm, subtitle: e.target.value })}
-                  className={inputClass}
-                  placeholder="Contoh: Perguruan Karate Tertua & Terbesar"
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Teks Sambutan</label>
-                <textarea
-                  rows={6}
-                  value={homeForm.teksSambutan}
-                  onChange={(e) => setHomeForm({ ...homeForm, teksSambutan: e.target.value })}
-                  className={`${inputClass} resize-y`}
-                  placeholder="Kalimat pembuka & selamat datang untuk anggota..."
-                />
-              </div>
-            </div>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => handleSaveTab("home", homeForm)}
-              className="btn-primary w-full py-3 flex items-center justify-center gap-2"
-            >
-              {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-              <span>Simpan Home Screen</span>
-            </button>
-          </div>
-        )}
-
-        {/* 2. SEJARAH TIMELINE TAB */}
-        {activeTab === "sejarah" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Timeline Sejarah</h3>
               <button
                 type="button"
-                onClick={addTimelineItem}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/20 text-xs font-bold text-amber-500 hover:bg-amber-500/10"
+                disabled={saving}
+                onClick={() => handleSaveTab("home", homeForm)}
+                className={styles.btnPrimary}
               >
-                <Plus size={14} />
-                Tambah Peristiwa
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                <span>Simpan Home Screen</span>
               </button>
-            </div>
+            </>
+          )}
 
-            <div className="space-y-4">
-              {sejarahForm.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 italic text-xs">Belum ada peristiwa dalam timeline.</div>
-              ) : (
-                sejarahForm.map((item, idx) => (
-                  <div key={idx} className="p-4 bg-black/20 border border-white/5 rounded-2xl space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-amber-500/70">Peristiwa #{idx + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeTimelineItem(idx)}
-                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className={labelClass}>Tahun</label>
-                        <input
-                          type="text"
-                          value={item.tahun}
-                          onChange={(e) => updateTimelineItem(idx, "tahun", e.target.value)}
-                          className={inputClass}
-                          placeholder="Contoh: 1971"
+          {/* 2. SEJARAH TIMELINE TAB */}
+          {activeTab === "sejarah" && (
+            <>
+              <div className={styles.sectionHeader}>
+                <h3 className={styles.sectionTitle}>Timeline Sejarah</h3>
+                <button type="button" onClick={addTimelineItem} className={styles.btnSecondary}>
+                  <Plus size={14} />
+                  Tambah Peristiwa
+                </button>
+              </div>
+
+              <div className={styles.cardList}>
+                {sejarahForm.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 italic text-xs">Belum ada peristiwa dalam timeline.</div>
+                ) : (
+                  sejarahForm.map((item, idx) => (
+                    <div key={idx} className={styles.cardItem}>
+                      <div className={styles.cardHeader}>
+                        <span className={styles.cardIndex}>Peristiwa #{idx + 1}</span>
+                        <button type="button" onClick={() => removeTimelineItem(idx)} className={styles.btnTrash}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      <div className={styles.grid3}>
+                        <div className={styles.formGroup}>
+                          <label className={styles.label}>Tahun</label>
+                          <input
+                            type="text"
+                            value={item.tahun}
+                            onChange={(e) => updateTimelineItem(idx, "tahun", e.target.value)}
+                            className={styles.input}
+                            placeholder="Contoh: 1971"
+                          />
+                        </div>
+                        <div className={`${styles.formGroup} ${styles.colSpan2}`}>
+                          <label className={styles.label}>Judul Peristiwa</label>
+                          <input
+                            type="text"
+                            value={item.judul}
+                            onChange={(e) => updateTimelineItem(idx, "judul", e.target.value)}
+                            className={styles.input}
+                            placeholder="Nama peristiwa..."
+                          />
+                        </div>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.label}>Deskripsi Lengkap</label>
+                        <textarea
+                          rows={2}
+                          value={item.deskripsi}
+                          onChange={(e) => updateTimelineItem(idx, "deskripsi", e.target.value)}
+                          className={styles.textarea}
+                          placeholder="Detail sejarah singkat..."
                         />
                       </div>
-                      <div className="col-span-2">
-                        <label className={labelClass}>Judul Peristiwa</label>
-                        <input
-                          type="text"
-                          value={item.judul}
-                          onChange={(e) => updateTimelineItem(idx, "judul", e.target.value)}
-                          className={inputClass}
-                          placeholder="Nama peristiwa..."
-                        />
-                      </div>
                     </div>
-                    <div>
-                      <label className={labelClass}>Deskripsi Lengkap</label>
-                      <textarea
-                        rows={2}
-                        value={item.deskripsi}
-                        onChange={(e) => updateTimelineItem(idx, "deskripsi", e.target.value)}
-                        className={`${inputClass} resize-y`}
-                        placeholder="Detail sejarah singkat..."
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
 
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => handleSaveTab("sejarah", { timeline: sejarahForm })}
-              className="btn-primary w-full py-3 flex items-center justify-center gap-2"
-            >
-              {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-              <span>Simpan Timeline Sejarah</span>
-            </button>
-          </div>
-        )}
-
-        {/* 3. MAKNA LAMBANG TAB */}
-        {activeTab === "lambang" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Simbol & Makna Lambang</h3>
               <button
                 type="button"
-                onClick={addLambangItem}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/20 text-xs font-bold text-amber-500 hover:bg-amber-500/10"
+                disabled={saving}
+                onClick={() => handleSaveTab("sejarah", { timeline: sejarahForm })}
+                className={styles.btnPrimary}
               >
-                <Plus size={14} />
-                Tambah Simbol
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                <span>Simpan Timeline Sejarah</span>
               </button>
-            </div>
+            </>
+          )}
 
-            <div className="space-y-4">
-              {lambangForm.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 italic text-xs">Belum ada makna lambang terdefinisi.</div>
-              ) : (
-                lambangForm.map((item, idx) => (
-                  <div key={idx} className="p-4 bg-black/20 border border-white/5 rounded-2xl space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-amber-500/70">Elemen Lambang #{idx + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeLambangItem(idx)}
-                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <div>
-                      <label className={labelClass}>Simbol / Nama Bagian</label>
-                      <input
-                        type="text"
-                        value={item.simbol}
-                        onChange={(e) => updateLambangItem(idx, "simbol", e.target.value)}
-                        className={inputClass}
-                        placeholder="Contoh: Bulatan Merah (Hinomaru)"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Arti & Filosofi</label>
-                      <textarea
-                        rows={2}
-                        value={item.makna}
-                        onChange={(e) => updateLambangItem(idx, "makna", e.target.value)}
-                        className={`${inputClass} resize-y`}
-                        placeholder="Filosofi dibalik simbol lambang..."
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+          {/* 3. MAKNA LAMBANG TAB */}
+          {activeTab === "lambang" && (
+            <>
+              <div className={styles.sectionHeader}>
+                <h3 className={styles.sectionTitle}>Simbol & Makna Lambang</h3>
+                <button type="button" onClick={addLambangItem} className={styles.btnSecondary}>
+                  <Plus size={14} />
+                  Tambah Simbol
+                </button>
+              </div>
 
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => handleSaveTab("makna-lambang", { simbolMakna: lambangForm })}
-              className="btn-primary w-full py-3 flex items-center justify-center gap-2"
-            >
-              {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-              <span>Simpan Filosofi Lambang</span>
-            </button>
-          </div>
-        )}
-
-        {/* 4. STRUKTUR ORGANISASI TAB */}
-        {activeTab === "organisasi" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Struktur Organisasi</h3>
-              <button
-                type="button"
-                onClick={addOrgLevel}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/20 text-xs font-bold text-amber-500 hover:bg-amber-500/10"
-              >
-                <Plus size={14} />
-                Tambah Tingkatan (Level)
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {organisasiForm.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 italic text-xs">Belum ada tingkatan kepengurusan.</div>
-              ) : (
-                organisasiForm.map((levelObj, lvlIdx) => (
-                  <div key={lvlIdx} className="p-5 bg-black/30 border border-white/10 rounded-2xl space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1 mr-4">
-                        <label className={labelClass}>Nama Tingkat Kepengurusan / Dewan</label>
+              <div className={styles.cardList}>
+                {lambangForm.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 italic text-xs">Belum ada makna lambang terdefinisi.</div>
+                ) : (
+                  lambangForm.map((item, idx) => (
+                    <div key={idx} className={styles.cardItem}>
+                      <div className={styles.cardHeader}>
+                        <span className={styles.cardIndex}>Elemen Lambang #{idx + 1}</span>
+                        <button type="button" onClick={() => removeLambangItem(idx)} className={styles.btnTrash}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.label}>Simbol / Nama Bagian</label>
                         <input
                           type="text"
-                          value={levelObj.level}
-                          onChange={(e) => {
-                            const updated = [...organisasiForm];
-                            updated[lvlIdx].level = e.target.value;
-                            setOrganisasiForm(updated);
-                          }}
-                          className={inputClass}
-                          placeholder="Contoh: Dewan Guru atau Pengurus Pusat"
+                          value={item.simbol}
+                          onChange={(e) => updateLambangItem(idx, "simbol", e.target.value)}
+                          className={styles.input}
+                          placeholder="Contoh: Bulatan Merah (Hinomaru)"
                         />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeOrgLevel(lvlIdx)}
-                        className="mt-6 p-2 rounded-xl text-red-500 hover:bg-red-500/10"
-                        title="Hapus Level"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <div className={styles.formGroup}>
+                        <label className={styles.label}>Arti & Filosofi</label>
+                        <textarea
+                          rows={2}
+                          value={item.makna}
+                          onChange={(e) => updateLambangItem(idx, "makna", e.target.value)}
+                          className={styles.textarea}
+                          placeholder="Filosofi dibalik simbol lambang..."
+                        />
+                      </div>
                     </div>
+                  ))
+                )}
+              </div>
 
-                    <div className="border-t border-white/5 pt-4 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-gray-400">Anggota Organisasi</span>
-                        <button
-                          type="button"
-                          onClick={() => addOrgMember(lvlIdx)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-amber-500 hover:bg-white/10"
-                        >
-                          <Plus size={12} />
-                          Tambah Anggota
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => handleSaveTab("makna-lambang", { simbolMakna: lambangForm })}
+                className={styles.btnPrimary}
+              >
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                <span>Simpan Filosofi Lambang</span>
+              </button>
+            </>
+          )}
+
+          {/* 4. STRUKTUR ORGANISASI TAB */}
+          {activeTab === "organisasi" && (
+            <>
+              <div className={styles.sectionHeader}>
+                <h3 className={styles.sectionTitle}>Struktur Organisasi</h3>
+                <button type="button" onClick={addOrgLevel} className={styles.btnSecondary}>
+                  <Plus size={14} />
+                  Tambah Tingkatan (Level)
+                </button>
+              </div>
+
+              <div className={styles.cardList}>
+                {organisasiForm.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 italic text-xs">Belum ada tingkatan kepengurusan.</div>
+                ) : (
+                  organisasiForm.map((levelObj, lvlIdx) => (
+                    <div key={lvlIdx} className={styles.orgLevelCard}>
+                      <div className={styles.orgLevelHeader}>
+                        <div className={styles.orgLevelTitleInput}>
+                          <label className={styles.label}>Nama Tingkat Kepengurusan / Dewan</label>
+                          <input
+                            type="text"
+                            value={levelObj.level}
+                            onChange={(e) => {
+                              const updated = [...organisasiForm];
+                              updated[lvlIdx].level = e.target.value;
+                              setOrganisasiForm(updated);
+                            }}
+                            className={styles.input}
+                            placeholder="Contoh: Dewan Guru atau Pengurus Pusat"
+                          />
+                        </div>
+                        <button type="button" onClick={() => removeOrgLevel(lvlIdx)} className={styles.btnTrash} title="Hapus Level">
+                          <Trash2 size={18} />
                         </button>
                       </div>
 
-                      {levelObj.anggota.map((member, memIdx) => (
-                        <div key={memIdx} className="p-3 bg-black/10 border border-white/5 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                          <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">Nama Lengkap</label>
-                            <input
-                              type="text"
-                              value={member.nama}
-                              onChange={(e) => updateOrgMember(lvlIdx, memIdx, "nama", e.target.value)}
-                              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
-                              placeholder="Nama..."
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] text-gray-500 block mb-1">Jabatan</label>
-                            <input
-                              type="text"
-                              value={member.jabatan}
-                              onChange={(e) => updateOrgMember(lvlIdx, memIdx, "jabatan", e.target.value)}
-                              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
-                              placeholder="Jabatan..."
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1">
-                              <label className="text-[10px] text-gray-500 block mb-1">URL Foto (Opsional)</label>
+                      <div className={styles.orgMemberList}>
+                        <div className={styles.orgMemberHeader}>
+                          <span className={styles.label}>Anggota Organisasi</span>
+                          <button type="button" onClick={() => addOrgMember(lvlIdx)} className={styles.btnSecondary}>
+                            <Plus size={12} />
+                            Tambah Anggota
+                          </button>
+                        </div>
+
+                        {levelObj.anggota.map((member, memIdx) => (
+                          <div key={memIdx} className={styles.orgMemberRow}>
+                            <div className={styles.formGroup}>
+                              <label className={styles.label}>Nama Lengkap</label>
                               <input
                                 type="text"
-                                value={member.foto}
-                                onChange={(e) => updateOrgMember(lvlIdx, memIdx, "foto", e.target.value)}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
-                                placeholder="http://..."
+                                value={member.nama}
+                                onChange={(e) => updateOrgMember(lvlIdx, memIdx, "nama", e.target.value)}
+                                className={styles.input}
+                                placeholder="Nama..."
                               />
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => removeOrgMember(lvlIdx, memIdx)}
-                              className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 shrink-0"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <div className={styles.formGroup}>
+                              <label className={styles.label}>Jabatan</label>
+                              <input
+                                type="text"
+                                value={member.jabatan}
+                                onChange={(e) => updateOrgMember(lvlIdx, memIdx, "jabatan", e.target.value)}
+                                className={styles.input}
+                                placeholder="Jabatan..."
+                              />
+                            </div>
+                            <div className={styles.memberFieldWrap}>
+                              <div className={styles.orgLevelTitleInput}>
+                                <label className={styles.label}>URL Foto (Opsional)</label>
+                                <input
+                                  type="text"
+                                  value={member.foto}
+                                  onChange={(e) => updateOrgMember(lvlIdx, memIdx, "foto", e.target.value)}
+                                  className={styles.input}
+                                  placeholder="http://..."
+                                />
+                              </div>
+                              <button type="button" onClick={() => removeOrgMember(lvlIdx, memIdx)} className={styles.btnTrash}>
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => handleSaveTab("struktur-organisasi", { struktur: organisasiForm })}
-              className="btn-primary w-full py-3 flex items-center justify-center gap-2"
-            >
-              {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-              <span>Simpan Struktur Organisasi</span>
-            </button>
-          </div>
-        )}
-
-        {/* 5. VISI MISI TAB */}
-        {activeTab === "visi-misi" && (
-          <div className="space-y-6">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Visi & Misi Perguruan</h3>
-            <div className="space-y-4">
-              <div>
-                <label className={labelClass}>Pernyataan Visi</label>
-                <textarea
-                  rows={3}
-                  value={visiMisiForm.visi}
-                  onChange={(e) => setVisiMisiForm({ ...visiMisiForm, visi: e.target.value })}
-                  className={`${inputClass} resize-y`}
-                  placeholder="Visi organisasi..."
-                />
+                  ))
+                )}
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <label className={labelClass}>Daftar Misi</label>
-                  <button
-                    type="button"
-                    onClick={addMisiItem}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/20 text-xs font-bold text-amber-500 hover:bg-amber-500/10"
-                  >
-                    <Plus size={14} />
-                    Tambah Misi
-                  </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => handleSaveTab("struktur-organisasi", { struktur: organisasiForm })}
+                className={styles.btnPrimary}
+              >
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                <span>Simpan Struktur Organisasi</span>
+              </button>
+            </>
+          )}
+
+          {/* 5. VISI MISI TAB */}
+          {activeTab === "visi-misi" && (
+            <>
+              <h3 className={styles.sectionTitle}>Visi & Misi Perguruan</h3>
+              <div className={styles.formList}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Pernyataan Visi</label>
+                  <textarea
+                    rows={3}
+                    value={visiMisiForm.visi}
+                    onChange={(e) => setVisiMisiForm({ ...visiMisiForm, visi: e.target.value })}
+                    className={styles.textarea}
+                    placeholder="Visi organisasi..."
+                  />
                 </div>
 
-                {visiMisiForm.misi.map((misi, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <span className="text-xs font-bold text-amber-500 shrink-0 w-6 text-center">{idx + 1}</span>
-                    <input
-                      type="text"
-                      value={misi}
-                      onChange={(e) => updateMisiItem(idx, e.target.value)}
-                      className={inputClass}
-                      placeholder={`Poin misi ke-${idx + 1}...`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeMisiItem(idx)}
-                      className="p-2.5 rounded-xl text-red-500 hover:bg-red-500/10"
-                    >
-                      <Trash2 size={16} />
+                <div className={styles.formGroup}>
+                  <div className={styles.sectionHeader}>
+                    <label className={styles.label}>Daftar Misi</label>
+                    <button type="button" onClick={addMisiItem} className={styles.btnSecondary}>
+                      <Plus size={14} />
+                      Tambah Misi
                     </button>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => handleSaveTab("visi-misi", { visi: visiMisiForm.visi, misi: visiMisiForm.misi })}
-              className="btn-primary w-full py-3 flex items-center justify-center gap-2"
-            >
-              {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-              <span>Simpan Visi & Misi</span>
-            </button>
-          </div>
-        )}
-
-        {/* 6. CAROUSEL CRUD TAB */}
-        {activeTab === "carousel" && (
-          <div className="space-y-6">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              {isEditingCarousel ? "Edit Slide" : "Tambah Slide Baru"}
-            </h3>
-
-            <form onSubmit={handleSaveCarousel} className="p-4 bg-black/20 border border-white/5 rounded-2xl space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Judul Slide</label>
-                  <input
-                    type="text"
-                    value={carouselForm.title}
-                    onChange={(e) => setCarouselForm({ ...carouselForm, title: e.target.value })}
-                    className={inputClass}
-                    placeholder="Judul info utama..."
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>URL Gambar</label>
-                  <input
-                    type="text"
-                    value={carouselForm.imageUrl}
-                    onChange={(e) => setCarouselForm({ ...carouselForm, imageUrl: e.target.value })}
-                    className={inputClass}
-                    placeholder="https://images.unsplash.com/..."
-                  />
+                  <div className={styles.cardList}>
+                    {visiMisiForm.misi.map((misi, idx) => (
+                      <div key={idx} className={styles.misiRow}>
+                        <span className={styles.misiIndex}>{idx + 1}</span>
+                        <input
+                          type="text"
+                          value={misi}
+                          onChange={(e) => updateMisiItem(idx, e.target.value)}
+                          className={styles.input}
+                          placeholder={`Poin misi ke-${idx + 1}...`}
+                        />
+                        <button type="button" onClick={() => removeMisiItem(idx)} className={styles.btnTrash}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div className="md:col-span-2">
-                  <label className={labelClass}>URL Link Target (Opsional)</label>
-                  <input
-                    type="text"
-                    value={carouselForm.targetUrl}
-                    onChange={(e) => setCarouselForm({ ...carouselForm, targetUrl: e.target.value })}
-                    className={inputClass}
-                    placeholder="Halaman/web tujuan ketika di-klik..."
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Urutan</label>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => handleSaveTab("visi-misi", { visi: visiMisiForm.visi, misi: visiMisiForm.misi })}
+                className={styles.btnPrimary}
+              >
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                <span>Simpan Visi & Misi</span>
+              </button>
+            </>
+          )}
+
+          {/* 6. CAROUSEL CRUD TAB */}
+          {activeTab === "carousel" && (
+            <>
+              <h3 className={styles.sectionTitle}>
+                {isEditingCarousel ? "Edit Slide" : "Tambah Slide Baru"}
+              </h3>
+
+              <form onSubmit={handleSaveCarousel} className={styles.cardItem}>
+                <div className={styles.carouselFormRow}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Judul Slide</label>
                     <input
-                      type="number"
-                      value={carouselForm.order}
-                      onChange={(e) => setCarouselForm({ ...carouselForm, order: parseInt(e.target.value) || 0 })}
-                      className={inputClass}
+                      type="text"
+                      value={carouselForm.title}
+                      onChange={(e) => setCarouselForm({ ...carouselForm, title: e.target.value })}
+                      className={styles.input}
+                      placeholder="Judul info utama..."
                     />
                   </div>
-                  <div className="flex items-center justify-center pb-3">
-                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-300">
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>URL Gambar</label>
+                    <input
+                      type="text"
+                      value={carouselForm.imageUrl}
+                      onChange={(e) => setCarouselForm({ ...carouselForm, imageUrl: e.target.value })}
+                      className={styles.input}
+                      placeholder="https://images.unsplash.com/..."
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.carouselFormRow3}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>URL Link Target (Opsional)</label>
+                    <input
+                      type="text"
+                      value={carouselForm.targetUrl}
+                      onChange={(e) => setCarouselForm({ ...carouselForm, targetUrl: e.target.value })}
+                      className={styles.input}
+                      placeholder="Halaman/web tujuan ketika di-klik..."
+                    />
+                  </div>
+                  <div className={styles.carouselOrderWrap}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Urutan</label>
+                      <input
+                        type="number"
+                        value={carouselForm.order}
+                        onChange={(e) => setCarouselForm({ ...carouselForm, order: parseInt(e.target.value) || 0 })}
+                        className={styles.input}
+                      />
+                    </div>
+                    <label className={styles.carouselCheckboxLabel}>
                       <input
                         type="checkbox"
                         checked={carouselForm.isActive}
                         onChange={(e) => setCarouselForm({ ...carouselForm, isActive: e.target.checked })}
-                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-amber-500"
+                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
                       />
-                      Aktif
+                      <span>Aktif</span>
                     </label>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="btn-primary flex-1 py-3 flex items-center justify-center gap-2"
-                >
-                  {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                  <span>{isEditingCarousel ? "Update Slide" : "Tambah Slide"}</span>
-                </button>
-                {isEditingCarousel && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCarouselForm({ id: "", title: "", imageUrl: "", targetUrl: "", order: 0, isActive: true });
-                      setIsEditingCarousel(false);
-                    }}
-                    className="px-4 py-3 rounded-xl border border-white/10 text-xs font-bold text-gray-400 hover:bg-white/5"
-                  >
-                    Batal
+                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+                  <button type="submit" disabled={saving} className={styles.btnPrimary}>
+                    {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                    <span>{isEditingCarousel ? "Update Slide" : "Tambah Slide"}</span>
                   </button>
-                )}
-              </div>
-            </form>
+                  {isEditingCarousel && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCarouselForm({ id: "", title: "", imageUrl: "", targetUrl: "", order: 0, isActive: true });
+                        setIsEditingCarousel(false);
+                      }}
+                      className={styles.btnSecondary}
+                    >
+                      Batal
+                    </button>
+                  )}
+                </div>
+              </form>
 
-            {/* List Carousel Slides */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Daftar Slide Aktif</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {carouselItems.map((item) => (
-                  <div key={item.id} className="glass-card overflow-hidden border-white/5 bg-black/20 flex flex-col justify-between">
-                    <div className="relative h-32 w-full bg-gray-900 flex items-center justify-center">
-                      {item.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <ImageIcon size={32} className="text-gray-700" />
-                      )}
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                          item.isActive !== false ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"
-                        }`}>
+              {/* List Carousel Slides */}
+              <div className={styles.formList}>
+                <h4 className={styles.label}>Daftar Slide Aktif</h4>
+                <div className={styles.carouselGrid}>
+                  {carouselItems.map((item) => (
+                    <div key={item.id} className={styles.carouselCard}>
+                      <div className={styles.carouselImageWrap}>
+                        {item.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className={styles.carouselImg}
+                          />
+                        ) : (
+                          <ImageIcon size={32} className="text-gray-700" />
+                        )}
+                        <span className={`${styles.carouselBadge} ${item.isActive !== false ? styles.carouselBadgeActive : styles.carouselBadgeInactive}`}>
                           {item.isActive !== false ? "Aktif" : "Nonaktif"}
                         </span>
-                        <span className="text-[9px] font-black bg-black/60 text-amber-500 border border-white/10 px-2 py-0.5 rounded-full">
+                        <span className={styles.carouselOrderBadge}>
                           Order: {item.order}
                         </span>
                       </div>
-                    </div>
-                    <div className="p-4 space-y-3">
-                      <div>
-                        <h4 className="text-xs font-bold text-white uppercase truncate">{item.title}</h4>
-                        {item.targetUrl && (
-                          <div className="flex items-center gap-1 text-[10px] text-gray-500 mt-1 truncate">
-                            <LinkIcon size={10} />
-                            <span>{item.targetUrl}</span>
-                          </div>
-                        )}
+                      <div className={styles.carouselInfo}>
+                        <div>
+                          <h4 className={styles.carouselTitle}>{item.title}</h4>
+                          {item.targetUrl && (
+                            <div className={styles.carouselLink}>
+                              <LinkIcon size={10} />
+                              <span>{item.targetUrl}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className={styles.carouselActions}>
+                          <button
+                            type="button"
+                            onClick={() => handleEditCarousel(item)}
+                            className={styles.carouselBtnEdit}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCarousel(item.id)}
+                            className={styles.carouselBtnDel}
+                          >
+                            Hapus
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleEditCarousel(item)}
-                          className="flex-1 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-[10px] font-black uppercase text-amber-500"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCarousel(item.id)}
-                          className="px-3 py-1.5 rounded-lg border border-red-500/10 hover:bg-red-500/5 text-[10px] font-black uppercase text-red-500"
-                        >
-                          Hapus
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
