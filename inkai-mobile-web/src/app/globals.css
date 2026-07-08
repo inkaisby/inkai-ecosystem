@@ -261,7 +261,7 @@ html[data-clock-phase="day"] .mobile-content {
 }
 
 .admin-topbar-spacer {
-  height: var(--admin-topbar-h);
+  height: calc(var(--admin-topbar-h) + var(--admin-topbar-top));
   flex-shrink: 0;
 }
 
