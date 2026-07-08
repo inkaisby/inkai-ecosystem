@@ -1820,6 +1820,7 @@ input::-ms-clear {
     left: 16rem !important; /* w-64 is 16rem */
     width: calc(100% - 16rem) !important;
     border-bottom: 1px solid var(--border-light);
+    z-index: 210 !important; /* Higher than sidebar (200) to prevent dropdown clipping */
   }
   
   .admin-notif-sheet,
