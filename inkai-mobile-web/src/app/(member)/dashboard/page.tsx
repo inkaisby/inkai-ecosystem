@@ -698,6 +698,13 @@ export default function Dashboard() {
                 ? "Lengkapi Profil Anda Sekarang"
                 : "Lengkapi Dokumen Keanggotaan"}
             </button>
+            <button
+              className={styles.logoutBtn}
+              onClick={logout}
+            >
+              <LogOut size={16} />
+              Logout / Keluar
+            </button>
           </div>
         </div>
       )}
