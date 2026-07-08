@@ -28,6 +28,7 @@ import {
   Trash2,
   Pencil,
   UserPlus,
+  Eye,
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -295,6 +296,171 @@ function AdminMemberListCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function AdminMemberTableRow({
+  member,
+  saving,
+  onOpenDetail,
+  onEdit,
+  patchMemberInline,
+  onToggleStatus,
+  onDelete,
+  canEditNiaSabuk,
+}: {
+  member: any;
+  saving: boolean;
+  onOpenDetail: (m: any) => void;
+  onEdit: (m: any) => void;
+  patchMemberInline: (
+    id: string,
+    body: Partial<{ nia: string; currentRank: string }>,
+  ) => Promise<boolean>;
+  onToggleStatus: (m: any) => void;
+  onDelete: (id: string) => void;
+  canEditNiaSabuk: boolean;
+}) {
+  const [niaLocal, setNiaLocal] = useState(() => member.nia ?? "");
+
+  useEffect(() => {
+    setNiaLocal(member.nia ?? "");
+  }, [member.id, member.nia]);
+
+  const rankValue = member.currentRank || "Putih (Kyu 10)";
+
+  return (
+    <tr className={`hover:bg-white/[0.02] transition-all group relative ${saving ? "opacity-70 pointer-events-none" : ""}`}>
+      <td className="py-3.5 pl-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onOpenDetail(member)}
+            className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10"
+            title="Detail anggota"
+          >
+            <span className="text-amber-500 font-bold text-xs">
+              {member.fullName?.charAt(0)}
+            </span>
+          </button>
+          <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() => onOpenDetail(member)}
+              className="text-left font-bold text-white hover:text-amber-500 transition-colors text-xs truncate max-w-[200px]"
+              title="Buka detail"
+            >
+              {member.fullName}
+            </button>
+          </div>
+        </div>
+      </td>
+      <td className="py-3.5">
+        {canEditNiaSabuk ? (
+          <input
+            type="text"
+            value={niaLocal}
+            disabled={saving}
+            onChange={(e) => setNiaLocal(e.target.value)}
+            onBlur={async () => {
+              const t = niaLocal.trim();
+              const cur = (member.nia ?? "").trim();
+              if (t === cur) return;
+              const ok = await patchMemberInline(member.id, {
+                nia: niaLocal,
+              });
+              if (!ok) setNiaLocal(member.nia ?? "");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            placeholder="Nomor induk"
+            className="glass-input px-2.5 py-1.5 text-[11px] font-mono focus:outline-none w-40"
+          />
+        ) : (
+          <span className="text-[11px] font-mono text-gray-300 opacity-80">
+            {(member.nia ?? "").trim() !== "" ? member.nia : "—"}
+          </span>
+        )}
+      </td>
+      <td className="py-3.5">
+        {canEditNiaSabuk ? (
+          <AdminMemberRankSelect
+            value={rankValue}
+            disabled={saving}
+            onChange={(next) => {
+              if (next === rankValue) return;
+              void patchMemberInline(member.id, { currentRank: next });
+            }}
+            className="glass-input px-2.5 py-1.5 text-[11px] appearance-none cursor-pointer font-bold focus-outline-none w-48"
+          />
+        ) : (
+          <span className="text-[11px] font-bold text-amber-500/95 opacity-90">
+            {rankValue}
+          </span>
+        )}
+      </td>
+      <td className="py-3.5 text-xs text-gray-400">
+        {member.dojo?.name || "Umum"}
+      </td>
+      <td className="py-3.5 text-center">
+        <span
+          className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+            member.status === "Active"
+              ? "bg-green-500/10 text-green-500"
+              : "bg-red-500/10 text-red-500"
+          }`}
+        >
+          {member.status === "Active" ? "Aktif" : "Non-Aktif"}
+        </span>
+      </td>
+      <td className="py-3.5 text-center pr-4">
+        <div className="flex justify-center items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onOpenDetail(member)}
+            className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+            title="Detail"
+          >
+            <Eye size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onEdit(member)}
+            className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all"
+            title="Ubah Data"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleStatus(member)}
+            className={`p-1.5 rounded-lg border transition-all ${
+              member.status === "Active"
+                ? "border-green-500/20 text-green-500 hover:bg-green-500/10"
+                : "border-red-500/20 text-red-500 hover:bg-red-500/10"
+            }`}
+            title={member.status === "Active" ? "Non-Aktifkan" : "Aktifkan"}
+          >
+            {member.status === "Active" ? (
+              <UserCheck size={14} />
+            ) : (
+              <UserMinus size={14} />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(member.id)}
+            className="p-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all"
+            title="Hapus"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -860,18 +1026,59 @@ function MembersContent() {
               ))}
             </div>
           ) : members.length > 0 ? (
-            members.map((member) => (
-              <AdminMemberListCard
-                key={member.id}
-                member={member}
-                saving={listSavingId === member.id}
-                onOpenDetail={openMemberDetail}
-                patchMemberInline={patchMemberInline}
-                onToggleStatus={handleToggleStatus}
-                onDelete={handleDelete}
-                canEditNiaSabuk={canEditNiaSabuk}
-              />
-            ))
+            <>
+              {/* Card List - Mobile/Tablet */}
+              <div className="space-y-3 lg:hidden">
+                {members.map((member) => (
+                  <AdminMemberListCard
+                    key={member.id}
+                    member={member}
+                    saving={listSavingId === member.id}
+                    onOpenDetail={openMemberDetail}
+                    patchMemberInline={patchMemberInline}
+                    onToggleStatus={handleToggleStatus}
+                    onDelete={handleDelete}
+                    canEditNiaSabuk={canEditNiaSabuk}
+                  />
+                ))}
+              </div>
+
+              {/* Table List - Desktop/Large screens */}
+              <div className="hidden lg:block glass-card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold bg-white/[0.01]">
+                      <tr>
+                        <th className="py-4 pl-4 font-medium">Nama Anggota</th>
+                        <th className="py-4 font-medium w-48">NIA</th>
+                        <th className="py-4 font-medium w-56">Sabuk & Kyu</th>
+                        <th className="py-4 font-medium">Dojo / Ranting</th>
+                        <th className="py-4 font-medium text-center w-28">Status</th>
+                        <th className="py-4 text-center pr-4 font-medium w-44">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {members.map((member) => {
+                        const saving = listSavingId === member.id;
+                        return (
+                          <AdminMemberTableRow
+                            key={member.id}
+                            member={member}
+                            saving={saving}
+                            onOpenDetail={openMemberDetail}
+                            onEdit={handleEdit}
+                            patchMemberInline={patchMemberInline}
+                            onToggleStatus={handleToggleStatus}
+                            onDelete={handleDelete}
+                            canEditNiaSabuk={canEditNiaSabuk}
+                          />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           ) : (
             !loading && (
               <div className="glass-card p-12 text-center text-gray-500 text-xs italic border-dashed border-white/5">
