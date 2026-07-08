@@ -330,8 +330,8 @@ function AdminMemberTableRow({
   const rankValue = member.currentRank || "Putih (Kyu 10)";
 
   return (
-    <tr className={`hover:bg-white/[0.02] transition-all group relative ${saving ? "opacity-70 pointer-events-none" : ""}`}>
-      <td className="py-3.5 pl-4">
+    <tr className={`hover:bg-white/[0.01] transition-all group border-b border-white/5 relative ${saving ? "opacity-70 pointer-events-none" : ""}`}>
+      <td className="py-4 px-6 text-left">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -355,7 +355,7 @@ function AdminMemberTableRow({
           </div>
         </div>
       </td>
-      <td className="py-3.5">
+      <td className="py-4 px-4 text-left">
         {canEditNiaSabuk ? (
           <input
             type="text"
@@ -385,7 +385,7 @@ function AdminMemberTableRow({
           </span>
         )}
       </td>
-      <td className="py-3.5">
+      <td className="py-4 px-4 text-left">
         {canEditNiaSabuk ? (
           <AdminMemberRankSelect
             value={rankValue}
@@ -402,26 +402,26 @@ function AdminMemberTableRow({
           </span>
         )}
       </td>
-      <td className="py-3.5 text-xs text-gray-400">
+      <td className="py-4 px-4 text-left text-xs text-gray-400">
         {member.dojo?.name || "Umum"}
       </td>
-      <td className="py-3.5 text-center">
+      <td className="py-4 px-4 text-center">
         <span
-          className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+          className={`text-[9px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${
             member.status === "Active"
-              ? "bg-green-500/10 text-green-500"
-              : "bg-red-500/10 text-red-500"
+              ? "bg-green-500/10 text-green-500 border border-green-500/20"
+              : "bg-red-500/10 text-red-500 border border-red-500/20"
           }`}
         >
           {member.status === "Active" ? "Aktif" : "Non-Aktif"}
         </span>
       </td>
-      <td className="py-3.5 text-center pr-4">
-        <div className="flex justify-center items-center gap-1.5">
+      <td className="py-4 px-6 text-center">
+        <div className="flex justify-center items-center gap-3">
           <button
             type="button"
             onClick={() => onOpenDetail(member)}
-            className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all border border-white/10"
             title="Detail"
           >
             <Eye size={14} />
@@ -429,7 +429,7 @@ function AdminMemberTableRow({
           <button
             type="button"
             onClick={() => onEdit(member)}
-            className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all"
+            className="p-2 rounded-xl bg-white/5 hover:bg-amber-500/10 text-gray-400 hover:text-amber-500 transition-all border border-white/10"
             title="Ubah Data"
           >
             <Pencil size={14} />
@@ -437,10 +437,10 @@ function AdminMemberTableRow({
           <button
             type="button"
             onClick={() => onToggleStatus(member)}
-            className={`p-1.5 rounded-lg border transition-all ${
+            className={`p-2 rounded-xl border transition-all ${
               member.status === "Active"
-                ? "border-green-500/20 text-green-500 hover:bg-green-500/10"
-                : "border-red-500/20 text-red-500 hover:bg-red-500/10"
+                ? "border-green-500/20 bg-green-500/5 text-green-500 hover:bg-green-500/10"
+                : "border-red-500/20 bg-red-500/5 text-red-500 hover:bg-red-500/10"
             }`}
             title={member.status === "Active" ? "Non-Aktifkan" : "Aktifkan"}
           >
@@ -453,7 +453,7 @@ function AdminMemberTableRow({
           <button
             type="button"
             onClick={() => onDelete(member.id)}
-            className="p-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all"
+            className="p-2 rounded-xl border border-red-500/20 bg-red-500/5 text-red-500 hover:bg-red-500/15 transition-all"
             title="Hapus"
           >
             <Trash2 size={14} />
@@ -610,10 +610,10 @@ function MembersContent() {
     }
   }, [selectedMember]);
 
-  const fetchMembers = async (page = 1, searchQuery = "") => {
+  const fetchMembers = async (page = 1, searchQuery = "", pageLimit = meta.limit) => {
     setLoading(true);
     try {
-      const params: any = { page, search: searchQuery };
+      const params: any = { page, search: searchQuery, limit: pageLimit };
       if (dojoId) params.dojoId = dojoId;
 
       const response = await api.members.getAll(params);
@@ -1049,12 +1049,12 @@ function MembersContent() {
                   <table className="w-full text-left text-sm border-collapse">
                     <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold bg-white/[0.01]">
                       <tr>
-                        <th className="py-4 pl-4 font-medium">Nama Anggota</th>
-                        <th className="py-4 font-medium w-48">NIA</th>
-                        <th className="py-4 font-medium w-56">Sabuk & Kyu</th>
-                        <th className="py-4 font-medium">Dojo / Ranting</th>
-                        <th className="py-4 font-medium text-center w-28">Status</th>
-                        <th className="py-4 text-center pr-4 font-medium w-44">Aksi</th>
+                        <th className="py-4 px-6 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left">Nama Anggota</th>
+                        <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left w-48">NIA</th>
+                        <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left w-56">Sabuk & Kyu</th>
+                        <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left">Dojo / Ranting</th>
+                        <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-center w-28">Status</th>
+                        <th className="py-4 px-6 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-center w-52">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -1089,25 +1089,53 @@ function MembersContent() {
         </div>
 
         {/* Pagination */}
-        <div className="flex justify-between items-center px-1">
-          <p className="text-[10px] text-gray-500 uppercase font-black">
-            Total: <span className="text-white">{meta.total}</span> Anggota
-          </p>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-1">
+          <div className="flex items-center gap-4">
+            <p className="text-[10px] text-gray-500 uppercase font-black">
+              Total: <span className="text-white">{meta.total}</span> Anggota
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-500 font-black uppercase">Tampilkan:</span>
+              <div className="relative">
+                <select
+                  value={meta.limit}
+                  onChange={(e) => {
+                    const nextLimit = Number(e.target.value);
+                    setMeta((prev) => ({ ...prev, limit: nextLimit }));
+                    fetchMembers(1, search, nextLimit);
+                  }}
+                  className="glass-input px-2.5 py-1 text-[10px] font-bold appearance-none cursor-pointer pr-7 focus:outline-none"
+                  style={{ colorScheme: "dark" }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={500}>500</option>
+                  <option value={1000}>1000</option>
+                </select>
+                <ChevronDown
+                  size={12}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                />
+              </div>
+            </div>
+          </div>
           <div className="flex gap-2">
             <button
               disabled={meta.page === 1}
-              onClick={() => fetchMembers(meta.page - 1)}
-              className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-500 disabled:opacity-20"
+              onClick={() => fetchMembers(meta.page - 1, search, meta.limit)}
+              className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-500 disabled:opacity-20 transition-all active:scale-95"
             >
               <ChevronLeft size={16} />
             </button>
             <div className="flex items-center px-3 bg-white/5 rounded-xl border border-white/10 text-[10px] font-bold text-gray-400">
-              {meta.page}
+              Halaman {meta.page} dari {Math.max(1, Math.ceil(meta.total / meta.limit))}
             </div>
             <button
               disabled={meta.page * meta.limit >= meta.total}
-              onClick={() => fetchMembers(meta.page + 1)}
-              className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-500 disabled:opacity-20"
+              onClick={() => fetchMembers(meta.page + 1, search, meta.limit)}
+              className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-500 disabled:opacity-20 transition-all active:scale-95"
             >
               <ChevronRight size={16} />
             </button>
