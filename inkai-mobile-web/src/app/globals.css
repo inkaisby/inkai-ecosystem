@@ -1876,6 +1876,10 @@ input::-ms-clear {
   margin-right: auto !important;
 }
 
+.ml-auto {
+  margin-left: auto !important;
+}
+
 .w-full {
   width: 100% !important;
 }
