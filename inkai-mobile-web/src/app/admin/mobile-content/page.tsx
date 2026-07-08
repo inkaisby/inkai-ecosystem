@@ -32,10 +32,10 @@ export default function MobileContentEditor() {
   // Raw Database Tab Data
   const [dbTabs, setDbTabs] = useState<any[]>([]);
 
-  // Structured Form States
-  const [homeForm, setHomeForm] = useState({ heroTitle: "", subtitle: "", teksSambutan: "" });
-  const [sejarahForm, setSejarahForm] = useState<Array<{ tahun: string; judul: string; deskripsi: string }>>([]);
-  const [lambangForm, setLambangForm] = useState<Array<{ simbol: string; makna: string }>>([]);
+  // Structured Form States (with added optional foto urls)
+  const [homeForm, setHomeForm] = useState({ heroTitle: "", subtitle: "", teksSambutan: "", foto: "" });
+  const [sejarahForm, setSejarahForm] = useState<Array<{ tahun: string; judul: string; deskripsi: string; foto?: string }>>([]);
+  const [lambangForm, setLambangForm] = useState<Array<{ simbol: string; makna: string; foto?: string }>>([]);
   const [organisasiForm, setOrganisasiForm] = useState<Array<{ level: string; anggota: Array<{ nama: string; jabatan: string; foto: string }> }>>([]);
   const [visiMisiForm, setVisiMisiForm] = useState({ visi: "", misi: [] as string[] });
   
@@ -43,6 +43,9 @@ export default function MobileContentEditor() {
   const [carouselItems, setCarouselItems] = useState<any[]>([]);
   const [carouselForm, setCarouselForm] = useState({ id: "", title: "", imageUrl: "", targetUrl: "", order: 0, isActive: true });
   const [isEditingCarousel, setIsEditingCarousel] = useState(false);
+
+  // Upload state
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
 
   // Mouse drag scroll support for desktop/simulator
   const tabRef = React.useRef<HTMLDivElement>(null);
@@ -97,7 +100,6 @@ export default function MobileContentEditor() {
       if (tabsRes.status === "success") {
         setDbTabs(tabsRes.data);
         
-        // Parse individual page contents
         const homeTab = tabsRes.data.find((t: any) => t.slug === "home");
         if (homeTab) {
           try {
@@ -105,10 +107,11 @@ export default function MobileContentEditor() {
             setHomeForm({
               heroTitle: parsed.heroTitle || "",
               subtitle: parsed.subtitle || "",
-              teksSambutan: parsed.teksSambutan || ""
+              teksSambutan: parsed.teksSambutan || "",
+              foto: parsed.foto || ""
             });
           } catch {
-            setHomeForm({ heroTitle: "Selamat Datang di INKAI", subtitle: "Institut Karate-Do Indonesia", teksSambutan: homeTab.content });
+            setHomeForm({ heroTitle: "Selamat Datang di INKAI", subtitle: "Institut Karate-Do Indonesia", teksSambutan: homeTab.content, foto: "" });
           }
         }
 
@@ -118,7 +121,7 @@ export default function MobileContentEditor() {
             const parsed = JSON.parse(sejarahTab.content);
             setSejarahForm(Array.isArray(parsed.timeline) ? parsed.timeline : []);
           } catch {
-            setSejarahForm([{ tahun: "1971", judul: "Pendirian INKAI", deskripsi: sejarahTab.content }]);
+            setSejarahForm([{ tahun: "1971", judul: "Pendirian INKAI", deskripsi: sejarahTab.content, foto: "" }]);
           }
         }
 
@@ -128,7 +131,7 @@ export default function MobileContentEditor() {
             const parsed = JSON.parse(lambangTab.content);
             setLambangForm(Array.isArray(parsed.simbolMakna) ? parsed.simbolMakna : []);
           } catch {
-            setLambangForm([{ simbol: "Bulatan Merah", makna: lambangTab.content }]);
+            setLambangForm([{ simbol: "Bulatan Merah", makna: lambangTab.content, foto: "" }]);
           }
         }
 
@@ -188,9 +191,80 @@ export default function MobileContentEditor() {
     }
   };
 
+  // Image Upload Action
+  const handleImageFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onSuccess: (url: string) => void,
+    fieldId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingField(fieldId);
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      toast.loading("Mengunggah gambar...", { id: "upload" });
+      const res = await api.auth.uploadFile(fd);
+      const url = res?.fileUrl || res?.data?.url || "";
+      if (url) {
+        onSuccess(url);
+        toast.success("Gambar berhasil diunggah!", { id: "upload" });
+      } else {
+        toast.error("Upload gagal: URL tidak valid", { id: "upload" });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal mengunggah gambar", { id: "upload" });
+    } finally {
+      setUploadingField(null);
+      e.target.value = "";
+    }
+  };
+
+  const renderImageUpload = (value: string, onChange: (val: string) => void, fieldId: string) => {
+    const isBusy = uploadingField === fieldId;
+    return (
+      <div className={styles.uploadWidget}>
+        <div className={styles.uploadPreview}>
+          {value ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value} alt="Preview" className={styles.uploadPreviewImg} />
+          ) : (
+            <ImageIcon size={18} className="text-gray-500" />
+          )}
+        </div>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={styles.input}
+          placeholder="URL Gambar (atau klik upload)"
+          style={{ flex: 1 }}
+        />
+        <label className={styles.uploadBtn}>
+          {isBusy ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Plus size={14} />
+          )}
+          <span>{isBusy ? "Unggah..." : "Upload"}</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleImageFileChange(e, onChange, fieldId)}
+            style={{ display: "none" }}
+            disabled={isBusy}
+          />
+        </label>
+      </div>
+    );
+  };
+
   // Timeline handlers
   const addTimelineItem = () => {
-    setSejarahForm([...sejarahForm, { tahun: "", judul: "", deskripsi: "" }]);
+    setSejarahForm([...sejarahForm, { tahun: "", judul: "", deskripsi: "", foto: "" }]);
   };
   const removeTimelineItem = (idx: number) => {
     setSejarahForm(sejarahForm.filter((_, i) => i !== idx));
@@ -203,7 +277,7 @@ export default function MobileContentEditor() {
 
   // Simbol Makna handlers
   const addLambangItem = () => {
-    setLambangForm([...lambangForm, { simbol: "", makna: "" }]);
+    setLambangForm([...lambangForm, { simbol: "", makna: "", foto: "" }]);
   };
   const removeLambangItem = (idx: number) => {
     setLambangForm(lambangForm.filter((_, i) => i !== idx));
@@ -384,6 +458,10 @@ export default function MobileContentEditor() {
                   />
                 </div>
                 <div className={styles.formGroup}>
+                  <label className={styles.label}>Banner / Gambar Latar</label>
+                  {renderImageUpload(homeForm.foto, (val) => setHomeForm({ ...homeForm, foto: val }), "home-banner")}
+                </div>
+                <div className={styles.formGroup}>
                   <label className={styles.label}>Teks Sambutan</label>
                   <textarea
                     rows={6}
@@ -452,6 +530,10 @@ export default function MobileContentEditor() {
                         </div>
                       </div>
                       <div className={styles.formGroup}>
+                        <label className={styles.label}>Gambar Peristiwa (Opsional)</label>
+                        {renderImageUpload(item.foto || "", (val) => updateTimelineItem(idx, "foto", val), `sejarah-${idx}`)}
+                      </div>
+                      <div className={styles.formGroup}>
                         <label className={styles.label}>Deskripsi Lengkap</label>
                         <textarea
                           rows={2}
@@ -510,6 +592,10 @@ export default function MobileContentEditor() {
                           className={styles.input}
                           placeholder="Contoh: Bulatan Merah (Hinomaru)"
                         />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.label}>Visual / Icon Simbol (Opsional)</label>
+                        {renderImageUpload(item.foto || "", (val) => updateLambangItem(idx, "foto", val), `lambang-${idx}`)}
                       </div>
                       <div className={styles.formGroup}>
                         <label className={styles.label}>Arti & Filosofi</label>
@@ -607,19 +693,18 @@ export default function MobileContentEditor() {
                               />
                             </div>
                             <div className={styles.memberFieldWrap}>
-                              <div className={styles.orgLevelTitleInput}>
-                                <label className={styles.label}>URL Foto (Opsional)</label>
-                                <input
-                                  type="text"
-                                  value={member.foto}
-                                  onChange={(e) => updateOrgMember(lvlIdx, memIdx, "foto", e.target.value)}
-                                  className={styles.input}
-                                  placeholder="http://..."
-                                />
+                              <label className={styles.label}>Foto Anggota</label>
+                              {renderImageUpload(
+                                member.foto,
+                                (val) => updateOrgMember(lvlIdx, memIdx, "foto", val),
+                                `org-${lvlIdx}-${memIdx}`
+                              )}
+                              <div className={styles.memberActionRow}>
+                                <span />
+                                <button type="button" onClick={() => removeOrgMember(lvlIdx, memIdx)} className={styles.btnTrash}>
+                                  <Trash2 size={14} />
+                                </button>
                               </div>
-                              <button type="button" onClick={() => removeOrgMember(lvlIdx, memIdx)} className={styles.btnTrash}>
-                                <Trash2 size={14} />
-                              </button>
                             </div>
                           </div>
                         ))}
@@ -718,14 +803,12 @@ export default function MobileContentEditor() {
                     />
                   </div>
                   <div className={styles.formGroup}>
-                    <label className={styles.label}>URL Gambar</label>
-                    <input
-                      type="text"
-                      value={carouselForm.imageUrl}
-                      onChange={(e) => setCarouselForm({ ...carouselForm, imageUrl: e.target.value })}
-                      className={styles.input}
-                      placeholder="https://images.unsplash.com/..."
-                    />
+                    <label className={styles.label}>Gambar Slide</label>
+                    {renderImageUpload(
+                      carouselForm.imageUrl,
+                      (val) => setCarouselForm({ ...carouselForm, imageUrl: val }),
+                      "carousel-slide"
+                    )}
                   </div>
                 </div>
 
