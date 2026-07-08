@@ -124,7 +124,7 @@ export default function TopBar() {
         aria-hidden
       />
       <div className="relative z-10 flex w-full min-w-0 items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 lg:hidden">
         <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
           <Shield size={16} className="text-black" strokeWidth={3} />
         </div>

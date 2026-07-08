@@ -17,15 +17,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/', slug: 'dashboard' },
-  { icon: Users, label: 'Anggota', href: '/members', slug: 'members' },
-  { icon: Map, label: 'Organisasi', href: '/organization', slug: 'organization' },
-  { icon: ShieldCheck, label: 'Verifikasi', href: '/verification', slug: 'verification' },
-  { icon: Calendar, label: 'Event', href: '/events', slug: 'events' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/admin', slug: 'dashboard' },
+  { icon: Users, label: 'Anggota', href: '/admin/members', slug: 'members' },
+  { icon: Map, label: 'Organisasi', href: '/admin/organization', slug: 'organization' },
+  { icon: ShieldCheck, label: 'Verifikasi', href: '/admin/verification', slug: 'verification' },
+  { icon: Calendar, label: 'Event', href: '/admin/events', slug: 'events' },
   { icon: Store, label: 'Store', href: '#', slug: 'store' },
   { icon: BookOpen, label: 'Library', href: '#', slug: 'library' },
-  { icon: MessageSquare, label: 'Broadcast', href: '/broadcast', slug: 'broadcast' },
-  { icon: Settings, label: 'Settings', href: '/settings', slug: 'settings' },
+  { icon: MessageSquare, label: 'Broadcast', href: '/admin/broadcast', slug: 'broadcast' },
+  { icon: Settings, label: 'Settings', href: '/admin/settings', slug: 'settings' },
 ];
 
 export default function Sidebar() {
@@ -53,39 +53,40 @@ export default function Sidebar() {
   });
 
   return (
-    <aside className="w-64 h-screen bg-[#0f0f12] border-r border-white/5 flex flex-col p-4 fixed left-0 top-0">
-      <div className="flex items-center gap-3 px-4 py-8">
-        <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center font-bold text-black text-xl">
+    <aside className="sidebar-aside flex flex-col">
+      <div className="sidebar-logo flex items-center">
+        <div className="sidebar-logo-icon flex items-center justify-center">
           I
         </div>
-        <div>
-          <h1 className="font-bold text-lg leading-none">INKAI</h1>
-          <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest">Admin Portal</p>
+        <div className="sidebar-logo-text">
+          <h1>INKAI</h1>
+          <p>Admin Portal</p>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <nav className="sidebar-nav flex-1">
         {filteredMenuItems.map((item) => {
-          const isActive = pathname === item.href;
+          if (item.href === '#') return null; // skip inactive menu entries if any
+          const isActive = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href));
           return (
             <Link 
               key={item.label} 
               href={item.href}
               className={`sidebar-item ${isActive ? 'active' : ''}`}
             >
-              <item.icon size={20} />
+              <item.icon size={18} />
               <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="pt-4 border-t border-white/5">
+      <div className="sidebar-footer">
         <button 
           onClick={handleLogout}
-          className="sidebar-item w-full text-red-500 hover:bg-red-500/10 transition-colors"
+          className="sidebar-item logout-btn flex items-center w-full"
         >
-          <LogOut size={20} />
+          <LogOut size={18} />
           <span>Keluar</span>
         </button>
       </div>
