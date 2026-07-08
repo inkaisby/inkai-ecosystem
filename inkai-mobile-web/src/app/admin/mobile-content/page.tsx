@@ -52,8 +52,10 @@ export default function MobileContentEditor() {
 
   useEffect(() => {
     if (authLoading) return;
-    const userRole = user?.roles?.[0];
-    const hasAccess = isAdmin && (userRole === "ADMINISTRATOR" || userRole === "ADMIN_PUSAT");
+    const hasAccess = isAdmin && Array.isArray(user?.roles) && user.roles.some((r: any) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === "ADMINISTRATOR" || roleName === "ADMIN_PUSAT";
+    });
     if (!hasAccess) {
       router.replace("/admin");
       return;

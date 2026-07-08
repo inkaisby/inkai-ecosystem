@@ -125,6 +125,14 @@ export default function Dashboard() {
 
   const user = authUser;
 
+  const isSuperOrPusat = useMemo(() => {
+    if (!user || !user.roles) return false;
+    return Array.isArray(user.roles) && user.roles.some((r: any) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'ADMINISTRATOR' || roleName === 'ADMIN_PUSAT';
+    });
+  }, [user]);
+
   const filteredMembers = useMemo(() => {
     if (!searchQuery) return recentMembers;
     const query = searchQuery.toLowerCase();
@@ -330,7 +338,7 @@ export default function Dashboard() {
           </div>
           <ChevronRight size={16} className="text-gray-600 shrink-0" />
         </button>
-        {(user?.roles?.[0] === 'ADMINISTRATOR' || user?.roles?.[0] === 'ADMIN_PUSAT') && (
+        {isSuperOrPusat && (
           <button
             onClick={() => router.push("/admin/mobile-content")}
             className="w-full glass-card p-4 flex items-center justify-between border-amber-500/15 bg-amber-500/[0.04] hover:bg-amber-500/10 active:scale-[0.99] transition-all text-left animate-in fade-in slide-in-from-bottom-2 duration-300"
