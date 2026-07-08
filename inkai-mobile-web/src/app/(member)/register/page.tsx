@@ -339,7 +339,8 @@ export default function Register() {
                     placeholder="Masukkan nama lengkap"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
+                    style={{ textTransform: 'uppercase' }}
                     disabled={isLoading}
                     autoComplete="name"
                   />
