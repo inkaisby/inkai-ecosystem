@@ -2121,145 +2121,147 @@ html[data-clock-phase="day"] select.event-form-field option {
 /* KPI Custom Belt Colors */
 .kpi-button {
   background-color: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border: 1.5px solid var(--glass-border) !important;
   color: var(--text-light);
 }
 
 .kpi-button .icon-container {
-  background-color: rgba(15, 23, 42, 0.06);
+  background-color: rgba(255, 255, 255, 0.5) !important;
   color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 html[data-clock-phase="night"] .kpi-button .icon-container {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.05);
 }
 
 /* Aktif (Green) */
 .kpi-aktif {
-  background-color: rgba(34, 197, 94, 0.08) !important;
-  border-color: rgba(34, 197, 94, 0.2) !important;
-  color: #166534 !important;
+  background-color: rgba(34, 197, 94, 0.16) !important;
+  border-color: rgba(34, 197, 94, 0.45) !important;
+  color: #14532d !important;
 }
 html[data-clock-phase="night"] .kpi-aktif {
-  background-color: rgba(34, 197, 94, 0.12) !important;
-  border-color: rgba(34, 197, 94, 0.3) !important;
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  border-color: rgba(34, 197, 94, 0.45) !important;
   color: #4ade80 !important;
 }
 .kpi-aktif.selected {
-  background-color: rgba(34, 197, 94, 0.18) !important;
-  border-color: rgba(34, 197, 94, 0.5) !important;
-  box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.1) !important;
+  background-color: rgba(34, 197, 94, 0.26) !important;
+  border-color: rgba(34, 197, 94, 0.7) !important;
+  box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.15) !important;
 }
 
 /* Kyu 10 (White) */
 .kpi-kyu10 {
   background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #475569 !important;
+  border-color: #94a3b8 !important;
+  color: #1e293b !important;
 }
 html[data-clock-phase="night"] .kpi-kyu10 {
-  background-color: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  color: #e2e8f0 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #f1f5f9 !important;
 }
 .kpi-kyu10.selected {
-  background-color: #f8fafc !important;
-  border-color: #64748b !important;
+  background-color: #f1f5f9 !important;
+  border-color: #475569 !important;
   color: #0f172a !important;
 }
 html[data-clock-phase="night"] .kpi-kyu10.selected {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  border-color: rgba(255, 255, 255, 0.35) !important;
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
   color: #ffffff !important;
 }
 
 /* Kyu 8 (Yellow) */
 .kpi-kyu8 {
-  background-color: rgba(234, 179, 8, 0.1) !important;
-  border-color: rgba(234, 179, 8, 0.25) !important;
-  color: #854d0e !important;
+  background-color: rgba(234, 179, 8, 0.18) !important;
+  border-color: rgba(234, 179, 8, 0.5) !important;
+  color: #713f12 !important;
 }
 html[data-clock-phase="night"] .kpi-kyu8 {
-  background-color: rgba(234, 179, 8, 0.12) !important;
-  border-color: rgba(234, 179, 8, 0.3) !important;
+  background-color: rgba(234, 179, 8, 0.16) !important;
+  border-color: rgba(234, 179, 8, 0.45) !important;
   color: #facc15 !important;
 }
 .kpi-kyu8.selected {
-  background-color: rgba(234, 179, 8, 0.2) !important;
-  border-color: rgba(234, 179, 8, 0.55) !important;
+  background-color: rgba(234, 179, 8, 0.28) !important;
+  border-color: rgba(234, 179, 8, 0.75) !important;
 }
 
 /* Kyu 7 (Orange) */
 .kpi-kyu7 {
-  background-color: rgba(249, 115, 22, 0.1) !important;
-  border-color: rgba(249, 115, 22, 0.25) !important;
-  color: #9a3412 !important;
+  background-color: rgba(249, 115, 22, 0.18) !important;
+  border-color: rgba(249, 115, 22, 0.5) !important;
+  color: #7c2d12 !important;
 }
 html[data-clock-phase="night"] .kpi-kyu7 {
-  background-color: rgba(249, 115, 22, 0.12) !important;
-  border-color: rgba(249, 115, 22, 0.3) !important;
+  background-color: rgba(249, 115, 22, 0.16) !important;
+  border-color: rgba(249, 115, 22, 0.45) !important;
   color: #fb923c !important;
 }
 .kpi-kyu7.selected {
-  background-color: rgba(249, 115, 22, 0.2) !important;
-  border-color: rgba(249, 115, 22, 0.55) !important;
+  background-color: rgba(249, 115, 22, 0.28) !important;
+  border-color: rgba(249, 115, 22, 0.75) !important;
 }
 
 /* Kyu 6 (Green) */
 .kpi-kyu6 {
-  background-color: rgba(16, 185, 129, 0.1) !important;
-  border-color: rgba(16, 185, 129, 0.25) !important;
-  color: #065f46 !important;
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #064e3b !important;
 }
 html[data-clock-phase="night"] .kpi-kyu6 {
-  background-color: rgba(16, 185, 129, 0.12) !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
+  background-color: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
   color: #34d399 !important;
 }
 .kpi-kyu6.selected {
-  background-color: rgba(16, 185, 129, 0.2) !important;
-  border-color: rgba(16, 185, 129, 0.55) !important;
+  background-color: rgba(16, 185, 129, 0.28) !important;
+  border-color: rgba(16, 185, 129, 0.75) !important;
 }
 
 /* Kyu 5-4 (Blue) */
 .kpi-kyu5_4 {
-  background-color: rgba(59, 130, 246, 0.1) !important;
-  border-color: rgba(59, 130, 246, 0.25) !important;
-  color: #1e40af !important;
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  color: #1e3a8a !important;
 }
 html[data-clock-phase="night"] .kpi-kyu5_4 {
-  background-color: rgba(59, 130, 246, 0.12) !important;
-  border-color: rgba(59, 130, 246, 0.3) !important;
+  background-color: rgba(59, 130, 246, 0.16) !important;
+  border-color: rgba(59, 130, 246, 0.45) !important;
   color: #60a5fa !important;
 }
 .kpi-kyu5_4.selected {
-  background-color: rgba(59, 130, 246, 0.2) !important;
-  border-color: rgba(59, 130, 246, 0.55) !important;
+  background-color: rgba(59, 130, 246, 0.28) !important;
+  border-color: rgba(59, 130, 246, 0.75) !important;
 }
 
 /* Kyu 3-1 (Brown) */
 .kpi-kyu3_2_1 {
-  background-color: rgba(139, 69, 19, 0.08) !important;
-  border-color: rgba(139, 69, 19, 0.2) !important;
-  color: #8b4513 !important;
+  background-color: rgba(120, 53, 4, 0.14) !important;
+  border-color: rgba(120, 53, 4, 0.4) !important;
+  color: #78350f !important;
 }
 html[data-clock-phase="night"] .kpi-kyu3_2_1 {
-  background-color: rgba(139, 69, 19, 0.12) !important;
-  border-color: rgba(139, 69, 19, 0.3) !important;
+  background-color: rgba(139, 69, 19, 0.16) !important;
+  border-color: rgba(139, 69, 19, 0.45) !important;
   color: #d2b48c !important;
 }
 .kpi-kyu3_2_1.selected {
-  background-color: rgba(139, 69, 19, 0.18) !important;
-  border-color: rgba(139, 69, 19, 0.5) !important;
+  background-color: rgba(120, 53, 4, 0.22) !important;
+  border-color: rgba(120, 53, 4, 0.6) !important;
 }
 
 /* DAN (Black) */
 .kpi-hitam {
-  background-color: #1e293b !important;
+  background-color: #0f172a !important;
   border-color: #334155 !important;
-  color: #e2e8f0 !important;
+  color: #f1f5f9 !important;
 }
 html[data-clock-phase="night"] .kpi-hitam {
-  background-color: #0f172a !important;
+  background-color: #020617 !important;
   border-color: #1e293b !important;
   color: #cbd5e1 !important;
 }
@@ -2271,16 +2273,16 @@ html[data-clock-phase="night"] .kpi-hitam {
 
 /* Non-Aktif (Red) */
 .kpi-non-aktif {
-  background-color: rgba(239, 68, 68, 0.08) !important;
-  border-color: rgba(239, 68, 68, 0.2) !important;
-  color: #991b1b !important;
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #7f1d1d !important;
 }
 html[data-clock-phase="night"] .kpi-non-aktif {
-  background-color: rgba(239, 68, 68, 0.12) !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
+  background-color: rgba(239, 68, 68, 0.16) !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
   color: #f87171 !important;
 }
 .kpi-non-aktif.selected {
-  background-color: rgba(239, 68, 68, 0.18) !important;
-  border-color: rgba(239, 68, 68, 0.5) !important;
+  background-color: rgba(239, 68, 68, 0.25) !important;
+  border-color: rgba(239, 68, 68, 0.65) !important;
 }
