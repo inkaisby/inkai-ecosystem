@@ -602,7 +602,7 @@ function OrganizationContent() {
                 viewState === 'provinces' ? "Cari wilayah..." : 
                 viewState === 'branches' ? "Cari cabang..." : "Cari dojo..."
               }
-              className="glass-input w-full py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-white placeholder:text-gray-600 font-medium"
+              className="glass-input w-full h-12 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-white placeholder:text-gray-600 font-medium"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -635,13 +635,13 @@ function OrganizationContent() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
                 <tr>
-                  <th className="pb-4 pl-4 font-medium text-center w-12">No</th>
-                  <th className="pb-4 pl-2 font-medium">Wilayah</th>
-                  <th className="pb-4 pl-2 font-medium">Ketua Pengprov</th>
-                  <th className="pb-4 text-center font-medium">Cabang</th>
-                  <th className="pb-4 text-center font-medium">Dojo</th>
-                  <th className="pb-4 text-center font-medium">Anggota</th>
-                  <th className="pb-4 text-center font-medium pr-4">Aksi</th>
+                  <th className="pb-4 pl-4 font-medium text-center w-12 whitespace-nowrap">No</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">Wilayah</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">Ketua Pengprov</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Cabang</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Dojo</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Anggota</th>
+                  <th className="pb-4 text-center font-medium pr-4 whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -651,20 +651,20 @@ function OrganizationContent() {
                   const canManage = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === prov.id);
                   return (
                     <tr key={prov.id} className="hover:bg-white/[0.02] transition-all group">
-                      <td className="py-4 pl-4 text-center text-gray-400 font-medium">{index + 1}</td>
-                      <td className="py-4 pl-2">
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{index + 1}</td>
+                      <td className="py-4 pl-2 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center font-black text-sm text-black shadow-md shadow-amber-500/10">
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center font-black text-sm text-black shadow-md shadow-amber-500/10 shrink-0">
                             {prov.name.substring(0, 2).toUpperCase()}
                           </div>
                           <span className="font-bold text-white tracking-tight">{prov.name}</span>
                         </div>
                       </td>
-                      <td className="py-4 pl-2 text-white font-medium">{prov.headName || '-'}</td>
-                      <td className="py-4 text-center text-white font-medium">{prov._count?.branches || 0}</td>
-                      <td className="py-4 text-center text-white font-medium">{totalDojos}</td>
-                      <td className="py-4 text-center text-white font-medium">{totalMembers}</td>
-                      <td className="py-4 pr-4">
+                      <td className="py-4 pl-2 text-white font-medium whitespace-nowrap">{prov.headName || '-'}</td>
+                      <td className="py-4 text-center text-white font-medium whitespace-nowrap">{prov._count?.branches || 0}</td>
+                      <td className="py-4 text-center text-white font-medium whitespace-nowrap">{totalDojos}</td>
+                      <td className="py-4 text-center text-white font-medium whitespace-nowrap">{totalMembers}</td>
+                      <td className="py-4 pr-4 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2 relative z-10">
                           <button
                             type="button"
@@ -772,12 +772,12 @@ function OrganizationContent() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
                 <tr>
-                  <th className="pb-4 pl-4 font-medium text-center w-12">No</th>
-                  <th className="pb-4 pl-2 font-medium">Cabang</th>
-                  <th className="pb-4 pl-2 font-medium">Ketua Cabang</th>
-                  <th className="pb-4 text-center font-medium">Total Dojo</th>
-                  <th className="pb-4 text-center font-medium">Total Anggota</th>
-                  <th className="pb-4 text-center font-medium pr-4">Aksi</th>
+                  <th className="pb-4 pl-4 font-medium text-center w-12 whitespace-nowrap">No</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">Cabang</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">Ketua Cabang</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Total Dojo</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Total Anggota</th>
+                  <th className="pb-4 text-center font-medium pr-4 whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -786,19 +786,19 @@ function OrganizationContent() {
                   const canManage = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || (isAdminBranch && user?.managedBranchId === branch.id);
                   return (
                     <tr key={branch.id} className="hover:bg-white/[0.02] transition-all group">
-                      <td className="py-4 pl-4 text-center text-gray-400 font-medium">{index + 1}</td>
-                      <td className="py-4 pl-2">
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{index + 1}</td>
+                      <td className="py-4 pl-2 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-black shadow-md shadow-amber-500/10">
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-black shadow-md shadow-amber-500/10 shrink-0">
                             <Building2 size={18} />
                           </div>
                           <span className="font-bold text-white tracking-tight">{branch.name}</span>
                         </div>
                       </td>
-                      <td className="py-4 pl-2 text-white font-medium">{branch.headName || '-'}</td>
-                      <td className="py-4 text-center text-white font-medium">{branch._count?.dojos || 0}</td>
-                      <td className="py-4 text-center text-white font-medium">{totalMembers}</td>
-                      <td className="py-4 pr-4">
+                      <td className="py-4 pl-2 text-white font-medium whitespace-nowrap">{branch.headName || '-'}</td>
+                      <td className="py-4 text-center text-white font-medium whitespace-nowrap">{branch._count?.dojos || 0}</td>
+                      <td className="py-4 text-center text-white font-medium whitespace-nowrap">{totalMembers}</td>
+                      <td className="py-4 pr-4 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2 relative z-10">
                           {canManage ? (
                             <button
@@ -850,15 +850,15 @@ function OrganizationContent() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
                 <tr>
-                  <th className="pb-4 pl-4 font-medium text-center w-12">No</th>
-                  <th className="pb-4 pl-2 font-medium">Dojo</th>
-                  <th className="pb-4 pl-2 font-medium">PIC / Ketua</th>
-                  <th className="pb-4 pl-2 font-medium">Kecamatan</th>
-                  <th className="pb-4 pl-2 font-medium">WhatsApp</th>
-                  <th className="pb-4 pl-2 font-medium">Tempat Latihan</th>
-                  <th className="pb-4 pl-2 font-medium">Jadwal</th>
-                  <th className="pb-4 text-center font-medium">Anggota</th>
-                  <th className="pb-4 text-center font-medium pr-4">Aksi</th>
+                  <th className="pb-4 pl-4 font-medium text-center w-12 whitespace-nowrap">No</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">Dojo</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">PIC / Ketua</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">Kecamatan</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">WhatsApp</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">Tempat Latihan</th>
+                  <th className="pb-4 pl-2 font-medium whitespace-nowrap">Jadwal</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Anggota</th>
+                  <th className="pb-4 text-center font-medium pr-4 whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -866,22 +866,22 @@ function OrganizationContent() {
                   const canEdit = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || (isAdminBranch && user?.managedBranchId === selectedBranch?.id) || (isAdminDojo && user?.managedDojoId === dojo.id);
                   return (
                     <tr key={dojo.id} className="hover:bg-white/[0.02] transition-all group">
-                      <td className="py-4 pl-4 text-center text-gray-400 font-medium">{index + 1}</td>
-                      <td className="py-4 pl-2">
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{index + 1}</td>
+                      <td className="py-4 pl-2 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-black shadow-md shadow-amber-500/10">
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-black shadow-md shadow-amber-500/10 shrink-0">
                             <MapPin size={18} />
                           </div>
                           <span className="font-bold text-white tracking-tight">{dojo.name}</span>
                         </div>
                       </td>
-                      <td className="py-4 pl-2 text-white font-medium">{dojo.headName || dojo.contactPerson || '-'}</td>
-                      <td className="py-4 pl-2 text-white font-medium">{dojo.kecamatan || '-'}</td>
-                      <td className="py-4 pl-2 text-white font-medium">{dojo.phoneNumber || '-'}</td>
-                      <td className="py-4 pl-2 text-white font-medium truncate max-w-[150px]" title={dojo.tempatLatihan}>{dojo.tempatLatihan || '-'}</td>
-                      <td className="py-4 pl-2 text-white font-medium truncate max-w-[120px]" title={dojo.schedule}>{dojo.schedule || '-'}</td>
-                      <td className="py-4 text-center text-white font-medium">{dojo._count?.members || 0}</td>
-                      <td className="py-4 pr-4">
+                      <td className="py-4 pl-2 text-white font-medium whitespace-nowrap">{dojo.headName || dojo.contactPerson || '-'}</td>
+                      <td className="py-4 pl-2 text-white font-medium whitespace-nowrap">{dojo.kecamatan || '-'}</td>
+                      <td className="py-4 pl-2 text-white font-medium whitespace-nowrap">{dojo.phoneNumber || '-'}</td>
+                      <td className="py-4 pl-2 text-white font-medium whitespace-normal min-w-[250px]" title={dojo.tempatLatihan}>{dojo.tempatLatihan || '-'}</td>
+                      <td className="py-4 pl-2 text-white font-medium whitespace-nowrap" title={dojo.schedule}>{dojo.schedule || '-'}</td>
+                      <td className="py-4 text-center text-white font-medium whitespace-nowrap">{dojo._count?.members || 0}</td>
+                      <td className="py-4 pr-4 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2 relative z-10">
                           <button
                             type="button"
