@@ -69,14 +69,14 @@
   padding: 12px 0;
   background: none;
   border: none;
-  color: white;
+  color: var(--text-light);
   font-size: 13px;
   outline: none;
 }
 
 .select option {
-  background-color: #1e1e24;
-  color: white;
+  background-color: var(--card-dark);
+  color: var(--text-light);
 }
 
 .inputWrapper {
@@ -99,13 +99,14 @@
   background: none;
   border: none;
   padding: 12px 0;
-  color: white;
+  color: var(--text-light);
   font-size: 13px;
   outline: none;
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+  opacity: 0.4;
 }
 
 /**
@@ -128,15 +129,15 @@
   padding-right: 8px;
   background: none;
   border: none;
-  color: white;
+  color: var(--text-light);
   font-size: 13px;
   outline: none;
   cursor: pointer;
 }
 
 .selectInWrapper option {
-  background-color: #1e1e24;
-  color: white;
+  background-color: var(--card-dark);
+  color: var(--text-light);
 }
 
 .uploadBox {
@@ -361,4 +362,39 @@
   font-size: 13px;
   font-weight: bold;
   cursor: pointer;
+}
+
+html[data-clock-phase="day"] .selectWrapper,
+html[data-clock-phase="day"] .inputWrapper {
+  background-color: rgba(15, 23, 42, 0.02);
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+html[data-clock-phase="day"] .select,
+html[data-clock-phase="day"] .input,
+html[data-clock-phase="day"] .selectInWrapper {
+  color: #0f172a !important;
+}
+
+html[data-clock-phase="day"] .select option,
+html[data-clock-phase="day"] .selectInWrapper option {
+  background-color: white;
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .input::placeholder {
+  color: rgba(15, 23, 42, 0.3);
+}
+
+html[data-clock-phase="day"] .uploadBox {
+  background-color: rgba(15, 23, 42, 0.02);
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+html[data-clock-phase="day"] .uploadFileName {
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .blockedTitle {
+  color: #0f172a;
 }
