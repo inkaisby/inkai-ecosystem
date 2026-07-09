@@ -253,42 +253,40 @@ export default function Billing() {
         <h1 className={styles.title}>Iuran Bulanan</h1>
       </header>
 
-      {/* Member Identity Card (Wireframe Premium) */}
-      <div className={styles.memberCard}>
-        <div className={styles.memberDojoBadge}>
-          <MapPin size={10} style={{ marginRight: '4px' }} />
-          {user.dojo?.name || "Dojo Pusat Jakarta"}
+      {/* Unified Dashboard Card */}
+      <div className={styles.dashboardCard}>
+        <div className={styles.dashboardLeft}>
+          <div className={styles.memberDojoBadge}>
+            <MapPin size={10} style={{ marginRight: '4px' }} />
+            {user.dojo?.name || "Dojo Pusat Jakarta"}
+          </div>
+          <h3 className={styles.memberName} style={{ margin: "0 0 4px 0", fontSize: "16px" }}>{user.fullName || "Anggota"}</h3>
+          <p className={styles.memberNia} style={{ margin: "0 0 12px 0", fontSize: "11px" }}>NIA: {user.nia || "MEMPROSES NIA..."}</p>
+          <div className={styles.memberLeaderInfo} style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", paddingTop: "8px" }}>
+            <UserCheck size={12} style={{ marginRight: '6px' }} />
+            Ranting: <strong>{user?.dojo?.bankAccountName || "Ketua Ranting"}</strong>
+          </div>
         </div>
-        <h3 className={styles.memberName}>{user.fullName || "Anggota"}</h3>
-        <p className={styles.memberNia}>NIA: {user.nia || "MEMPROSES NIA..."}</p>
-        <div className={styles.memberLeaderInfo}>
-          <UserCheck size={12} style={{ marginRight: '6px' }} />
-          Konfirmasi Ketua Ranting: <strong>{user?.dojo?.bankAccountName || "Ketua Ranting"}</strong>
-        </div>
-      </div>
 
-      <div className={styles.summaryCard}>
-        <p className={styles.summaryLabel}>Tagihan Menunggak</p>
-        <h2 className={styles.totalAmount}>
-          Rp {new Intl.NumberFormat('id-ID').format(totalUnpaid)}
-        </h2>
-        <div className={styles.duesAmountInfo}>
-          <Info size={12} className={styles.duesInfoIcon} />
-          <span>Iuran bulanan diselaraskan Ketua Ranting: <strong>Rp {new Intl.NumberFormat('id-ID').format(user.monthlyDuesAmount ?? user.member?.monthlyDuesAmount ?? 50000)}</strong></span>
+        <div className={styles.dashboardRight}>
+          <span className={styles.balanceLabel}>Tagihan Menunggak</span>
+          <span className={styles.balanceAmount}>
+            Rp {new Intl.NumberFormat('id-ID').format(totalUnpaid)}
+          </span>
+          <button 
+            className={`${styles.dashboardPayBtn} ${hasWaiting ? styles.waiting : ''}`}
+            disabled={(totalUnpaid === 0 && !hasWaiting) || isProcessing}
+            onClick={handleOpenPaymentModal}
+            style={{ marginTop: "4px" }}
+          >
+            {hasWaiting ? "Update Bukti" : "Bayar Sekarang"}
+          </button>
         </div>
-        <button 
-          className={`${styles.payBtn} ${hasWaiting ? styles.waiting : ''}`}
-          disabled={(totalUnpaid === 0 && !hasWaiting) || isProcessing}
-          onClick={handleOpenPaymentModal}
-        >
-          {hasWaiting ? "UPDATE BUKTI BAYAR" : "BAYAR SEKARANG"}
-        </button>
       </div>
 
       <section className={styles.section}>
-        <div className={styles.historySectionHeader}>
-          <h2 className={styles.sectionTitle}>Riwayat Pembayaran</h2>
-          <ChevronRight size={16} className={styles.historyIcon} />
+        <div className={styles.historySectionHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <h2 className={styles.sectionTitle} style={{ margin: 0, fontSize: 14 }}>Riwayat Pembayaran</h2>
         </div>
 
         {/* Filter & History Controls Premium */}

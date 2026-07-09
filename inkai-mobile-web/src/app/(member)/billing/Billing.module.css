@@ -1146,3 +1146,122 @@ html[data-clock-phase="day"] .transferHelpNote {
   border-color: rgba(245, 158, 11, 0.35);
   color: var(--primary-gold-hover);
 }
+
+.dashboardCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 480px) {
+  .dashboardCard {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.dashboardLeft {
+  flex: 1;
+}
+
+.dashboardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+}
+
+@media (min-width: 480px) {
+  .dashboardRight {
+    align-items: flex-end;
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+.balanceLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.balanceAmount {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--primary-gold);
+}
+
+.dashboardPayBtn {
+  width: 100%;
+  padding: 10px 16px;
+  background-color: var(--primary-gold);
+  color: black;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+@media (min-width: 480px) {
+  .dashboardPayBtn {
+    width: auto;
+  }
+}
+
+.dashboardPayBtn:disabled {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.dashboardPayBtn.waiting {
+  background-color: rgba(168, 85, 247, 0.12) !important;
+  color: #c084fc !important;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  box-shadow: none;
+}
+
+html[data-clock-phase="day"] .dashboardCard {
+  background: white;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+html[data-clock-phase="day"] .balanceAmount {
+  color: #b45309;
+}
+
+html[data-clock-phase="day"] .dashboardPayBtn {
+  background-color: #d97706;
+  color: white;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
+}
+
+html[data-clock-phase="day"] .tabItem {
+  background: #f1f5f9;
+  border-color: rgba(15, 23, 42, 0.05);
+}
+
+html[data-clock-phase="day"] .tabActive {
+  background: rgba(217, 119, 6, 0.1) !important;
+  color: #d97706 !important;
+  border-color: #d97706 !important;
+}
