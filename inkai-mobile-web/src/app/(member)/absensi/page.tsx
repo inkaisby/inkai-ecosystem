@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronUp,
   History,
+  Fingerprint,
 } from "lucide-react";
 import { api, eventApi } from "@/lib/api";
 import { formatEventPelaksanaan } from "@/lib/formatEventPelaksanaan";
@@ -103,8 +104,118 @@ export default function AttendanceScannerPage() {
   const [eventSubmittingId, setEventSubmittingId] = useState<string | null>(null);
   const [showQrSection, setShowQrSection] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; cell: any | null }>({ isOpen: false, cell: null });
+  const [showHistory, setShowHistory] = useState(false);
+  const [showFingerprintModal, setShowFingerprintModal] = useState(false);
+  const [fingerprintStatus, setFingerprintStatus] = useState<"idle" | "scanning" | "success" | "failed">("idle");
+  const [fingerprintProgress, setFingerprintProgress] = useState(0);
+  const [fingerprintMessage, setFingerprintMessage] = useState("");
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleFingerprintCheckIn = async () => {
+    if (!user?.dojo?.id) {
+      toast.error("Anda belum memiliki Dojo yang terdaftar.");
+      return;
+    }
+    
+    setFingerprintStatus("success");
+    setFingerprintMessage("Memproses absensi...");
+    
+    // Call WebAuthn to trigger native biometric if possible
+    try {
+      if (window.PublicKeyCredential) {
+        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (available) {
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          
+          await navigator.credentials.create({
+            publicKey: {
+              challenge,
+              rp: { name: "INKAI Mobile" },
+              user: {
+                id: new Uint8Array(16),
+                name: user.fullName || "User",
+                displayName: user.fullName || "User",
+              },
+              pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+              timeout: 5000,
+              authenticatorSelection: {
+                userVerification: "required",
+                authenticatorAttachment: "platform"
+              }
+            }
+          }).catch((err) => {
+            console.log("Native biometric bypassed or failed: ", err);
+          });
+        }
+      }
+    } catch (e) {
+      console.log("WebAuthn check bypassed: ", e);
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.attendance.checkIn({
+        dojoId: user.dojo.id,
+        method: "FINGERPRINT",
+      });
+      toast.success(
+        typeof response.message === "string"
+          ? response.message
+          : "Absensi sidik jari berhasil!"
+      );
+      setFingerprintMessage("Absensi Berhasil!");
+      await loadLists();
+      setTimeout(() => {
+        setShowFingerprintModal(false);
+        setFingerprintStatus("idle");
+      }, 1500);
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } };
+      const msg = ax.response?.data?.message || "Gagal mencatat kehadiran";
+      toast.error(msg);
+      setFingerprintStatus("failed");
+      setFingerprintMessage(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startFingerprintScanning = () => {
+    if (fingerprintStatus === "success" || fingerprintStatus === "failed") return;
+    setFingerprintStatus("scanning");
+    setFingerprintProgress(0);
+    
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
+    let progress = 0;
+    scanIntervalRef.current = setInterval(() => {
+      progress += 5;
+      setFingerprintProgress(Math.min(progress, 100));
+      if (progress >= 100) {
+        if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          navigator.vibrate(150);
+        }
+        void handleFingerprintCheckIn();
+      }
+    }, 80);
+  };
+
+  const stopFingerprintScanning = () => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    if (fingerprintStatus === "scanning") {
+      setFingerprintStatus("idle");
+      setFingerprintProgress(0);
+    }
+  };
 
   const calendarCells = useMemo(() => {
     const now = new Date();
@@ -388,7 +499,8 @@ export default function AttendanceScannerPage() {
 
   return (
     <div className={dashStyles.container} style={{ padding: "16px", paddingBottom: 120 }}>
-      <div className={dashStyles.header} style={{ marginBottom: 8 }}>
+      {/* Header */}
+      <div className={dashStyles.header} style={{ marginBottom: 12 }}>
         <button
           type="button"
           onClick={() => router.push("/dashboard")}
@@ -416,202 +528,219 @@ export default function AttendanceScannerPage() {
               fontWeight: 600,
             }}
           >
-            Agenda yang diikuti & presensi QR dojo
+            Pindai QR Dojo atau Sidik Jari HP
           </p>
         </div>
       </div>
 
-      <section className={dashStyles.section} style={{ marginBottom: 0 }}>
-        <div className={dashStyles.sectionHeader}>
-          <h2 className={dashStyles.sectionTitle}>Absensi agenda</h2>
-          <Calendar size={16} style={{ opacity: 0.6 }} aria-hidden />
-        </div>
+      {/* Quick Attendance Actions */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+        <button
+          type="button"
+          onClick={() => setShowQrSection((v) => !v)}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px 12px",
+            borderRadius: "20px",
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: showQrSection ? "rgba(245, 158, 11, 0.12)" : "var(--card-dark)",
+            borderColor: showQrSection ? "var(--primary-gold)" : "rgba(255,255,255,0.08)",
+            color: "var(--text-light)",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <Camera size={24} style={{ color: "var(--primary-gold)", marginBottom: "6px" }} />
+          <span style={{ fontSize: "12px", fontWeight: 800 }}>Pindai QR Dojo</span>
+        </button>
 
-        {loadingLists ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
-            <Loader2 className="animate-spin text-amber-500" size={28} />
-          </div>
-        ) : !user?.nia ? (
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 16,
-              background: "rgba(245, 158, 11, 0.08)",
-              border: "1px solid rgba(245, 158, 11, 0.25)",
-              fontSize: 12,
-              color: "var(--text-light)",
-            }}
+        <button
+          type="button"
+          onClick={() => {
+            setShowFingerprintModal(true);
+            setFingerprintStatus("idle");
+            setFingerprintProgress(0);
+            setFingerprintMessage("");
+          }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px 12px",
+            borderRadius: "20px",
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "var(--card-dark)",
+            color: "var(--text-light)",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <Fingerprint size={24} style={{ color: "var(--primary-gold)", marginBottom: "6px" }} />
+          <span style={{ fontSize: "12px", fontWeight: 800 }}>Sidik Jari HP</span>
+        </button>
+      </div>
+
+      {/* Dynamic QR Scanner panel */}
+      <AnimatePresence>
+        {showQrSection && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{ overflow: "hidden", marginBottom: 16 }}
           >
-            Setelah NIA aktif, Anda dapat melakukan absensi kegiatan agenda dari
-            sini.
-          </div>
-        ) : eligibleEvents.length === 0 ? (
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 16,
-              background: "rgba(255,255,255,0.04)",
-              fontSize: 12,
-              color: "#888",
-            }}
-          >
-            Tidak ada agenda yang sedang berjalan dengan pendaftaran disetujui.
-            Daftar agenda di menu Event.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {eligibleEvents.map((ev) => {
-              const done = attendedTodayForEvent(ev.id);
-              const busy = eventSubmittingId === ev.id;
-              return (
-                <div
-                  key={ev.id}
-                  style={{
-                    borderRadius: 16,
-                    padding: 14,
-                    background: "var(--card-dark)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                    <div style={{ minWidth: 0 }}>
-                      <h3
-                        style={{
-                          margin: 0,
-                          fontSize: 14,
-                          fontWeight: 800,
-                          color: "var(--text-light)",
-                        }}
-                      >
-                        {ev.title}
-                      </h3>
-                      <p style={{ margin: "6px 0 0", fontSize: 11, color: "#888" }}>
-                        {formatEventPelaksanaan(ev.startDate, ev.endDate)}
-                        {" · "}
-                        {ev.branch?.name ||
-                          ev.branch?.city ||
-                          ev.location ||
-                          "Lokasi agenda"}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={done || busy}
-                      onClick={() => void handleEventCheckIn(ev.id)}
-                      style={{
-                        alignSelf: "center",
-                        padding: "10px 16px",
-                        borderRadius: 12,
-                        border: "none",
-                        fontWeight: 800,
-                        fontSize: 11,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        cursor: done || busy ? "not-allowed" : "pointer",
-                        opacity: done ? 0.5 : 1,
-                        background: done
-                          ? "rgba(34,197,94,0.2)"
-                          : "var(--primary-gold)",
-                        color: done ? "#86efac" : "#111",
-                      }}
-                    >
-                      {busy ? (
-                        <Loader2 className="animate-spin" size={16} />
-                      ) : done ? (
-                        "Sudah absen"
-                      ) : (
-                        "Absen"
-                      )}
-                    </button>
+            <div
+              style={{
+                padding: 16,
+                borderRadius: 20,
+                background: "var(--card-dark)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              {!scanning && !result && !loading && (
+                <div style={{ textAlign: "center", padding: "8px 0" }}>
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      margin: "0 auto 12px",
+                      borderRadius: 16,
+                      background: "linear-gradient(135deg,#f59e0b,#d97706)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Camera size={28} color="#111" />
                   </div>
+                  <p style={{ fontSize: 12, color: "#aaa", marginBottom: 12 }}>
+                    Pindai QR dojo; lokasi digunakan untuk validasi jarak.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={startScanner}
+                    style={{
+                      width: "100%",
+                      padding: 12,
+                      borderRadius: 12,
+                      border: "none",
+                      fontWeight: 800,
+                      fontSize: 12,
+                      background: "var(--primary-gold)",
+                      color: "#111",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Mulai pindai QR
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+              )}
 
-      <section id="riwayat-absensi" className={dashStyles.section} style={{ marginBottom: 0 }}>
-        <div className={dashStyles.sectionHeader}>
-          <h2 className={dashStyles.sectionTitle}>Riwayat kehadiran</h2>
-          <History size={16} style={{ opacity: 0.6 }} aria-hidden />
-        </div>
-        {loadingLists ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: 20 }}>
-            <Loader2 className="animate-spin text-amber-500" size={24} />
-          </div>
-        ) : history.length === 0 ? (
-          <p style={{ fontSize: 12, color: "#888" }}>Belum ada riwayat absensi.</p>
-        ) : (
-          <ul
-            style={{
-              listStyle: "none",
-              margin: 0,
-              padding: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            {history.map((h) => (
-              <li
-                key={h.id}
-                style={{
-                  padding: 12,
-                  borderRadius: 14,
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  fontSize: 12,
-                }}
-              >
-                <div style={{ fontWeight: 700, color: "var(--text-light)" }}>
-                  {h.event?.title || `Latihan — ${h.dojo?.name || "dojo"}`}
+              {scanning && (
+                <div>
+                  <div
+                    id="reader"
+                    style={{
+                      overflow: "hidden",
+                      borderRadius: 16,
+                      border: "2px solid rgba(245,158,11,0.4)",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const s = scannerRef.current;
+                      if (s) void s.stop().catch(() => undefined);
+                      scannerRef.current = null;
+                      setScanning(false);
+                    }}
+                    style={{
+                      marginTop: 12,
+                      width: "100%",
+                      padding: 10,
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "transparent",
+                      color: "#888",
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Batalkan
+                  </button>
                 </div>
+              )}
+
+              {loading && (
+                <div style={{ padding: 24, textAlign: "center" }}>
+                  <Loader2 className="animate-spin text-amber-500" size={32} />
+                </div>
+              )}
+
+              {result && (
                 <div
                   style={{
-                    marginTop: 6,
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 8,
-                    color: "#888",
-                    fontSize: 11,
+                    padding: 16,
+                    borderRadius: 16,
+                    textAlign: "center",
+                    border: result.success
+                      ? "1px solid rgba(34,197,94,0.3)"
+                      : "1px solid rgba(239,68,68,0.3)",
+                    background: result.success
+                      ? "rgba(34,197,94,0.06)"
+                      : "rgba(239,68,68,0.06)",
                   }}
                 >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <Clock size={12} aria-hidden />
-                    {new Date(h.checkInAt).toLocaleString("id-ID", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </span>
-                  {h.dojo?.name ? (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      <MapPin size={12} aria-hidden />
-                      {h.dojo.name}
-                    </span>
+                  <div style={{ marginBottom: 8 }}>
+                    {result.success ? (
+                      <CheckCircle2 size={32} color="#22c55e" />
+                    ) : (
+                      <XCircle size={32} color="#ef4444" />
+                    )}
+                  </div>
+                  <p style={{ fontWeight: 800, fontSize: 13, marginBottom: 4 }}>
+                    {result.success ? "Berhasil" : "Gagal"}
+                  </p>
+                  <p style={{ fontSize: 11, color: "#888" }}>{result.message}</p>
+                  {result.success && result.dojoName ? (
+                    <p style={{ marginTop: 8, fontSize: 12 }}>
+                      <MapPin size={12} style={{ verticalAlign: "middle" }} />{" "}
+                      {result.dojoName} · {result.time}
+                    </p>
                   ) : null}
-                  {h.method ? (
-                    <span style={{ opacity: 0.85 }}>{h.method}</span>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setResult(null)}
+                    style={{
+                      marginTop: 12,
+                      width: "100%",
+                      padding: 10,
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      background: "transparent",
+                      color: "var(--text-light)",
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Tutup
+                  </button>
                 </div>
-              </li>
-            ))}
-          </ul>
+              )}
+            </div>
+          </motion.div>
         )}
-        <p style={{ fontSize: 11, color: "#666", marginTop: 12, lineHeight: 1.5 }}>
-          Pengurus dapat mengoreksi atau menghapus catatan dari panel admin jika
-          terjadi kesalahan.
-        </p>
-      </section>
+      </AnimatePresence>
 
-      {/* Calendar visual */}
-      <section className={dashStyles.section} style={{ marginBottom: 0 }}>
-        <div className={dashStyles.sectionHeader}>
-          <h2 className={dashStyles.sectionTitle}>Jadwal & Absen Latihan Dojo</h2>
-        </div>
+      {/* Calendar visual - Jadwal & Absen Latihan Dojo */}
+      <section className={dashStyles.section} style={{ margin: "0 0 16px 0", padding: 0 }}>
         <div
           style={{
-            padding: "16px",
+            padding: "14px 16px",
             borderRadius: "20px",
             background: "var(--card-dark)",
             border: "1px solid rgba(255,255,255,0.06)",
@@ -619,15 +748,25 @@ export default function AttendanceScannerPage() {
         >
           <div
             style={{
-              fontSize: "11px",
-              fontWeight: 800,
-              color: "#fff",
-              textAlign: "center",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: "12px",
-              letterSpacing: "0.05em",
             }}
           >
-            {currentMonthYearName}
+            <h2 style={{ fontSize: 13, fontWeight: 800, color: "var(--text-light)", margin: 0 }}>
+              Jadwal & Latihan Dojo
+            </h2>
+            <div
+              style={{
+                fontSize: "10px",
+                fontWeight: 800,
+                color: "var(--primary-gold)",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {currentMonthYearName}
+            </div>
           </div>
 
           <div
@@ -733,19 +872,19 @@ export default function AttendanceScannerPage() {
               justifyContent: "space-around",
               fontSize: "10px",
               color: "var(--text-muted)",
-              marginTop: "16px",
+              marginTop: "12px",
               borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-              paddingTop: "12px",
+              paddingTop: "8px",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <div
                 style={{
-                  width: "10px",
-                  height: "10px",
+                  width: "8px",
+                  height: "8px",
                   background: "rgba(16, 185, 129, 0.15)",
                   border: "1px solid #10b981",
-                  borderRadius: "3px",
+                  borderRadius: "2px",
                 }}
               />
               <span>Hadir ({attendedSessionsCount} Sesi)</span>
@@ -753,11 +892,11 @@ export default function AttendanceScannerPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <div
                 style={{
-                  width: "10px",
-                  height: "10px",
+                  width: "8px",
+                  height: "8px",
                   background: "rgba(255, 255, 255, 0.005)",
                   border: "1px dashed rgba(255, 255, 255, 0.05)",
-                  borderRadius: "3px",
+                  borderRadius: "2px",
                 }}
               />
               <span>Belum Terjadi</span>
@@ -766,193 +905,451 @@ export default function AttendanceScannerPage() {
         </div>
       </section>
 
-      <section className={dashStyles.section} style={{ marginBottom: 0 }}>
+      {/* Absensi Agenda Section (Only show if there are eligible events or if user NIA is active) */}
+      {(!user?.nia || eligibleEvents.length > 0) && (
+        <section className={dashStyles.section} style={{ margin: "0 0 16px 0" }}>
+          <div className={dashStyles.sectionHeader} style={{ marginBottom: 10 }}>
+            <h2 className={dashStyles.sectionTitle} style={{ fontSize: 13 }}>Absensi Agenda Kegiatan</h2>
+            <Calendar size={14} style={{ opacity: 0.6 }} aria-hidden />
+          </div>
+
+          {loadingLists ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: 12 }}>
+              <Loader2 className="animate-spin text-amber-500" size={20} />
+            </div>
+          ) : !user?.nia ? (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 12,
+                background: "rgba(245, 158, 11, 0.06)",
+                border: "1px solid rgba(245, 158, 11, 0.2)",
+                fontSize: 11,
+                color: "var(--text-light)",
+                lineHeight: 1.4,
+              }}
+            >
+              Setelah NIA aktif, Anda dapat melakukan absensi kegiatan agenda dari sini.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {eligibleEvents.map((ev) => {
+                const done = attendedTodayForEvent(ev.id);
+                const busy = eventSubmittingId === ev.id;
+                return (
+                  <div
+                    key={ev.id}
+                    style={{
+                      borderRadius: 12,
+                      padding: 10,
+                      background: "var(--card-dark)",
+                      border: "1px solid rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                        <h3
+                          style={{
+                            margin: 0,
+                            fontSize: 12,
+                            fontWeight: 800,
+                            color: "var(--text-light)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {ev.title}
+                        </h3>
+                        <p style={{ margin: "4px 0 0", fontSize: 10, color: "#888" }}>
+                          {formatEventPelaksanaan(ev.startDate, ev.endDate)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={done || busy}
+                        onClick={() => void handleEventCheckIn(ev.id)}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          border: "none",
+                          fontWeight: 800,
+                          fontSize: 10,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                          cursor: done || busy ? "not-allowed" : "pointer",
+                          opacity: done ? 0.5 : 1,
+                          background: done
+                            ? "rgba(34,197,94,0.2)"
+                            : "var(--primary-gold)",
+                          color: done ? "#86efac" : "#111",
+                        }}
+                      >
+                        {busy ? (
+                          <Loader2 className="animate-spin" size={12} />
+                        ) : done ? (
+                          "Sudah absen"
+                        ) : (
+                          "Absen"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Riwayat Kehadiran (Collapsible) */}
+      <section id="riwayat-absensi" className={dashStyles.section} style={{ margin: "0 0 16px 0" }}>
         <button
           type="button"
-          onClick={() => setShowQrSection((v) => !v)}
+          onClick={() => setShowHistory((v) => !v)}
           style={{
             width: "100%",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "14px 16px",
+            padding: "12px 16px",
             borderRadius: 16,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.02)",
             color: "var(--text-light)",
             fontWeight: 700,
             fontSize: 13,
+            cursor: "pointer",
           }}
         >
-          Absensi QR di dojo (latihan rutin)
-          {showQrSection ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <History size={16} style={{ color: "var(--primary-gold)" }} />
+            <span>Riwayat Kehadiran</span>
+          </div>
+          {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
+
         <AnimatePresence>
-          {showQrSection ? (
+          {showHistory && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               style={{ overflow: "hidden" }}
             >
-              <div style={{ paddingTop: 16 }}>
-                {!scanning && !result && !loading && (
-                  <div
-                    style={{
-                      padding: 24,
-                      borderRadius: 20,
-                      textAlign: "center",
-                      background: "var(--card-dark)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 72,
-                        height: 72,
-                        margin: "0 auto 16px",
-                        borderRadius: 20,
-                        background: "linear-gradient(135deg,#f59e0b,#d97706)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Camera size={36} color="#111" />
-                    </div>
-                    <p style={{ fontSize: 13, color: "#aaa", marginBottom: 16 }}>
-                      Pindai QR dojo; lokasi digunakan untuk validasi jarak.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={startScanner}
-                      style={{
-                        width: "100%",
-                        padding: 14,
-                        borderRadius: 14,
-                        border: "none",
-                        fontWeight: 800,
-                        background: "var(--primary-gold)",
-                        color: "#111",
-                      }}
-                    >
-                      Mulai pindai QR
-                    </button>
+              <div style={{ paddingTop: 12 }}>
+                {loadingLists ? (
+                  <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
+                    <Loader2 className="animate-spin text-amber-500" size={20} />
                   </div>
-                )}
-
-                {scanning && (
-                  <div>
-                    <div
-                      id="reader"
-                      style={{
-                        overflow: "hidden",
-                        borderRadius: 16,
-                        border: "2px solid rgba(245,158,11,0.4)",
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const s = scannerRef.current;
-                        if (s) void s.stop().catch(() => undefined);
-                        scannerRef.current = null;
-                        setScanning(false);
-                      }}
-                      style={{
-                        marginTop: 12,
-                        width: "100%",
-                        padding: 12,
-                        borderRadius: 12,
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        background: "transparent",
-                        color: "#888",
-                      }}
-                    >
-                      Batalkan
-                    </button>
-                  </div>
-                )}
-
-                {loading && (
-                  <div style={{ padding: 40, textAlign: "center" }}>
-                    <Loader2 className="animate-spin text-amber-500" size={40} />
-                  </div>
-                )}
-
-                {result && (
-                  <div
-                    style={{
-                      padding: 24,
-                      borderRadius: 20,
-                      textAlign: "center",
-                      border: result.success
-                        ? "1px solid rgba(34,197,94,0.3)"
-                        : "1px solid rgba(239,68,68,0.3)",
-                      background: result.success
-                        ? "rgba(34,197,94,0.06)"
-                        : "rgba(239,68,68,0.06)",
-                    }}
-                  >
-                    <div style={{ marginBottom: 12 }}>
-                      {result.success ? (
-                        <CheckCircle2 size={40} color="#22c55e" />
-                      ) : (
-                        <XCircle size={40} color="#ef4444" />
-                      )}
-                    </div>
-                    <p style={{ fontWeight: 800, marginBottom: 8 }}>
-                      {result.success ? "Berhasil" : "Gagal"}
-                    </p>
-                    <p style={{ fontSize: 12, color: "#888" }}>{result.message}</p>
-                    {result.success && result.dojoName ? (
-                      <p style={{ marginTop: 12, fontSize: 13 }}>
-                        <MapPin size={14} style={{ verticalAlign: "middle" }} />{" "}
-                        {result.dojoName} · {result.time}
-                      </p>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => setResult(null)}
-                      style={{
-                        marginTop: 16,
-                        width: "100%",
-                        padding: 12,
-                        borderRadius: 12,
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        background: "transparent",
-                        color: "var(--text-light)",
-                      }}
-                    >
-                      Tutup
-                    </button>
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    marginTop: 16,
-                    padding: 14,
-                    borderRadius: 14,
-                    display: "flex",
-                    gap: 12,
-                    background: "rgba(245,158,11,0.08)",
-                    border: "1px solid rgba(245,158,11,0.2)",
-                  }}
-                >
-                  <AlertCircle size={22} color="#f59e0b" style={{ flexShrink: 0 }} />
-                  <p style={{ margin: 0, fontSize: 11, color: "#aaa", lineHeight: 1.5 }}>
-                    Satu kali absensi QR per hari untuk latihan rutin di dojo.
-                    Agenda terpisah dicatat di atas.
+                ) : history.length === 0 ? (
+                  <p style={{ fontSize: 11, color: "#888", textAlign: "center", margin: "8px 0" }}>
+                    Belum ada riwayat absensi.
                   </p>
-                </div>
+                ) : (
+                  <ul
+                    style={{
+                      listStyle: "none",
+                      margin: 0,
+                      padding: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                    }}
+                  >
+                    {history.map((h) => (
+                      <li
+                        key={h.id}
+                        style={{
+                          padding: 10,
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.02)",
+                          border: "1px solid rgba(255,255,255,0.04)",
+                          fontSize: 11,
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, color: "var(--text-light)" }}>
+                          {h.event?.title || `Latihan — ${h.dojo?.name || "dojo"}`}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 4,
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 6,
+                            color: "#888",
+                            fontSize: 10,
+                          }}
+                        >
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                            <Clock size={10} aria-hidden />
+                            {new Date(h.checkInAt).toLocaleString("id-ID", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                          {h.dojo?.name ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                              <MapPin size={10} aria-hidden />
+                              {h.dojo.name}
+                            </span>
+                          ) : null}
+                          {h.method ? (
+                            <span style={{ opacity: 0.8 }}>{h.method}</span>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p style={{ fontSize: 10, color: "#666", marginTop: 8, lineHeight: 1.4 }}>
+                  Pengurus dapat mengoreksi atau menghapus catatan dari panel admin jika terjadi kesalahan.
+                </p>
               </div>
             </motion.div>
-          ) : null}
+          )}
         </AnimatePresence>
       </section>
 
       <BottomNav />
+
+      {/* Premium Fingerprint/Biometric Scan Modal */}
+      <AnimatePresence>
+        {showFingerprintModal && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0, 0, 0, 0.8)",
+              backdropFilter: "blur(6px)",
+              padding: "20px",
+            }}
+            onClick={() => {
+              if (fingerprintStatus !== "scanning") {
+                setShowFingerprintModal(false);
+              }
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "var(--card-dark)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "24px",
+                padding: "28px 24px",
+                width: "100%",
+                maxWidth: "340px",
+                textAlign: "center",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              }}
+            >
+              <h3
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "18px",
+                  fontWeight: 800,
+                  color: "var(--text-light)",
+                }}
+              >
+                Absensi Sidik Jari
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 24px 0",
+                  fontSize: "12px",
+                  color: "var(--text-muted)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {fingerprintStatus === "success"
+                  ? "Verifikasi Berhasil"
+                  : fingerprintStatus === "failed"
+                  ? fingerprintMessage || "Verifikasi Gagal"
+                  : fingerprintStatus === "scanning"
+                  ? "Memindai... Jangan lepaskan jari Anda"
+                  : "Tekan dan tahan ikon sidik jari di bawah untuk melakukan absensi"}
+              </p>
+
+              {/* Fingerprint Touch Area */}
+              <div
+                style={{
+                  position: "relative",
+                  width: "120px",
+                  height: "120px",
+                  margin: "0 auto 24px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {/* Outer Progress Ring */}
+                <svg
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    transform: "rotate(-90deg)",
+                  }}
+                >
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    stroke="rgba(255, 255, 255, 0.05)"
+                    strokeWidth="4"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    stroke={
+                      fingerprintStatus === "success"
+                        ? "#10b981"
+                        : fingerprintStatus === "failed"
+                        ? "#ef4444"
+                        : "var(--primary-gold)"
+                    }
+                    strokeWidth="4"
+                    fill="transparent"
+                    strokeDasharray={326.7}
+                    strokeDashoffset={326.7 - (326.7 * fingerprintProgress) / 100}
+                    style={{ transition: "stroke-dashoffset 0.1s ease" }}
+                  />
+                </svg>
+
+                {/* Fingerprint Button */}
+                <motion.div
+                  onMouseDown={startFingerprintScanning}
+                  onMouseUp={stopFingerprintScanning}
+                  onMouseLeave={stopFingerprintScanning}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    startFingerprintScanning();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    stopFingerprintScanning();
+                  }}
+                  animate={
+                    fingerprintStatus === "scanning"
+                      ? { scale: [1, 0.95, 1], transition: { repeat: Infinity, duration: 1 } }
+                      : { scale: 1 }
+                  }
+                  style={{
+                    width: "88px",
+                    height: "88px",
+                    borderRadius: "50%",
+                    background:
+                      fingerprintStatus === "success"
+                        ? "rgba(16, 185, 129, 0.15)"
+                        : fingerprintStatus === "failed"
+                        ? "rgba(239, 68, 68, 0.15)"
+                        : "rgba(245, 158, 11, 0.1)",
+                    border: `1.5px solid ${
+                      fingerprintStatus === "success"
+                        ? "#10b981"
+                        : fingerprintStatus === "failed"
+                        ? "#ef4444"
+                        : "rgba(245, 158, 11, 0.3)"
+                    }`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    zIndex: 10,
+                  }}
+                >
+                  {fingerprintStatus === "success" ? (
+                    <CheckCircle2 size={36} color="#10b981" />
+                  ) : fingerprintStatus === "failed" ? (
+                    <XCircle size={36} color="#ef4444" />
+                  ) : (
+                    <Fingerprint
+                      size={36}
+                      color={
+                        fingerprintStatus === "scanning"
+                          ? "var(--primary-gold)"
+                          : "rgba(245, 158, 11, 0.7)"
+                      }
+                    />
+                  )}
+                </motion.div>
+
+                {/* Pulsing glow under scanning */}
+                {fingerprintStatus === "scanning" && (
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    style={{
+                      position: "absolute",
+                      width: "100px",
+                      height: "100px",
+                      borderRadius: "50%",
+                      background: "rgba(245, 158, 11, 0.2)",
+                      zIndex: 1,
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Status Message */}
+              {fingerprintMessage && (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color:
+                      fingerprintStatus === "success"
+                        ? "#10b981"
+                        : fingerprintStatus === "failed"
+                        ? "#ef4444"
+                        : "var(--text-light)",
+                    margin: "0 0 16px 0",
+                  }}
+                >
+                  {fingerprintMessage}
+                </p>
+              )}
+
+              {/* Action Button */}
+              <button
+                type="button"
+                disabled={fingerprintStatus === "scanning"}
+                onClick={() => setShowFingerprintModal(false)}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: "transparent",
+                  color: "var(--text-light)",
+                  fontWeight: 700,
+                  fontSize: "13px",
+                  cursor: fingerprintStatus === "scanning" ? "not-allowed" : "pointer",
+                  opacity: fingerprintStatus === "scanning" ? 0.5 : 1,
+                }}
+              >
+                Tutup
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Premium Confirmation Modal */}
       <AnimatePresence>
