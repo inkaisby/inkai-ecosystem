@@ -105,7 +105,7 @@ function AdminMemberRankSelect({
         </optgroup>
         <optgroup label="Sabuk Kuning">
           <option value="Kuning (Kyu 8)">Kuning (Kyu 8)</option>
-          <option value="Kuning (Kyu 7)">Kuning (Kyu 7)</option>
+          <option value="Kuning (Kyu 7)">Orange (Kyu 7)</option>
         </optgroup>
         <optgroup label="Sabuk Hijau">
           <option value="Hijau (Kyu 6)">Hijau (Kyu 6)</option>
@@ -497,6 +497,49 @@ function AdminMemberTableRow({
   );
 }
 
+const getMemberKpiCategory = (member: any): string => {
+  const rank = String(member.currentRank || "").toUpperCase();
+  if (rank.includes("HITAM") || rank.includes("DAN")) {
+    return "hitam";
+  }
+  
+  const kyuMatch = rank.match(/KYU\s+(\d+)/);
+  let kyuNum = 0;
+  if (kyuMatch) {
+    kyuNum = parseInt(kyuMatch[1], 10);
+  } else {
+    if (rank.includes("PUTIH") || rank.includes("10")) kyuNum = 10;
+    else if (rank.includes("9")) kyuNum = 9;
+    else if (rank.includes("8")) kyuNum = 8;
+    else if (rank.includes("7")) kyuNum = 7;
+    else if (rank.includes("6")) kyuNum = 6;
+    else if (rank.includes("5")) kyuNum = 5;
+    else if (rank.includes("4")) kyuNum = 4;
+    else if (rank.includes("3")) kyuNum = 3;
+    else if (rank.includes("2")) kyuNum = 2;
+    else if (rank.includes("1")) kyuNum = 1;
+  }
+
+  if (kyuNum === 10 || kyuNum === 9) return "kyu10";
+  if (kyuNum === 8) return "kyu8";
+  if (kyuNum === 7) return "kyu7";
+  if (kyuNum === 6) return "kyu6";
+  if (kyuNum === 5 || kyuNum === 4) return "kyu5_4";
+  if (kyuNum === 3 || kyuNum === 2 || kyuNum === 1) return "kyu3_2_1";
+  
+  if (rank.includes("PUTIH")) return "kyu10";
+  if (rank.includes("KUNING")) {
+    if (rank.includes("7")) return "kyu7";
+    return "kyu8";
+  }
+  if (rank.includes("ORANGE") || rank.includes("ORANYE")) return "kyu7";
+  if (rank.includes("HIJAU")) return "kyu6";
+  if (rank.includes("BIRU")) return "kyu5_4";
+  if (rank.includes("COKLAT")) return "kyu3_2_1";
+
+  return "";
+};
+
 function MembersContent() {
   const router = useRouter();
   const { user } = useAuth();
@@ -518,50 +561,36 @@ function MembersContent() {
   const [search, setSearch] = useState("");
   const [dojoInfo, setDojoInfo] = useState<any | null>(null);
 
-  const [selectedKpi, setSelectedKpi] = useState<"aktif" | "hitam" | "kyu" | "non-aktif" | null>(null);
+  const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   const stats = useMemo(() => {
     let hitam = 0;
-    let kyu = 0;
     let nonAktif = 0;
-    const kyuCounts: Record<string, number> = {};
+    let kyu10 = 0;
+    let kyu8 = 0;
+    let kyu7 = 0;
+    let kyu6 = 0;
+    let kyu5_4 = 0;
+    let kyu3_2_1 = 0;
     
     allDojoMembers.forEach((m: any) => {
       if (m.status !== "Active") {
         nonAktif++;
       }
-      const rank = String(m.currentRank || "").toUpperCase();
-      if (rank.includes("HITAM") || rank.includes("DAN")) {
-        hitam++;
-      } else if (rank !== "") {
-        kyu++;
-        const kyuMatch = rank.match(/KYU\s+(\d+)/);
-        if (kyuMatch) {
-          const kyuNum = `Kyu ${kyuMatch[1]}`;
-          kyuCounts[kyuNum] = (kyuCounts[kyuNum] || 0) + 1;
-        } else {
-          let normalized = m.currentRank.trim();
-          const upper = normalized.toUpperCase();
-          if (upper === "PUTIH") {
-            normalized = "Kyu 10";
-          } else {
-            normalized = normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
-          }
-          kyuCounts[normalized] = (kyuCounts[normalized] || 0) + 1;
-        }
-      }
+      
+      const cat = getMemberKpiCategory(m);
+      if (cat === "hitam") hitam++;
+      else if (cat === "kyu10") kyu10++;
+      else if (cat === "kyu8") kyu8++;
+      else if (cat === "kyu7") kyu7++;
+      else if (cat === "kyu6") kyu6++;
+      else if (cat === "kyu5_4") kyu5_4++;
+      else if (cat === "kyu3_2_1") kyu3_2_1++;
     });
 
-    const sortedKyuEntries = Object.entries(kyuCounts).sort((a, b) => {
-      const numA = parseInt(a[0].match(/\d+/)?.[0] || "0", 10);
-      const numB = parseInt(b[0].match(/\d+/)?.[0] || "0", 10);
-      return numB - numA;
-    });
-
-    const kyuList = sortedKyuEntries.map(([name, count]) => ({ name, count }));
-    return { hitam, kyu, nonAktif, kyuList };
+    return { hitam, nonAktif, kyu10, kyu8, kyu7, kyu6, kyu5_4, kyu3_2_1 };
   }, [allDojoMembers]);
 
   const filteredMembers = useMemo(() => {
@@ -582,15 +611,19 @@ function MembersContent() {
     } else if (selectedKpi === "non-aktif") {
       result = result.filter(m => m.status !== "Active");
     } else if (selectedKpi === "hitam") {
-      result = result.filter(m => {
-        const rank = String(m.currentRank || "").toUpperCase();
-        return rank.includes("HITAM") || rank.includes("DAN");
-      });
-    } else if (selectedKpi === "kyu") {
-      result = result.filter(m => {
-        const rank = String(m.currentRank || "").toUpperCase();
-        return rank !== "" && !rank.includes("HITAM") && !rank.includes("DAN");
-      });
+      result = result.filter(m => getMemberKpiCategory(m) === "hitam");
+    } else if (selectedKpi === "kyu10") {
+      result = result.filter(m => getMemberKpiCategory(m) === "kyu10");
+    } else if (selectedKpi === "kyu8") {
+      result = result.filter(m => getMemberKpiCategory(m) === "kyu8");
+    } else if (selectedKpi === "kyu7") {
+      result = result.filter(m => getMemberKpiCategory(m) === "kyu7");
+    } else if (selectedKpi === "kyu6") {
+      result = result.filter(m => getMemberKpiCategory(m) === "kyu6");
+    } else if (selectedKpi === "kyu5_4") {
+      result = result.filter(m => getMemberKpiCategory(m) === "kyu5_4");
+    } else if (selectedKpi === "kyu3_2_1") {
+      result = result.filter(m => getMemberKpiCategory(m) === "kyu3_2_1");
     }
     
     return result;
@@ -1138,26 +1171,165 @@ function MembersContent() {
       </div>
 
       {/* Stats Quick View */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-4">
         <button
           type="button"
           onClick={() => {
             setSelectedKpi(prev => prev === "aktif" ? null : "aktif");
             setCurrentPage(1);
           }}
-          className={`glass-card flex items-center gap-4 py-4 text-left cursor-pointer transition-all duration-300 hover:border-green-500/30 hover:scale-[1.02] border ${
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-green-500/30 hover:scale-[1.02] border ${
             selectedKpi === "aktif"
               ? "border-green-500/50 bg-green-500/[0.03] shadow-md shadow-green-500/5"
               : "border-white/5"
           }`}
         >
-          <div className="p-3 bg-green-500/10 text-green-500 rounded-xl shrink-0 ml-1">
-            <UserCheck size={24} />
+          <div className="p-2 bg-green-500/10 text-green-500 rounded-lg shrink-0">
+            <UserCheck size={20} />
           </div>
-          <div>
-            <p className="text-gray-500 text-xs">Anggota Aktif</p>
-            <h4 className="text-xl font-bold text-white">
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">Aktif</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
               {allDojoMembers.filter(m => m.status === "Active").length || "0"}
+            </h4>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "kyu10" ? null : "kyu10");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-white/30 hover:scale-[1.02] border ${
+            selectedKpi === "kyu10"
+              ? "border-white/50 bg-white/[0.03] shadow-md shadow-white/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-2 bg-white/10 text-white rounded-lg shrink-0">
+            <Award size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">Kyu 10 (Pth)</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
+              {stats.kyu10}
+            </h4>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "kyu8" ? null : "kyu8");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-yellow-500/30 hover:scale-[1.02] border ${
+            selectedKpi === "kyu8"
+              ? "border-yellow-500/50 bg-yellow-500/[0.03] shadow-md shadow-yellow-500/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-2 bg-yellow-500/10 text-yellow-500 rounded-lg shrink-0">
+            <Award size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">Kyu 8 (Kng)</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
+              {stats.kyu8}
+            </h4>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "kyu7" ? null : "kyu7");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-orange-500/30 hover:scale-[1.02] border ${
+            selectedKpi === "kyu7"
+              ? "border-orange-500/50 bg-orange-500/[0.03] shadow-md shadow-orange-500/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg shrink-0">
+            <Award size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">Kyu 7 (Org)</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
+              {stats.kyu7}
+            </h4>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "kyu6" ? null : "kyu6");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-emerald-500/30 hover:scale-[1.02] border ${
+            selectedKpi === "kyu6"
+              ? "border-emerald-500/50 bg-emerald-500/[0.03] shadow-md shadow-emerald-500/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg shrink-0">
+            <Award size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">Kyu 6 (Hij)</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
+              {stats.kyu6}
+            </h4>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "kyu5_4" ? null : "kyu5_4");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-blue-500/30 hover:scale-[1.02] border ${
+            selectedKpi === "kyu5_4"
+              ? "border-blue-500/50 bg-blue-500/[0.03] shadow-md shadow-blue-500/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg shrink-0">
+            <Award size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">Kyu 5-4 (Bru)</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
+              {stats.kyu5_4}
+            </h4>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "kyu3_2_1" ? null : "kyu3_2_1");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-[#8B4513]/30 hover:scale-[1.02] border ${
+            selectedKpi === "kyu3_2_1"
+              ? "border-[#8B4513]/50 bg-[#8B4513]/[0.03] shadow-md shadow-[#8B4513]/5"
+              : "border-white/5"
+          }`}
+          style={selectedKpi === "kyu3_2_1" ? { borderColor: '#8B4513' } : undefined}
+        >
+          <div className="p-2 bg-[#8B4513]/25 text-[#D2B48C] rounded-lg shrink-0">
+            <Award size={20} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">Kyu 3-1 (Ckl)</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
+              {stats.kyu3_2_1}
             </h4>
           </div>
         </button>
@@ -1168,54 +1340,20 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "hitam" ? null : "hitam");
             setCurrentPage(1);
           }}
-          className={`glass-card flex items-center gap-4 py-4 text-left cursor-pointer transition-all duration-300 hover:border-amber-500/30 hover:scale-[1.02] border ${
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-neutral-400/30 hover:scale-[1.02] border ${
             selectedKpi === "hitam"
-              ? "border-amber-500/50 bg-amber-500/[0.03] shadow-md shadow-amber-500/5"
+              ? "border-neutral-400/50 bg-neutral-900 shadow-md shadow-black/5"
               : "border-white/5"
           }`}
         >
-          <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl shrink-0 ml-1">
-            <Award size={24} />
+          <div className="p-2 bg-neutral-800 text-neutral-200 border border-neutral-700 rounded-lg shrink-0">
+            <Award size={20} />
           </div>
-          <div>
-            <p className="text-gray-500 text-xs">Sabuk Hitam (DAN)</p>
-            <h4 className="text-xl font-bold text-white">
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">DAN (Htm)</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
               {stats.hitam}
             </h4>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedKpi(prev => prev === "kyu" ? null : "kyu");
-            setCurrentPage(1);
-          }}
-          className={`glass-card flex items-start gap-4 py-4 text-left cursor-pointer transition-all duration-300 hover:border-blue-500/30 hover:scale-[1.02] border min-w-[340px] ${
-            selectedKpi === "kyu"
-              ? "border-blue-500/50 bg-blue-500/[0.03] shadow-md shadow-blue-500/5"
-              : "border-white/5"
-          }`}
-        >
-          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl shrink-0 mt-0.5 ml-1">
-            <Award size={24} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-gray-500 text-xs">Sabuk Kyu (Warna)</p>
-            <div className="flex items-center gap-4 mt-1">
-              <h4 className="text-3xl font-black leading-none text-white shrink-0">
-                {stats.kyu}
-              </h4>
-              {stats.kyuList && stats.kyuList.length > 0 && (
-                <div className="border-l border-white/10 pl-3 py-0.5 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] text-gray-500 font-medium leading-tight">
-                  {stats.kyuList.map((item) => (
-                    <div key={item.name} className="whitespace-nowrap">
-                      {item.name} <span className="text-amber-500 font-bold">= {item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </button>
 
@@ -1225,18 +1363,18 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "non-aktif" ? null : "non-aktif");
             setCurrentPage(1);
           }}
-          className={`glass-card flex items-center gap-4 py-4 text-left cursor-pointer transition-all duration-300 hover:border-red-500/30 hover:scale-[1.02] border ${
+          className={`glass-card flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:border-red-500/30 hover:scale-[1.02] border ${
             selectedKpi === "non-aktif"
               ? "border-red-500/50 bg-red-500/[0.03] shadow-md shadow-red-500/5"
               : "border-white/5"
           }`}
         >
-          <div className="p-3 bg-red-500/10 text-red-500 rounded-xl shrink-0 ml-1">
-            <UserMinus size={24} />
+          <div className="p-2 bg-red-500/10 text-red-500 rounded-lg shrink-0">
+            <UserMinus size={20} />
           </div>
-          <div>
-            <p className="text-gray-500 text-xs">Anggota Non-Aktif</p>
-            <h4 className="text-xl font-bold text-white">
+          <div className="min-w-0">
+            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider truncate">Non-Aktif</p>
+            <h4 className="text-lg font-bold text-white leading-tight">
               {stats.nonAktif}
             </h4>
           </div>
