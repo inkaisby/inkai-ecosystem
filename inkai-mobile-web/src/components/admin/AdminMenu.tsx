@@ -62,11 +62,19 @@ export default function AdminMenu() {
     if (isOpen) {
       api.events.getAll()
         .then((res: any) => {
+          let rawEvents: any[] = [];
           if (res && res.status === 'success' && Array.isArray(res.data)) {
-            setEvents(res.data);
+            rawEvents = res.data;
           } else if (Array.isArray(res)) {
-            setEvents(res);
+            rawEvents = res;
           }
+
+          // Sort events by startDate (descending to show latest/upcoming first) and slice to top 5
+          const sortedAndFiltered = [...rawEvents]
+            .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+            .slice(0, 5);
+
+          setEvents(sortedAndFiltered);
         })
         .catch(err => console.error('Failed to load events in AdminMenu', err));
     }
