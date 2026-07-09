@@ -1663,24 +1663,54 @@ export default function EventsPage() {
                                 />
                               </div>
                               <label className="text-[9px] font-semibold uppercase text-gray-500 tracking-wider ml-0.5">
-                                Jam Mulai
+                                Jam Mulai (24 Jam)
                               </label>
-                              <div className="event-input-container">
-                                <input
-                                  type="time"
-                                  name="startTime"
-                                  required
-                                  value={formData.startTime}
-                                  onChange={(e) =>
-                                    setFormData((prev) =>
-                                      clampRegistrationCloseToStart({
-                                        ...prev,
-                                        startTime: e.target.value,
-                                      }),
-                                    )
-                                  }
-                                  className="event-form-field"
-                                />
+                              <div className="flex items-center gap-1.5">
+                                <div className="event-input-container flex-1">
+                                  <select
+                                    value={formData.startTime.split(":")[0] || "08"}
+                                    onChange={(e) => {
+                                      const h = e.target.value;
+                                      const m = formData.startTime.split(":")[1] || "00";
+                                      setFormData((prev) =>
+                                        clampRegistrationCloseToStart({
+                                          ...prev,
+                                          startTime: `${h}:${m}`,
+                                        }),
+                                      );
+                                    }}
+                                    className="event-form-field"
+                                    style={{ padding: "12px 8px", textAlign: "center" }}
+                                  >
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                      const val = i.toString().padStart(2, "0");
+                                      return <option key={val} value={val}>{val}</option>;
+                                    })}
+                                  </select>
+                                </div>
+                                <span className="text-gray-400 font-bold">:</span>
+                                <div className="event-input-container flex-1">
+                                  <select
+                                    value={formData.startTime.split(":")[1] || "00"}
+                                    onChange={(e) => {
+                                      const h = formData.startTime.split(":")[0] || "08";
+                                      const m = e.target.value;
+                                      setFormData((prev) =>
+                                        clampRegistrationCloseToStart({
+                                          ...prev,
+                                          startTime: `${h}:${m}`,
+                                        }),
+                                      );
+                                    }}
+                                    className="event-form-field"
+                                    style={{ padding: "12px 8px", textAlign: "center" }}
+                                  >
+                                    {Array.from({ length: 60 }, (_, i) => {
+                                      const val = i.toString().padStart(2, "0");
+                                      return <option key={val} value={val}>{val}</option>;
+                                    })}
+                                  </select>
+                                </div>
                               </div>
                             </div>
                             <div className="space-y-1.5">
@@ -1703,22 +1733,50 @@ export default function EventsPage() {
                                 />
                               </div>
                               <label className="text-[9px] font-semibold uppercase text-gray-500 tracking-wider ml-0.5">
-                                Jam Selesai
+                                Jam Selesai (24 Jam)
                               </label>
-                              <div className="event-input-container">
-                                <input
-                                  type="time"
-                                  name="endTime"
-                                  required
-                                  value={formData.endTime}
-                                  onChange={(e) =>
-                                    setFormData({
-                                      ...formData,
-                                      endTime: e.target.value,
-                                    })
-                                  }
-                                  className="event-form-field"
-                                />
+                              <div className="flex items-center gap-1.5">
+                                <div className="event-input-container flex-1">
+                                  <select
+                                    value={formData.endTime.split(":")[0] || "17"}
+                                    onChange={(e) => {
+                                      const h = e.target.value;
+                                      const m = formData.endTime.split(":")[1] || "00";
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        endTime: `${h}:${m}`,
+                                      }));
+                                    }}
+                                    className="event-form-field"
+                                    style={{ padding: "12px 8px", textAlign: "center" }}
+                                  >
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                      const val = i.toString().padStart(2, "0");
+                                      return <option key={val} value={val}>{val}</option>;
+                                    })}
+                                  </select>
+                                </div>
+                                <span className="text-gray-400 font-bold">:</span>
+                                <div className="event-input-container flex-1">
+                                  <select
+                                    value={formData.endTime.split(":")[1] || "00"}
+                                    onChange={(e) => {
+                                      const h = formData.endTime.split(":")[0] || "17";
+                                      const m = e.target.value;
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        endTime: `${h}:${m}`,
+                                      }));
+                                    }}
+                                    className="event-form-field"
+                                    style={{ padding: "12px 8px", textAlign: "center" }}
+                                  >
+                                    {Array.from({ length: 60 }, (_, i) => {
+                                      const val = i.toString().padStart(2, "0");
+                                      return <option key={val} value={val}>{val}</option>;
+                                    })}
+                                  </select>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1760,32 +1818,56 @@ export default function EventsPage() {
                             </div>
                             <div className="space-y-1.5">
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
-                                Jam Tutup
+                                Jam Tutup (24 Jam)
                               </label>
-                              <div className="event-input-container">
-                                <input
-                                  type="time"
-                                  name="registrationCloseTime"
-                                  value={formData.registrationCloseTime}
-                                  max={
-                                    formData.registrationCloseDate &&
-                                    formData.startDate &&
-                                    formData.registrationCloseDate ===
-                                      formData.startDate &&
-                                    formData.startTime
-                                      ? formData.startTime
-                                      : undefined
-                                  }
-                                  onChange={(e) =>
-                                    setFormData((prev) =>
-                                      clampRegistrationCloseToStart({
-                                        ...prev,
-                                        registrationCloseTime: e.target.value,
-                                      }),
-                                    )
-                                  }
-                                  className="event-form-field"
-                                />
+                              <div className="flex items-center gap-1.5">
+                                <div className="event-input-container flex-1">
+                                  <select
+                                    value={formData.registrationCloseTime ? formData.registrationCloseTime.split(":")[0] : ""}
+                                    onChange={(e) => {
+                                      const h = e.target.value;
+                                      const m = formData.registrationCloseTime ? (formData.registrationCloseTime.split(":")[1] || "00") : "00";
+                                      setFormData((prev) =>
+                                        clampRegistrationCloseToStart({
+                                          ...prev,
+                                          registrationCloseTime: h ? `${h}:${m}` : "",
+                                        }),
+                                      );
+                                    }}
+                                    className="event-form-field"
+                                    style={{ padding: "12px 8px", textAlign: "center" }}
+                                  >
+                                    <option value="">--</option>
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                      const val = i.toString().padStart(2, "0");
+                                      return <option key={val} value={val}>{val}</option>;
+                                    })}
+                                  </select>
+                                </div>
+                                <span className="text-gray-400 font-bold">:</span>
+                                <div className="event-input-container flex-1">
+                                  <select
+                                    value={formData.registrationCloseTime ? formData.registrationCloseTime.split(":")[1] : ""}
+                                    onChange={(e) => {
+                                      const m = e.target.value;
+                                      const h = formData.registrationCloseTime ? (formData.registrationCloseTime.split(":")[0] || "00") : "00";
+                                      setFormData((prev) =>
+                                        clampRegistrationCloseToStart({
+                                          ...prev,
+                                          registrationCloseTime: m ? `${h}:${m}` : "",
+                                        }),
+                                      );
+                                    }}
+                                    className="event-form-field"
+                                    style={{ padding: "12px 8px", textAlign: "center" }}
+                                  >
+                                    <option value="">--</option>
+                                    {Array.from({ length: 60 }, (_, i) => {
+                                      const val = i.toString().padStart(2, "0");
+                                      return <option key={val} value={val}>{val}</option>;
+                                    })}
+                                  </select>
+                                </div>
                               </div>
                             </div>
                           </div>
