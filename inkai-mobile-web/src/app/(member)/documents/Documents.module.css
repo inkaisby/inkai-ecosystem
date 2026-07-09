@@ -66,13 +66,13 @@
 }
 
 .infoCard {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(0, 0, 0, 0) 100%);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: 20px;
-  padding: 20px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(0, 0, 0, 0) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 14px;
+  padding: 14px;
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
 }
 
 .infoIcon {
@@ -81,60 +81,60 @@
 }
 
 .infoText h3 {
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 13px;
+  font-weight: 800;
   color: var(--text-light);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .infoText p {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .sectionTitle {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  padding-left: 4px;
+  letter-spacing: 1px;
+  padding-left: 2px;
 }
 
 .docCard {
-  background-color: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 24px;
-  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
+  padding: 16px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
 }
 
 .docCardActive {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .docHeader {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .docIconWrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background-color: rgba(255, 255, 255, 0.05);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.03);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,17 +142,17 @@
 }
 
 .docHeader h4 {
-  font-size: 15px;
-  font-weight: bold;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--text-light);
   flex: 1;
 }
 
 .statusBadge {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 20px;
+  padding: 3px 8px;
+  border-radius: 6px;
   text-transform: uppercase;
 }
 
@@ -167,16 +167,16 @@
 }
 
 .statusScanning {
-  background-color: rgba(139, 92, 246, 0.15);
+  background-color: rgba(139, 92, 246, 0.1);
   color: #a78bfa;
 }
 
 .bpjsReadout {
   margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background-color: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  padding: 12px;
+  border-radius: 12px;
+  background-color: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.12);
   font-size: 11px;
   color: var(--text-muted);
   line-height: 1.45;
@@ -217,41 +217,41 @@
 }
 
 .uploadZone {
-  border: 2px dashed rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 24px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(255, 255, 255, 0.01);
   overflow: hidden;
   position: relative;
 }
 
 .uploadZone:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.03);
   border-color: var(--primary-gold);
 }
 
 .uploadZone p {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
 .uploadZoneDrag {
   border-color: var(--primary-gold);
-  background-color: rgba(245, 158, 11, 0.14);
-  box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.35);
+  background-color: rgba(245, 158, 11, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.2);
 }
 
 .dropHint {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
-  opacity: 0.85;
+  opacity: 0.75;
   text-align: center;
   line-height: 1.35;
   max-width: 260px;
@@ -260,7 +260,9 @@
 .hasPreview {
   padding: 0;
   border-style: solid;
-  height: 160px;
+  border-color: rgba(255, 255, 255, 0.08);
+  height: 140px;
+  border-radius: 12px;
 }
 
 .inlinePreview {
@@ -489,4 +491,32 @@
   color: var(--primary-gold);
   text-decoration: underline;
   font-weight: 500;
+}
+
+:global(html[data-clock-phase="day"]) .infoCard {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  border-color: rgba(217, 119, 6, 0.15);
+}
+
+:global(html[data-clock-phase="day"]) .docCard {
+  background-color: white;
+  border-color: rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+}
+
+:global(html[data-clock-phase="day"]) .docIconWrapper {
+  background-color: rgba(15, 23, 42, 0.03);
+}
+
+:global(html[data-clock-phase="day"]) .uploadZone {
+  background-color: rgba(15, 23, 42, 0.01);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+:global(html[data-clock-phase="day"]) .hasPreview {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+:global(html[data-clock-phase="day"]) .viewBtn {
+  background-color: rgba(15, 23, 42, 0.04);
 }
