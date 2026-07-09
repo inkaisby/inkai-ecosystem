@@ -517,7 +517,12 @@ function MembersContent() {
   const [meta, setMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [search, setSearch] = useState("");
   const [dojoInfo, setDojoInfo] = useState<any | null>(null);
-  const [stats, setStats] = useState({ hitam: 0, kyu: 0, nonAktif: 0, kyuBreakdown: "" });
+  const [stats, setStats] = useState({
+    hitam: 0,
+    kyu: 0,
+    nonAktif: 0,
+    kyuList: [] as { name: string; count: number }[],
+  });
 
   // Modal states
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -669,7 +674,13 @@ function MembersContent() {
             const kyuNum = `Kyu ${kyuMatch[1]}`;
             kyuCounts[kyuNum] = (kyuCounts[kyuNum] || 0) + 1;
           } else {
-            const normalized = m.currentRank;
+            let normalized = m.currentRank.trim();
+            const upper = normalized.toUpperCase();
+            if (upper === "PUTIH") {
+              normalized = "Kyu 10";
+            } else {
+              normalized = normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+            }
             kyuCounts[normalized] = (kyuCounts[normalized] || 0) + 1;
           }
         }
@@ -681,11 +692,9 @@ function MembersContent() {
         return numB - numA;
       });
 
-      const kyuBreakdownText = sortedKyuEntries
-        .map(([kyuName, count]) => `${kyuName}: ${count}`)
-        .join(" • ");
+      const kyuList = sortedKyuEntries.map(([name, count]) => ({ name, count }));
       
-      setStats({ hitam, kyu, nonAktif, kyuBreakdown: kyuBreakdownText });
+      setStats({ hitam, kyu, nonAktif, kyuList });
     } catch (err) {
       console.error("Failed to fetch stats", err);
     }
@@ -1080,20 +1089,26 @@ function MembersContent() {
           </div>
         </div>
 
-        <div className="glass-card flex items-center gap-4 py-4">
-          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl">
+        <div className="glass-card flex items-start gap-4 py-4 min-w-[340px]">
+          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl shrink-0 mt-0.5">
             <Award size={24} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-gray-500 text-xs">Sabuk Kyu (Warna)</p>
-            <h4 className="text-xl font-bold">
-              {stats.kyu}
-            </h4>
-            {stats.kyuBreakdown && (
-              <p className="text-[10px] text-gray-500/70 mt-0.5 whitespace-normal break-words leading-tight" title={stats.kyuBreakdown.replace(/ • /g, ", ")}>
-                {stats.kyuBreakdown}
-              </p>
-            )}
+            <div className="flex items-center gap-4 mt-1">
+              <h4 className="text-3xl font-black leading-none text-white shrink-0">
+                {stats.kyu}
+              </h4>
+              {stats.kyuList && stats.kyuList.length > 0 && (
+                <div className="border-l border-white/10 pl-3 py-0.5 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] text-gray-500 font-medium leading-tight">
+                  {stats.kyuList.map((item) => (
+                    <div key={item.name} className="whitespace-nowrap">
+                      {item.name} <span className="text-amber-500 font-bold">= {item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
