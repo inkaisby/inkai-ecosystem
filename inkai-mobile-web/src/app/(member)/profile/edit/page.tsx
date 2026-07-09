@@ -416,16 +416,16 @@ function EditProfileContent() {
             <input 
               type="text" 
               className={styles.input}
-              placeholder="13 Digit Nomor BPJS"
+              placeholder="Minimal 11 Digit Nomor BPJS"
               value={formData.bpjsCardNumber || ''}
               onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, '').substring(0, 13);
+                const val = e.target.value.replace(/\D/g, '').substring(0, 16);
                 setFormData({...formData, bpjsCardNumber: val});
               }}
             />
           </div>
-          {formData.bpjsCardNumber && formData.bpjsCardNumber.length !== 13 && (
-            <p className={styles.errorText}>Nomor Kartu BPJS harus berjumlah 13 digit</p>
+          {formData.bpjsCardNumber && formData.bpjsCardNumber.length < 11 && (
+            <p className={styles.errorText}>Nomor Kartu BPJS harus minimal 11 digit</p>
           )}
         </div>
 
