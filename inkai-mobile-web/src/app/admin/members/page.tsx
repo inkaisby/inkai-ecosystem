@@ -29,6 +29,7 @@ import {
   Pencil,
   UserPlus,
   Eye,
+  Award,
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api, getAssetUrl } from "@/lib/api";
@@ -516,6 +517,7 @@ function MembersContent() {
   const [meta, setMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [search, setSearch] = useState("");
   const [dojoInfo, setDojoInfo] = useState<any | null>(null);
+  const [stats, setStats] = useState({ hitam: 0, kyu: 0, nonAktif: 0 });
 
   // Modal states
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -641,6 +643,35 @@ function MembersContent() {
     }
   }, [selectedMember]);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const params: any = { page: 1, limit: 500 };
+      if (dojoId) params.dojoId = dojoId;
+      const res = await api.members.getAll(params);
+      const allMembers = res.data || [];
+      
+      let hitam = 0;
+      let kyu = 0;
+      let nonAktif = 0;
+      
+      allMembers.forEach((m: any) => {
+        if (m.status !== "Active") {
+          nonAktif++;
+        }
+        const rank = String(m.currentRank || "").toUpperCase();
+        if (rank.includes("HITAM") || rank.includes("DAN")) {
+          hitam++;
+        } else if (rank !== "") {
+          kyu++;
+        }
+      });
+      
+      setStats({ hitam, kyu, nonAktif });
+    } catch (err) {
+      console.error("Failed to fetch stats", err);
+    }
+  }, [dojoId]);
+
   const fetchMembers = async (page = 1, searchQuery = "", pageLimit = meta.limit) => {
     setLoading(true);
     try {
@@ -660,6 +691,7 @@ function MembersContent() {
 
   useEffect(() => {
     fetchMembers(1, search);
+    fetchStats();
     if (dojoId) {
       const fetchDojoInfo = async () => {
         try {
@@ -802,6 +834,7 @@ function MembersContent() {
       setShowDeleteModal(false);
       setShowDetailModal(false);
       fetchMembers(meta.page, search);
+      fetchStats();
     } catch (err: any) {
       toast.error(err.message || "Gagal menghapus anggota");
     }
@@ -836,6 +869,7 @@ function MembersContent() {
         setSelectedMember({ ...selectedMember, status: newStatus });
       }
       fetchMembers(meta.page, search);
+      fetchStats();
     } catch (err: any) {
       toast.error(err.message || "Gagal mengubah status");
     }
@@ -873,6 +907,7 @@ function MembersContent() {
       setEditingRank(null);
       toast.success("Riwayat kenaikan tingkat diperbarui");
       fetchMembers(meta.page, search);
+      fetchStats();
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
@@ -1001,7 +1036,7 @@ function MembersContent() {
       </div>
 
       {/* Stats Quick View */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="glass-card flex items-center gap-4 py-4">
           <div className="p-3 bg-green-500/10 text-green-500 rounded-xl">
             <UserCheck size={24} />
@@ -1010,6 +1045,42 @@ function MembersContent() {
             <p className="text-gray-500 text-xs">Anggota Aktif</p>
             <h4 className="text-xl font-bold">
               {meta.total > 0 ? meta.total : "..."}
+            </h4>
+          </div>
+        </div>
+
+        <div className="glass-card flex items-center gap-4 py-4">
+          <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
+            <Award size={24} />
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Sabuk Hitam (DAN)</p>
+            <h4 className="text-xl font-bold">
+              {stats.hitam}
+            </h4>
+          </div>
+        </div>
+
+        <div className="glass-card flex items-center gap-4 py-4">
+          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl">
+            <Award size={24} />
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Sabuk Kyu (Warna)</p>
+            <h4 className="text-xl font-bold">
+              {stats.kyu}
+            </h4>
+          </div>
+        </div>
+
+        <div className="glass-card flex items-center gap-4 py-4">
+          <div className="p-3 bg-red-500/10 text-red-500 rounded-xl">
+            <UserMinus size={24} />
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Anggota Non-Aktif</p>
+            <h4 className="text-xl font-bold">
+              {stats.nonAktif}
             </h4>
           </div>
         </div>
@@ -1217,6 +1288,7 @@ function MembersContent() {
                     setShowAddModal(false);
                     resetForm();
                     fetchMembers(1, search);
+                    fetchStats();
                     toast.success(
                       isEdit
                         ? "Data anggota berhasil diperbarui!"
@@ -2367,6 +2439,7 @@ function MembersContent() {
                       setShowBulkModal(false);
                       setBulkText("");
                       fetchMembers(1);
+                      fetchStats();
                     } catch (err: any) {
                       toast.error(err.message || "Gagal mengimpor data");
                     } finally {
