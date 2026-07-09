@@ -260,6 +260,7 @@ export default function EventsPage() {
   });
 
   const [eventFeeRows, setEventFeeRows] = useState<EventFeeFormRow[]>([]);
+  const [useRegistrationFee, setUseRegistrationFee] = useState(false);
 
   /** national = cabang kosong/null (terlihat di semua ranting sesuaturan backend); branch = wilayah tertentu */
   const [wilayahScope, setWilayahScope] = useState<"national" | "branch">(
@@ -466,6 +467,7 @@ export default function EventsPage() {
       registrationFeeRp: "",
     });
     setEventFeeRows([]);
+    setUseRegistrationFee(false);
   };
 
   const filteredEvents = useMemo(() => {
@@ -518,6 +520,10 @@ export default function EventsPage() {
           fee: Number(c?.fee ?? 0),
         }))
       : [];
+
+    const hasFee = normalizedCats.some((c) => c.fee > 0);
+    setUseRegistrationFee(hasFee);
+
     setEventFeeRows(
       normalizedCats.map((c) => ({
         id: c.id,
@@ -525,6 +531,8 @@ export default function EventsPage() {
         feeRp: String(Math.round(Number(c.fee ?? 0))),
       })),
     );
+
+    const singleDefault = normalizedCats.find(c => c.name === DEFAULT_EVENT_REGISTRATION_CATEGORY);
 
     setWilayahScope(event.branchId ? "branch" : "national");
     setFormData({
@@ -557,7 +565,7 @@ export default function EventsPage() {
       registrationCloseTime: event.registrationCloseAt
         ? dateToLocalTimeInput(new Date(event.registrationCloseAt))
         : "",
-      registrationFeeRp: "",
+      registrationFeeRp: singleDefault ? String(Math.round(singleDefault.fee)) : "",
     });
     setModalMode("edit");
     setShowEventModal(true);
@@ -1237,14 +1245,16 @@ export default function EventsPage() {
                           }
 
                           const categoriesPart =
-                            modalMode === "create"
-                              ? buildCategoriesPayloadForCreate(
-                                  formData.registrationFeeRp,
-                                )
-                              : buildCategoriesPayloadForEdit(
-                                  eventFeeRows,
-                                  formData.registrationFeeRp,
-                                );
+                            !useRegistrationFee
+                              ? { categories: [] }
+                              : modalMode === "create"
+                                ? buildCategoriesPayloadForCreate(
+                                    formData.registrationFeeRp,
+                                  )
+                                : buildCategoriesPayloadForEdit(
+                                    eventFeeRows,
+                                    formData.registrationFeeRp,
+                                  );
 
                           const eventPayload: EventUpsertPayload = {
                             title: finalTitle,
@@ -1535,101 +1545,116 @@ export default function EventsPage() {
                           <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                             Biaya Pendaftaran (per peserta)
                           </label>
-                          {modalMode === "edit" && eventFeeRows.length > 0 ? (
-                            <div className="space-y-2">
-                              <p className="text-[10px] text-gray-500 leading-relaxed font-medium ml-0.5">
-                                Nominal tagihan pembayaran mengikuti baris kategori di bawah ini.
-                              </p>
-                              <div className="space-y-2">
-                                {eventFeeRows.map((row, idx) => (
-                                  <div
-                                    key={row.id ? row.id : `fee-${idx}`}
-                                    className="rounded-xl border border-white/5 bg-white/[0.01] p-3 flex items-center justify-between gap-4"
-                                  >
-                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-300 truncate">
-                                      {row.name}
-                                    </span>
-                                    <div className="event-input-container" style={{ width: "144px" }}>
-                                      <Wallet
-                                        className="event-field-icon"
-                                        size={14}
-                                      />
-                                      <input
-                                        type="number"
-                                        min={0}
-                                        step={1}
-                                        inputMode="numeric"
-                                        autoComplete="off"
-                                        aria-label={`Biaya ${row.name}`}
-                                        value={row.feeRp}
-                                        onChange={(e) =>
-                                          setEventFeeRows((rows) =>
-                                            rows.map((r, i) =>
-                                              i === idx
-                                                ? { ...r, feeRp: e.target.value }
-                                                : r,
-                                            ),
-                                          )
-                                        }
-                                        placeholder="0"
-                                        className="event-form-field event-form-field-icon"
-                                        style={{
-                                          minHeight: "38px",
-                                          padding: "8px 12px 8px 36px",
-                                          fontSize: "12px",
-                                          borderRadius: "8px"
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="event-input-container">
-                                <Wallet
-                                  className="event-field-icon"
-                                  size={16}
-                                />
-                                <input
-                                  type="number"
-                                  name="registrationFeeRp"
-                                  min={0}
-                                  step={1}
-                                  inputMode="numeric"
-                                  autoComplete="off"
-                                  value={formData.registrationFeeRp}
-                                  onChange={(e) =>
-                                    setFormData({
-                                      ...formData,
-                                      registrationFeeRp: e.target.value,
-                                    })
-                                  }
-                                  placeholder="0 = gratis"
-                                  className="event-form-field event-form-field-icon"
-                                />
-                              </div>
-                              <p className="text-[10px] text-gray-500 leading-relaxed font-medium ml-0.5">
-                                {modalMode === "create" ? (
-                                  <>
-                                    Kategori tarif otomatis:{" "}
-                                    <span className="text-gray-400 font-semibold">
-                                      {DEFAULT_EVENT_REGISTRATION_CATEGORY}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    Isi biaya untuk membuat kategori{" "}
-                                    <span className="text-gray-400 font-semibold">
-                                      {DEFAULT_EVENT_REGISTRATION_CATEGORY}
-                                    </span>
-                                  </>
-                                )}
-                              </p>
-                            </>
-                          )}
+                          <div className="event-input-container">
+                            <select
+                              value={useRegistrationFee ? "yes" : "no"}
+                              onChange={(e) => setUseRegistrationFee(e.target.value === "yes")}
+                              className="event-form-field"
+                            >
+                              <option value="no">Tidak Ditampilkan (Gratis / Tanpa Biaya)</option>
+                              <option value="yes">Tampilkan (Berbayar)</option>
+                            </select>
+                          </div>
                         </div>
+
+                        {useRegistrationFee && (
+                          <div className="space-y-2 pt-1.5 animate-in fade-in duration-200">
+                            {modalMode === "edit" && eventFeeRows.length > 0 ? (
+                              <div className="space-y-2">
+                                <p className="text-[10px] text-gray-500 leading-relaxed font-medium ml-0.5">
+                                  Nominal tagihan pembayaran mengikuti baris kategori di bawah ini.
+                                </p>
+                                <div className="space-y-2">
+                                  {eventFeeRows.map((row, idx) => (
+                                    <div
+                                      key={row.id ? row.id : `fee-${idx}`}
+                                      className="rounded-xl border border-white/5 bg-white/[0.01] p-3 flex items-center justify-between gap-4"
+                                    >
+                                      <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-300 truncate">
+                                        {row.name}
+                                      </span>
+                                      <div className="event-input-container" style={{ width: "144px" }}>
+                                        <Wallet
+                                          className="event-field-icon"
+                                          size={14}
+                                        />
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          step={1}
+                                          inputMode="numeric"
+                                          autoComplete="off"
+                                          aria-label={`Biaya ${row.name}`}
+                                          value={row.feeRp}
+                                          onChange={(e) =>
+                                            setEventFeeRows((rows) =>
+                                              rows.map((r, i) =>
+                                                i === idx
+                                                  ? { ...r, feeRp: e.target.value }
+                                                  : r,
+                                              ),
+                                            )
+                                          }
+                                          placeholder="0"
+                                          className="event-form-field event-form-field-icon"
+                                          style={{
+                                            minHeight: "38px",
+                                            padding: "8px 12px 8px 36px",
+                                            fontSize: "12px",
+                                            borderRadius: "8px"
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="event-input-container">
+                                  <Wallet
+                                    className="event-field-icon"
+                                    size={16}
+                                  />
+                                  <input
+                                    type="number"
+                                    name="registrationFeeRp"
+                                    min={0}
+                                    step={1}
+                                    inputMode="numeric"
+                                    autoComplete="off"
+                                    value={formData.registrationFeeRp}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        registrationFeeRp: e.target.value,
+                                      })
+                                    }
+                                    placeholder="0 = gratis"
+                                    className="event-form-field event-form-field-icon"
+                                  />
+                                </div>
+                                <p className="text-[10px] text-gray-500 leading-relaxed font-medium ml-0.5">
+                                  {modalMode === "create" ? (
+                                    <>
+                                      Kategori tarif otomatis:{" "}
+                                      <span className="text-gray-400 font-semibold">
+                                        {DEFAULT_EVENT_REGISTRATION_CATEGORY}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      Isi biaya untuk membuat kategori{" "}
+                                      <span className="text-gray-400 font-semibold">
+                                        {DEFAULT_EVENT_REGISTRATION_CATEGORY}
+                                      </span>
+                                    </>
+                                  )}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        )}
 
                         {/* Waktu Pelaksanaan */}
                         <div className="space-y-3.5 pt-2 border-t border-white/5">
