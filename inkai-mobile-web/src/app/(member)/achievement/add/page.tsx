@@ -63,8 +63,13 @@ function AddAchievementForm() {
     type: "success",
   });
   const [resubmitBanner, setResubmitBanner] = useState<string | null>(null);
+  const typeParam = searchParams.get("type");
+  const defaultType = (typeParam === "SABUK" || typeParam === "PIAGAM" || typeParam === "PELATIHAN") 
+    ? typeParam 
+    : "SABUK";
+
   const [formData, setFormData] = useState({
-    type: "SABUK" as "SABUK" | "PIAGAM" | "PELATIHAN",
+    type: defaultType,
     sabukGradeKind: "KYU" as "KYU" | "DAN",
     title: "",
     date: "",

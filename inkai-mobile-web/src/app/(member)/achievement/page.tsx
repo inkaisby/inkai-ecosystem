@@ -185,7 +185,7 @@ function AchievementContent() {
       });
       return;
     }
-    router.push("/achievement/add");
+    router.push(`/achievement/add?type=${activeTab.toUpperCase()}`);
   }
 
   function renderAddFooter(ctaLabel: string) {
