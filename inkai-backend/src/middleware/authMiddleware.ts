@@ -8,8 +8,8 @@ interface AuthRequest extends Request {
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
-  if (!secret || secret === 'secret' || secret.length < 32) {
-    throw new Error('JWT_SECRET must be set to a strong secret (min 32 characters)');
+  if (!secret || secret === 'secret' || secret.length < 16) {
+    throw new Error('JWT_SECRET must be set to a strong secret (min 16 characters)');
   }
   return secret;
 }
