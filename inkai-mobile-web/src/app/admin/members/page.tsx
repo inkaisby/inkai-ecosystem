@@ -177,7 +177,8 @@ function AdminMemberListCard({
         <button
           type="button"
           onClick={() => onOpenDetail(member)}
-          className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10 overflow-hidden"
+          className="shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10 overflow-hidden"
+          style={{ width: "40px", height: "40px" }}
           title="Detail anggota"
         >
           {photoSrc ? (
@@ -356,7 +357,8 @@ function AdminMemberTableRow({
           <button
             type="button"
             onClick={() => onOpenDetail(member)}
-            className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10 overflow-hidden"
+            className="shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10 overflow-hidden"
+            style={{ width: "32px", height: "32px" }}
             title="Detail anggota"
           >
             {photoSrc ? (
