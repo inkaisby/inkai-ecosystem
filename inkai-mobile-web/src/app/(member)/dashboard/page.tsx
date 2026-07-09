@@ -146,12 +146,20 @@ export default function Dashboard() {
         api.attendance.getMy({ limit: 100 }).catch(() => ({ status: "error", data: [] })),
       ]);
 
+      let myEventIds = new Set<string>();
+      if (myEventsRes.data.status === "success") {
+        const myEvList = myEventsRes.data.data || [];
+        setMyEvents(myEvList);
+        myEventIds = new Set(myEvList.map((me: any) => me.id));
+      }
+
       if (upcomingRes.data.status === "success") {
         const raw = upcomingRes.data.data || [];
         const now = Date.now();
-        const upcomingFiltered = [...raw].filter((e: { endDate?: string }) =>
-          e.endDate ? new Date(e.endDate).getTime() >= now : true,
-        );
+        const upcomingFiltered = [...raw].filter((e: { id: string; endDate?: string }) => {
+          const isNotPassed = e.endDate ? new Date(e.endDate).getTime() >= now : true;
+          return isNotPassed && !myEventIds.has(e.id);
+        });
         const nearest = upcomingFiltered
           .sort(
             (a: { startDate: string }, b: { startDate: string }) =>
@@ -172,9 +180,6 @@ export default function Dashboard() {
           )
           .slice(0, 5);
         setPastEvents(pastFiltered);
-      }
-      if (myEventsRes.data.status === "success") {
-        setMyEvents(myEventsRes.data.data || []);
       }
       if (billingsRes?.data?.status === "success") {
         setBillings(billingsRes.data.data || []);
@@ -236,7 +241,7 @@ export default function Dashboard() {
     { icon: <ArrowRightLeft />, label: "Pindah", path: "/transfer" },
     { icon: <FileText />, label: "Dokumen", path: "/documents" },
     { icon: <CalendarCheck />, label: "Event", path: "/events" },
-    { icon: <History />, label: "Riwayat", path: "/absensi#riwayat" },
+    { icon: <History />, label: "Riwayat", path: "/history" },
   ];
 
   if (!mounted || isAuthLoading || !user) {
@@ -317,19 +322,22 @@ export default function Dashboard() {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  const namaBulanIni = now.toLocaleString("id-ID", { month: "long" }).replace(/^\w/, (c) => c.toUpperCase());
+  const isFirstSemester = currentMonth < 6;
+  const semesterLabel = isFirstSemester ? "I (Jan - Jun)" : "II (Jul - Des)";
 
-  const currentMonthAttendances = attendanceHistory.filter((h: any) => {
+  const currentSemesterAttendances = attendanceHistory.filter((h: any) => {
     if (!h.checkInAt) return false;
     const checkInDate = new Date(h.checkInAt);
+    const checkInMonth = checkInDate.getMonth();
+    const isCheckInFirstSemester = checkInMonth < 6;
     return (
-      checkInDate.getMonth() === currentMonth &&
+      isCheckInFirstSemester === isFirstSemester &&
       checkInDate.getFullYear() === currentYear
     );
   });
 
-  const attendanceCount = currentMonthAttendances.length;
-  const totalSessions = 8; // Standar 8 kali latihan sebulan (2x seminggu)
+  const attendanceCount = currentSemesterAttendances.length;
+  const totalSessions = 48; // Standar 48 kali latihan sesemester (8 per bulan * 6 bulan)
   const attendancePct =
     totalSessions > 0
       ? Math.min(100, Math.round((attendanceCount / totalSessions) * 1000) / 10)
@@ -474,7 +482,7 @@ export default function Dashboard() {
       {!isAdmin && (
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Kehadiran Latihan Bulan {namaBulanIni}</h2>
+            <h2 className={styles.sectionTitle}>Kehadiran Latihan Semester {semesterLabel}</h2>
           </div>
           <div
             className={styles.eventItem}
@@ -498,7 +506,7 @@ export default function Dashboard() {
                 {attendancePct}%
               </div>
               <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
-                {attendanceCount} dari {totalSessions} Latihan Bulan Ini
+                {attendanceCount} dari {totalSessions} Latihan Semester Ini
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
