@@ -23,6 +23,7 @@ import {
   Loader2,
   X,
   ArrowLeft,
+  MapPin,
   ChevronDown,
   Calendar,
   Trash2,
@@ -511,18 +512,102 @@ function MembersContent() {
     [user],
   );
 
-  const [members, setMembers] = useState<any[]>([]);
+  const [allDojoMembers, setAllDojoMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [meta, setMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [search, setSearch] = useState("");
   const [dojoInfo, setDojoInfo] = useState<any | null>(null);
-  const [stats, setStats] = useState({
-    hitam: 0,
-    kyu: 0,
-    nonAktif: 0,
-    kyuList: [] as { name: string; count: number }[],
-  });
+
+  const [selectedKpi, setSelectedKpi] = useState<"aktif" | "hitam" | "kyu" | "non-aktif" | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const stats = useMemo(() => {
+    let hitam = 0;
+    let kyu = 0;
+    let nonAktif = 0;
+    const kyuCounts: Record<string, number> = {};
+    
+    allDojoMembers.forEach((m: any) => {
+      if (m.status !== "Active") {
+        nonAktif++;
+      }
+      const rank = String(m.currentRank || "").toUpperCase();
+      if (rank.includes("HITAM") || rank.includes("DAN")) {
+        hitam++;
+      } else if (rank !== "") {
+        kyu++;
+        const kyuMatch = rank.match(/KYU\s+(\d+)/);
+        if (kyuMatch) {
+          const kyuNum = `Kyu ${kyuMatch[1]}`;
+          kyuCounts[kyuNum] = (kyuCounts[kyuNum] || 0) + 1;
+        } else {
+          let normalized = m.currentRank.trim();
+          const upper = normalized.toUpperCase();
+          if (upper === "PUTIH") {
+            normalized = "Kyu 10";
+          } else {
+            normalized = normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+          }
+          kyuCounts[normalized] = (kyuCounts[normalized] || 0) + 1;
+        }
+      }
+    });
+
+    const sortedKyuEntries = Object.entries(kyuCounts).sort((a, b) => {
+      const numA = parseInt(a[0].match(/\d+/)?.[0] || "0", 10);
+      const numB = parseInt(b[0].match(/\d+/)?.[0] || "0", 10);
+      return numB - numA;
+    });
+
+    const kyuList = sortedKyuEntries.map(([name, count]) => ({ name, count }));
+    return { hitam, kyu, nonAktif, kyuList };
+  }, [allDojoMembers]);
+
+  const filteredMembers = useMemo(() => {
+    let result = [...allDojoMembers];
+    
+    if (search.trim() !== "") {
+      const q = search.toLowerCase().trim();
+      result = result.filter(m => 
+        (m.fullName || "").toLowerCase().includes(q) ||
+        (m.nia || "").toLowerCase().includes(q) ||
+        (m.nik || "").toLowerCase().includes(q) ||
+        (m.user?.email || "").toLowerCase().includes(q)
+      );
+    }
+    
+    if (selectedKpi === "aktif") {
+      result = result.filter(m => m.status === "Active");
+    } else if (selectedKpi === "non-aktif") {
+      result = result.filter(m => m.status !== "Active");
+    } else if (selectedKpi === "hitam") {
+      result = result.filter(m => {
+        const rank = String(m.currentRank || "").toUpperCase();
+        return rank.includes("HITAM") || rank.includes("DAN");
+      });
+    } else if (selectedKpi === "kyu") {
+      result = result.filter(m => {
+        const rank = String(m.currentRank || "").toUpperCase();
+        return rank !== "" && !rank.includes("HITAM") && !rank.includes("DAN");
+      });
+    }
+    
+    return result;
+  }, [allDojoMembers, search, selectedKpi]);
+
+  const paginatedMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredMembers.slice(startIndex, startIndex + pageSize);
+  }, [filteredMembers, currentPage, pageSize]);
+
+  const meta = useMemo(() => {
+    return {
+      total: filteredMembers.length,
+      page: currentPage,
+      limit: pageSize
+    };
+  }, [filteredMembers.length, currentPage, pageSize]);
 
   // Modal states
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -576,7 +661,7 @@ function MembersContent() {
       try {
         const resPayload: any = await api.members.update(memberId, body as any);
         const updated = resPayload?.data ?? resPayload;
-        setMembers((prev) =>
+        setAllDojoMembers((prev) =>
           prev.map((m) => (m.id === memberId ? { ...m, ...updated } : m)),
         );
         setSelectedMember((sm: any) =>
@@ -623,7 +708,7 @@ function MembersContent() {
       );
       const refreshed = await api.members.getDetail(selectedMember.id);
       setSelectedMember(refreshed.data);
-      setMembers((prev) =>
+      setAllDojoMembers((prev) =>
         prev.map((m) =>
           m.id === selectedMember.id
             ? {
@@ -648,78 +733,24 @@ function MembersContent() {
     }
   }, [selectedMember]);
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const params: any = { page: 1, limit: 500 };
-      if (dojoId) params.dojoId = dojoId;
-      const res = await api.members.getAll(params);
-      const allMembers = res.data || [];
-      
-      let hitam = 0;
-      let kyu = 0;
-      let nonAktif = 0;
-      const kyuCounts: Record<string, number> = {};
-      
-      allMembers.forEach((m: any) => {
-        if (m.status !== "Active") {
-          nonAktif++;
-        }
-        const rank = String(m.currentRank || "").toUpperCase();
-        if (rank.includes("HITAM") || rank.includes("DAN")) {
-          hitam++;
-        } else if (rank !== "") {
-          kyu++;
-          const kyuMatch = rank.match(/KYU\s+(\d+)/);
-          if (kyuMatch) {
-            const kyuNum = `Kyu ${kyuMatch[1]}`;
-            kyuCounts[kyuNum] = (kyuCounts[kyuNum] || 0) + 1;
-          } else {
-            let normalized = m.currentRank.trim();
-            const upper = normalized.toUpperCase();
-            if (upper === "PUTIH") {
-              normalized = "Kyu 10";
-            } else {
-              normalized = normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
-            }
-            kyuCounts[normalized] = (kyuCounts[normalized] || 0) + 1;
-          }
-        }
-      });
-
-      const sortedKyuEntries = Object.entries(kyuCounts).sort((a, b) => {
-        const numA = parseInt(a[0].match(/\d+/)?.[0] || "0", 10);
-        const numB = parseInt(b[0].match(/\d+/)?.[0] || "0", 10);
-        return numB - numA;
-      });
-
-      const kyuList = sortedKyuEntries.map(([name, count]) => ({ name, count }));
-      
-      setStats({ hitam, kyu, nonAktif, kyuList });
-    } catch (err) {
-      console.error("Failed to fetch stats", err);
-    }
-  }, [dojoId]);
-
-  const fetchMembers = async (page = 1, searchQuery = "", pageLimit = meta.limit) => {
+  const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
-      const params: any = { page, search: searchQuery, limit: pageLimit };
+      const params: any = { page: 1, limit: 1000 };
       if (dojoId) params.dojoId = dojoId;
 
       const response = await api.members.getAll(params);
-      setMembers(response.data);
-      setMeta(response.meta);
+      setAllDojoMembers(response.data || []);
       setError(null);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [dojoId]);
 
   useEffect(() => {
-    fetchMembers(1, search);
-    fetchStats();
+    fetchMembers();
     if (dojoId) {
       const fetchDojoInfo = async () => {
         try {
@@ -786,9 +817,45 @@ function MembersContent() {
     }
   }, [selectedBranchId]);
 
+  const handleExportCSV = () => {
+    if (filteredMembers.length === 0) {
+      toast.error("Tidak ada data untuk diekspor");
+      return;
+    }
+    
+    const headers = ["No", "Nama Anggota", "NIA", "NIK", "Sabuk & Kyu", "Dojo", "Status", "Email", "No. HP"];
+    const rows = filteredMembers.map((m, index) => [
+      index + 1,
+      m.fullName || "",
+      m.nia || "-",
+      m.nik || "-",
+      m.currentRank || "-",
+      m.dojo?.name || "-",
+      m.status === "Active" ? "AKTIF" : "NON-AKTIF",
+      m.user?.email || "-",
+      m.phoneNumber || "-"
+    ]);
+    
+    // Convert to CSV string safely
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Daftar_Anggota_${dojoName || "INKAI"}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Ekspor CSV berhasil diunduh");
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchMembers(1, search);
+    setCurrentPage(1);
   };
 
   const handleBack = () => {
@@ -861,8 +928,7 @@ function MembersContent() {
       toast.success("Anggota berhasil dihapus");
       setShowDeleteModal(false);
       setShowDetailModal(false);
-      fetchMembers(meta.page, search);
-      fetchStats();
+      fetchMembers();
     } catch (err: any) {
       toast.error(err.message || "Gagal menghapus anggota");
     }
@@ -896,8 +962,7 @@ function MembersContent() {
       if (selectedMember && selectedMember.id === member.id) {
         setSelectedMember({ ...selectedMember, status: newStatus });
       }
-      fetchMembers(meta.page, search);
-      fetchStats();
+      fetchMembers();
     } catch (err: any) {
       toast.error(err.message || "Gagal mengubah status");
     }
@@ -934,8 +999,7 @@ function MembersContent() {
       setShowRankEditModal(false);
       setEditingRank(null);
       toast.success("Riwayat kenaikan tingkat diperbarui");
-      fetchMembers(meta.page, search);
-      fetchStats();
+      fetchMembers();
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
@@ -1043,21 +1107,31 @@ function MembersContent() {
 
         {dojoId && (
           <div className="grid grid-cols-2 gap-3 p-4 bg-amber-500/5 rounded-2xl border border-amber-500/10">
-            <div className="space-y-0.5">
-              <p className="text-[9px] font-black uppercase text-gray-500">
-                Wilayah
-              </p>
-              <p className="text-[11px] font-bold text-gray-300 uppercase truncate">
-                {dojoInfo?.kecamatan || "..."}
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 text-amber-500 rounded-xl shrink-0">
+                <MapPin size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-black uppercase text-gray-500 leading-none mb-1">
+                  Wilayah
+                </p>
+                <p className="text-[11px] font-bold text-gray-300 uppercase truncate">
+                  {dojoInfo?.kecamatan || "..."}
+                </p>
+              </div>
             </div>
-            <div className="space-y-0.5">
-              <p className="text-[9px] font-black uppercase text-gray-500">
-                Kontak
-              </p>
-              <p className="text-[11px] font-bold text-amber-500 uppercase truncate">
-                {dojoInfo?.phoneNumber || "..."}
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 text-amber-500 rounded-xl shrink-0">
+                <Phone size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-black uppercase text-gray-500 leading-none mb-1">
+                  Kontak
+                </p>
+                <p className="text-[11px] font-bold text-amber-500 uppercase truncate">
+                  {dojoInfo?.phoneNumber || "..."}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -1065,32 +1139,65 @@ function MembersContent() {
 
       {/* Stats Quick View */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="glass-card flex items-center gap-4 py-4">
-          <div className="p-3 bg-green-500/10 text-green-500 rounded-xl">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "aktif" ? null : "aktif");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-4 py-4 text-left cursor-pointer transition-all duration-300 hover:border-green-500/30 hover:scale-[1.02] border ${
+            selectedKpi === "aktif"
+              ? "border-green-500/50 bg-green-500/[0.03] shadow-md shadow-green-500/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-3 bg-green-500/10 text-green-500 rounded-xl shrink-0 ml-1">
             <UserCheck size={24} />
           </div>
           <div>
             <p className="text-gray-500 text-xs">Anggota Aktif</p>
-            <h4 className="text-xl font-bold">
-              {meta.total > 0 ? meta.total : "..."}
+            <h4 className="text-xl font-bold text-white">
+              {allDojoMembers.filter(m => m.status === "Active").length || "0"}
             </h4>
           </div>
-        </div>
+        </button>
 
-        <div className="glass-card flex items-center gap-4 py-4">
-          <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "hitam" ? null : "hitam");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-4 py-4 text-left cursor-pointer transition-all duration-300 hover:border-amber-500/30 hover:scale-[1.02] border ${
+            selectedKpi === "hitam"
+              ? "border-amber-500/50 bg-amber-500/[0.03] shadow-md shadow-amber-500/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl shrink-0 ml-1">
             <Award size={24} />
           </div>
           <div>
             <p className="text-gray-500 text-xs">Sabuk Hitam (DAN)</p>
-            <h4 className="text-xl font-bold">
+            <h4 className="text-xl font-bold text-white">
               {stats.hitam}
             </h4>
           </div>
-        </div>
+        </button>
 
-        <div className="glass-card flex items-start gap-4 py-4 min-w-[340px]">
-          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl shrink-0 mt-0.5">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "kyu" ? null : "kyu");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-start gap-4 py-4 text-left cursor-pointer transition-all duration-300 hover:border-blue-500/30 hover:scale-[1.02] border min-w-[340px] ${
+            selectedKpi === "kyu"
+              ? "border-blue-500/50 bg-blue-500/[0.03] shadow-md shadow-blue-500/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl shrink-0 mt-0.5 ml-1">
             <Award size={24} />
           </div>
           <div className="min-w-0 flex-1">
@@ -1110,19 +1217,30 @@ function MembersContent() {
               )}
             </div>
           </div>
-        </div>
+        </button>
 
-        <div className="glass-card flex items-center gap-4 py-4">
-          <div className="p-3 bg-red-500/10 text-red-500 rounded-xl">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedKpi(prev => prev === "non-aktif" ? null : "non-aktif");
+            setCurrentPage(1);
+          }}
+          className={`glass-card flex items-center gap-4 py-4 text-left cursor-pointer transition-all duration-300 hover:border-red-500/30 hover:scale-[1.02] border ${
+            selectedKpi === "non-aktif"
+              ? "border-red-500/50 bg-red-500/[0.03] shadow-md shadow-red-500/5"
+              : "border-white/5"
+          }`}
+        >
+          <div className="p-3 bg-red-500/10 text-red-500 rounded-xl shrink-0 ml-1">
             <UserMinus size={24} />
           </div>
           <div>
             <p className="text-gray-500 text-xs">Anggota Non-Aktif</p>
-            <h4 className="text-xl font-bold">
+            <h4 className="text-xl font-bold text-white">
               {stats.nonAktif}
             </h4>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Filter & List Area */}
@@ -1146,6 +1264,15 @@ function MembersContent() {
               <Search size={16} />
               Cari Anggota
             </button>
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="btn-secondary text-xs py-2.5 px-4 flex items-center justify-center gap-2 hover:border-amber-500/30 transition-all text-white border border-white/10"
+              title="Ekspor ke CSV"
+            >
+              <Download size={14} />
+              Ekspor CSV
+            </button>
             {dojoId && (
               <button
                 type="button"
@@ -1166,11 +1293,11 @@ function MembersContent() {
                 <MemberItemSkeleton key={i} />
               ))}
             </div>
-          ) : members.length > 0 ? (
+          ) : paginatedMembers.length > 0 ? (
             <>
               {/* Card List - Mobile/Tablet */}
               <div className="space-y-3 lg:hidden">
-                {members.map((member) => (
+                {paginatedMembers.map((member) => (
                   <AdminMemberListCard
                     key={member.id}
                     member={member}
@@ -1200,9 +1327,9 @@ function MembersContent() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {members.map((member, index) => {
+                      {paginatedMembers.map((member, index) => {
                         const saving = listSavingId === member.id;
-                        const rowNumber = (meta.page - 1) * meta.limit + index + 1;
+                        const rowNumber = (meta.page - 1) * pageSize + index + 1;
                         return (
                           <AdminMemberTableRow
                             key={member.id}
@@ -1225,8 +1352,14 @@ function MembersContent() {
             </>
           ) : (
             !loading && (
-              <div className="glass-card p-12 text-center text-gray-500 text-xs italic border-dashed border-white/5">
-                Tidak ada data anggota ditemukan.
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center glass-card border-white/5 bg-white/[0.01]">
+                <div className="p-4 bg-amber-500/10 text-amber-500 rounded-2xl mb-4">
+                  <Search size={32} />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">Anggota Tidak Ditemukan</h3>
+                <p className="text-xs text-gray-500 max-w-sm leading-relaxed">
+                  {search ? `Tidak ada hasil pencarian untuk "${search}". Coba periksa kembali ejaan nama, NIA, NIK, atau email.` : "Tidak ada anggota dalam kategori filter ini."}
+                </p>
               </div>
             )
           )}
@@ -1242,11 +1375,11 @@ function MembersContent() {
               <span className="text-[10px] text-gray-500 font-black uppercase">Tampilkan:</span>
               <div className="relative">
                 <select
-                  value={meta.limit}
+                  value={pageSize}
                   onChange={(e) => {
                     const nextLimit = Number(e.target.value);
-                    setMeta((prev) => ({ ...prev, limit: nextLimit }));
-                    fetchMembers(1, search, nextLimit);
+                    setPageSize(nextLimit);
+                    setCurrentPage(1);
                   }}
                   className="glass-input px-2.5 py-1 text-[10px] font-bold appearance-none cursor-pointer pr-7 focus:outline-none"
                   style={{ colorScheme: "dark" }}
@@ -1267,18 +1400,18 @@ function MembersContent() {
           </div>
           <div className="flex gap-2">
             <button
-              disabled={meta.page === 1}
-              onClick={() => fetchMembers(meta.page - 1, search, meta.limit)}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-500 disabled:opacity-20 transition-all active:scale-95"
             >
               <ChevronLeft size={16} />
             </button>
             <div className="flex items-center px-3 bg-white/5 rounded-xl border border-white/10 text-[10px] font-bold text-gray-400">
-              Halaman {meta.page} dari {Math.max(1, Math.ceil(meta.total / meta.limit))}
+              Halaman {currentPage} dari {Math.max(1, Math.ceil(meta.total / pageSize))}
             </div>
             <button
-              disabled={meta.page * meta.limit >= meta.total}
-              onClick={() => fetchMembers(meta.page + 1, search, meta.limit)}
+              disabled={currentPage * pageSize >= meta.total}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
               className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-500 disabled:opacity-20 transition-all active:scale-95"
             >
               <ChevronRight size={16} />
@@ -1326,8 +1459,7 @@ function MembersContent() {
                     }
                     setShowAddModal(false);
                     resetForm();
-                    fetchMembers(1, search);
-                    fetchStats();
+                    fetchMembers();
                     toast.success(
                       isEdit
                         ? "Data anggota berhasil diperbarui!"
@@ -2477,8 +2609,7 @@ function MembersContent() {
 
                       setShowBulkModal(false);
                       setBulkText("");
-                      fetchMembers(1);
-                      fetchStats();
+                      fetchMembers();
                     } catch (err: any) {
                       toast.error(err.message || "Gagal mengimpor data");
                     } finally {
