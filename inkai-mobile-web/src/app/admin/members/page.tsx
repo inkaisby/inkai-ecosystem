@@ -1090,7 +1090,7 @@ function MembersContent() {
               {stats.kyu}
             </h4>
             {stats.kyuBreakdown && (
-              <p className="text-[10px] text-gray-500/70 mt-0.5 truncate" title={stats.kyuBreakdown.replace(/ • /g, ", ")}>
+              <p className="text-[10px] text-gray-500/70 mt-0.5 whitespace-normal break-words leading-tight" title={stats.kyuBreakdown.replace(/ • /g, ", ")}>
                 {stats.kyuBreakdown}
               </p>
             )}
