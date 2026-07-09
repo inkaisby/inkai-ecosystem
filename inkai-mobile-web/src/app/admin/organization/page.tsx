@@ -16,7 +16,9 @@ import {
   Filter,
   X,
   UserCheck,
-  Lock
+  Lock,
+  Pencil,
+  Eye
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -628,82 +630,81 @@ function OrganizationContent() {
           </button>
         </div>
       ) : viewState === 'provinces' ? (
-        <div className="grid grid-cols-1 gap-5">
-          {filteredProvinces.map((prov) => (
-            <div 
-              key={prov.id} 
-              className="modal-gradient p-6 rounded-2xl border border-white-5 shadow-2xl relative overflow-hidden group hover:border-amber-500/30 transition-all duration-500"
-            >
-              {/* Subtle background glow */}
-              <div className="absolute -right-8 -top-8 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all duration-500"></div>
-              
-              <div className="flex justify-between items-start relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center font-black text-xl text-black shadow-lg shadow-amber-500/20">
-                    {prov.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-lg font-black text-white tracking-tight leading-tight mb-1">{prov.name}</h3>
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <div className="w-1 h-1 bg-amber-500 rounded-full"></div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Ketua: {prov.headName || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-                {(isSuperAdmin || 
-                  isAdminPusat || 
-                  (isAdminProvince && user?.managedProvinceId === prov.id)) && (
-                  <button 
-                    onClick={() => handleOpenEditProvince(prov)}
-                    className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
-                  >
-                    <MoreVertical size={20} />
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 my-6">
-                <div className="p-3.5 bg-white-5 rounded-2xl border border-white-5 text-center group-hover:border-white-10 transition-colors">
-                  <p className="text-[9px] uppercase font-black text-gray-600 tracking-widest mb-1.5">Cabang</p>
-                  <p className="text-lg font-black text-white">{prov._count?.branches || 0}</p>
-                </div>
-                <div className="p-3.5 bg-white-5 rounded-2xl border border-white-5 text-center group-hover:border-white-10 transition-colors">
-                  <p className="text-[9px] uppercase font-black text-gray-600 tracking-widest mb-1.5">Dojo</p>
-                  <p className="text-lg font-black text-white">{prov.branches?.reduce((acc: number, b: any) => acc + (b._count?.dojos || 0), 0) || 0}</p>
-                </div>
-                <div className="p-3.5 bg-white-5 rounded-2xl border border-white-5 text-center group-hover:border-white-10 transition-colors">
-                  <p className="text-[9px] uppercase font-black text-gray-600 tracking-widest mb-1.5">Anggota</p>
-                  <p className="text-lg font-black text-white">{prov.branches?.reduce((acc: number, b: any) => acc + (b.dojos?.reduce((acc2: number, d: any) => acc2 + (d._count?.members || 0), 0) || 0), 0) || 0}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 relative z-10">
-                <button 
-                  onClick={() => handleViewDetails(prov)}
-                  className="btn-secondary flex-1 py-3 text-[10px] font-black uppercase tracking-widest"
-                >
-                  Detail
-                </button>
-                {(isSuperAdmin || 
-                  isAdminPusat || 
-                  (isAdminProvince && user?.managedProvinceId === prov.id)) ? (
-                  <button 
-                    onClick={() => handleManageBranches(prov)}
-                    className="btn-primary flex-[2] py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
-                  >
-                    Kelola Cabang
-                  </button>
-                ) : (
-                  <div className="flex-[2] py-3 text-[10px] font-black uppercase tracking-widest text-center text-gray-600 bg-white-5 rounded-2xl border border-white-5">
-                    Hanya Lihat
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          
+        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
+                <tr>
+                  <th className="pb-4 pl-4 font-medium text-center w-12">No</th>
+                  <th className="pb-4 pl-2 font-medium">Wilayah</th>
+                  <th className="pb-4 pl-2 font-medium">Ketua Pengprov</th>
+                  <th className="pb-4 text-center font-medium">Cabang</th>
+                  <th className="pb-4 text-center font-medium">Dojo</th>
+                  <th className="pb-4 text-center font-medium">Anggota</th>
+                  <th className="pb-4 text-center font-medium pr-4">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredProvinces.map((prov, index) => {
+                  const totalDojos = prov.branches?.reduce((acc: number, b: any) => acc + (b._count?.dojos || 0), 0) || 0;
+                  const totalMembers = prov.branches?.reduce((acc: number, b: any) => acc + (b.dojos?.reduce((acc2: number, d: any) => acc2 + (d._count?.members || 0), 0) || 0), 0) || 0;
+                  const canManage = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === prov.id);
+                  return (
+                    <tr key={prov.id} className="hover:bg-white/[0.02] transition-all group">
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium">{index + 1}</td>
+                      <td className="py-4 pl-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center font-black text-sm text-black shadow-md shadow-amber-500/10">
+                            {prov.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <span className="font-bold text-white tracking-tight">{prov.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 pl-2 text-white font-medium">{prov.headName || '-'}</td>
+                      <td className="py-4 text-center text-white font-medium">{prov._count?.branches || 0}</td>
+                      <td className="py-4 text-center text-white font-medium">{totalDojos}</td>
+                      <td className="py-4 text-center text-white font-medium">{totalMembers}</td>
+                      <td className="py-4 pr-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleViewDetails(prov)}
+                            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-300 bg-white/5 hover:bg-white/10 hover:text-white rounded-lg border border-white/10 transition-all"
+                            title="Detail Wilayah"
+                          >
+                            Detail
+                          </button>
+                          {canManage ? (
+                            <button
+                              onClick={() => handleManageBranches(prov)}
+                              className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all"
+                              title="Kelola Cabang"
+                            >
+                              Kelola
+                            </button>
+                          ) : (
+                            <span className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-500 bg-white/5 rounded-lg border border-dashed border-white/5 cursor-default">
+                              Lihat
+                            </span>
+                          )}
+                          {canManage && (
+                            <button
+                              onClick={() => handleOpenEditProvince(prov)}
+                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                              title="Edit Wilayah"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           {filteredProvinces.length === 0 && (
-            <div className="modal-gradient p-16 rounded-2xl text-center text-gray-500 text-xs italic border border-dashed border-white-10">
+            <div className="p-16 text-center text-gray-500 text-xs italic">
               Tidak ada data wilayah ditemukan.
             </div>
           )}
@@ -753,136 +754,140 @@ function OrganizationContent() {
           </div>
         </div>
       ) : viewState === 'branches' ? (
-        <div className="grid grid-cols-1 gap-5">
-          {filteredBranches.map((branch) => (
-            <div 
-              key={branch.id} 
-              className="modal-gradient p-6 rounded-2xl border border-white-5 shadow-2xl relative overflow-hidden group hover:border-amber-500/30 transition-all duration-500"
-            >
-              <div className="absolute -right-8 -top-8 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all duration-500"></div>
-              
-              <div className="flex justify-between items-start relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center font-black text-xl text-black shadow-lg shadow-amber-500/20">
-                    <Building2 size={24} />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-lg font-black text-white tracking-tight leading-tight mb-1">{branch.name}</h3>
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <div className="w-1 h-1 bg-amber-500 rounded-full"></div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Ketua: {branch.headName || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-                {(isSuperAdmin || 
-                  isAdminPusat || 
-                  (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || 
-                  (isAdminBranch && user?.managedBranchId === branch.id)) && (
-                  <button 
-                    onClick={() => handleOpenEditBranch(branch)}
-                    className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
-                  >
-                    <MoreVertical size={20} />
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 my-6">
-                <div className="p-3.5 bg-white-5 rounded-2xl border border-white-5 text-center">
-                  <p className="text-[9px] uppercase font-black text-gray-600 tracking-widest mb-1.5 text-center">Total Dojo</p>
-                  <p className="text-lg font-black text-white text-center">{branch._count?.dojos || 0}</p>
-                </div>
-                <div className="p-3.5 bg-white-5 rounded-2xl border border-white-5 text-center">
-                  <p className="text-[9px] uppercase font-black text-gray-600 tracking-widest mb-1.5 text-center">Anggota</p>
-                  <p className="text-lg font-black text-white text-center">{branch.dojos?.reduce((acc: number, d: any) => acc + (d._count?.members || 0), 0) || 0}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 relative z-10">
-                {(isSuperAdmin || 
-                  isAdminPusat || 
-                  (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || 
-                  (isAdminBranch && user?.managedBranchId === branch.id)) ? (
-                  <button 
-                    onClick={() => handleManageDojos(branch)}
-                    className="btn-primary flex-1 py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
-                  >
-                    Kelola Dojo / Ranting
-                  </button>
-                ) : (
-                  <div className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-center text-gray-600 bg-white-5 rounded-2xl border border-white-5">
-                    Hanya Lihat
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          
+        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
+                <tr>
+                  <th className="pb-4 pl-4 font-medium text-center w-12">No</th>
+                  <th className="pb-4 pl-2 font-medium">Cabang</th>
+                  <th className="pb-4 pl-2 font-medium">Ketua Cabang</th>
+                  <th className="pb-4 text-center font-medium">Total Dojo</th>
+                  <th className="pb-4 text-center font-medium">Total Anggota</th>
+                  <th className="pb-4 text-center font-medium pr-4">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredBranches.map((branch, index) => {
+                  const totalMembers = branch.dojos?.reduce((acc: number, d: any) => acc + (d._count?.members || 0), 0) || 0;
+                  const canManage = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || (isAdminBranch && user?.managedBranchId === branch.id);
+                  return (
+                    <tr key={branch.id} className="hover:bg-white/[0.02] transition-all group">
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium">{index + 1}</td>
+                      <td className="py-4 pl-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-black shadow-md shadow-amber-500/10">
+                            <Building2 size={18} />
+                          </div>
+                          <span className="font-bold text-white tracking-tight">{branch.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 pl-2 text-white font-medium">{branch.headName || '-'}</td>
+                      <td className="py-4 text-center text-white font-medium">{branch._count?.dojos || 0}</td>
+                      <td className="py-4 text-center text-white font-medium">{totalMembers}</td>
+                      <td className="py-4 pr-4">
+                        <div className="flex items-center justify-center gap-2">
+                          {canManage ? (
+                            <button
+                              onClick={() => handleManageDojos(branch)}
+                              className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all"
+                              title="Kelola Dojo"
+                            >
+                              Kelola Dojo
+                            </button>
+                          ) : (
+                            <span className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-500 bg-white/5 rounded-lg border border-dashed border-white/5 cursor-default">
+                              Lihat
+                            </span>
+                          )}
+                          {canManage && (
+                            <button
+                              onClick={() => handleOpenEditBranch(branch)}
+                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                              title="Edit Cabang"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           {filteredBranches.length === 0 && (
-            <div className="modal-gradient p-16 rounded-2xl text-center text-gray-500 text-xs italic border border-dashed border-white-10">
+            <div className="p-16 text-center text-gray-500 text-xs italic">
               Tidak ada data cabang ditemukan.
             </div>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5">
-          {filteredDojos.map((dojo) => (
-            <div 
-              key={dojo.id} 
-              className="modal-gradient p-6 rounded-2xl border border-white-5 shadow-2xl relative overflow-hidden group hover:border-amber-500/30 transition-all duration-500"
-            >
-              <div className="absolute -right-8 -top-8 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all duration-500"></div>
-              
-              <div className="flex justify-between items-start relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center text-black shadow-lg shadow-amber-500/20">
-                    <MapPin size={24} />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-lg font-black text-white tracking-tight leading-tight mb-1">{dojo.name}</h3>
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <div className="w-1 h-1 bg-amber-500 rounded-full"></div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80">PIC: {dojo.headName || dojo.contactPerson || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-                {(isSuperAdmin || 
-                  isAdminPusat || 
-                  (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || 
-                  (isAdminBranch && user?.managedBranchId === selectedBranch?.id) || 
-                  (isAdminDojo && user?.managedDojoId === dojo.id)) && (
-                  <button 
-                    onClick={() => handleOpenEditDojo(dojo)}
-                    className="p-2 text-gray-500 hover:text-white rounded-xl hover:bg-white-5 transition-all"
-                  >
-                    <MoreVertical size={20} />
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 my-6">
-                <div className="p-3.5 bg-white-5 rounded-2xl border border-white-5">
-                  <p className="text-[9px] uppercase font-black text-gray-600 tracking-widest mb-1.5 text-center">Kecamatan</p>
-                  <p className="text-xs font-bold text-white text-center truncate">{dojo.kecamatan || 'N/A'}</p>
-                </div>
-                <div className="p-3.5 bg-white-5 rounded-2xl border border-white-5">
-                  <p className="text-[9px] uppercase font-black text-gray-600 tracking-widest mb-1.5 text-center">Anggota</p>
-                  <p className="text-lg font-black text-white text-center">{dojo._count?.members || 0}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 relative z-10">
-                <button 
-                  onClick={() => handleViewMembers(dojo)}
-                  className="btn-primary flex-1 py-3 text-[10px] font-black uppercase tracking-widest shadow-amber-20"
-                >
-                  Lihat Anggota
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
+                <tr>
+                  <th className="pb-4 pl-4 font-medium text-center w-12">No</th>
+                  <th className="pb-4 pl-2 font-medium">Dojo</th>
+                  <th className="pb-4 pl-2 font-medium">PIC / Ketua</th>
+                  <th className="pb-4 pl-2 font-medium">Kecamatan</th>
+                  <th className="pb-4 pl-2 font-medium">WhatsApp</th>
+                  <th className="pb-4 pl-2 font-medium">Tempat Latihan</th>
+                  <th className="pb-4 pl-2 font-medium">Jadwal</th>
+                  <th className="pb-4 text-center font-medium">Anggota</th>
+                  <th className="pb-4 text-center font-medium pr-4">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredDojos.map((dojo, index) => {
+                  const canEdit = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || (isAdminBranch && user?.managedBranchId === selectedBranch?.id) || (isAdminDojo && user?.managedDojoId === dojo.id);
+                  return (
+                    <tr key={dojo.id} className="hover:bg-white/[0.02] transition-all group">
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium">{index + 1}</td>
+                      <td className="py-4 pl-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-black shadow-md shadow-amber-500/10">
+                            <MapPin size={18} />
+                          </div>
+                          <span className="font-bold text-white tracking-tight">{dojo.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 pl-2 text-white font-medium">{dojo.headName || dojo.contactPerson || '-'}</td>
+                      <td className="py-4 pl-2 text-white font-medium">{dojo.kecamatan || '-'}</td>
+                      <td className="py-4 pl-2 text-white font-medium">{dojo.phoneNumber || '-'}</td>
+                      <td className="py-4 pl-2 text-white font-medium truncate max-w-[150px]" title={dojo.tempatLatihan}>{dojo.tempatLatihan || '-'}</td>
+                      <td className="py-4 pl-2 text-white font-medium truncate max-w-[120px]" title={dojo.schedule}>{dojo.schedule || '-'}</td>
+                      <td className="py-4 text-center text-white font-medium">{dojo._count?.members || 0}</td>
+                      <td className="py-4 pr-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleViewMembers(dojo)}
+                            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all"
+                            title="Lihat Anggota"
+                          >
+                            Anggota
+                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEditDojo(dojo)}
+                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                              title="Edit Dojo"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           {filteredDojos.length === 0 && (
-            <div className="modal-gradient p-16 rounded-2xl text-center text-gray-500 text-xs italic border border-dashed border-white-10">
+            <div className="p-16 text-center text-gray-500 text-xs italic">
               Tidak ada data dojo ditemukan.
             </div>
           )}
