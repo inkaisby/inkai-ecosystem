@@ -58,19 +58,19 @@
 }
 
 .selectWrapper {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0 16px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0 12px;
 }
 
 .select {
   width: 100%;
-  padding: 16px 0;
+  padding: 12px 0;
   background: none;
   border: none;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
 }
 
@@ -80,13 +80,13 @@
 }
 
 .inputWrapper {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  gap: 12px;
+  padding: 0 12px;
+  gap: 10px;
 }
 
 .inputIcon {
@@ -98,9 +98,9 @@
   flex: 1;
   background: none;
   border: none;
-  padding: 16px 0;
+  padding: 12px 0;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
 }
 
@@ -124,12 +124,12 @@
 .selectInWrapper {
   flex: 1;
   width: 100%;
-  padding: 16px 0;
+  padding: 12px 0;
   padding-right: 8px;
   background: none;
   border: none;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
   cursor: pointer;
 }
@@ -141,14 +141,14 @@
 
 .uploadBox {
   width: 100%;
-  padding: 32px;
-  background-color: rgba(255, 255, 255, 0.03);
-  border-radius: 20px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 14px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
@@ -249,16 +249,27 @@
 
 .submitBtn {
   width: 100%;
-  padding: 16px;
+  padding: 12px;
   background-color: var(--primary-gold);
   color: black;
-  border-radius: 16px;
-  font-weight: bold;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   margin-top: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submitBtn:active {
+  transform: scale(0.98);
 }
 
 .spinner {

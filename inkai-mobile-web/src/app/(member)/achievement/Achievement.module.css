@@ -24,76 +24,85 @@
 
 .tabs {
   display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 0;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: 12px;
+  margin: 12px 0 8px;
+  position: relative;
 }
 
 .tab {
   flex: 1;
-  padding: 16px 0;
+  padding: 10px 0;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 800;
   color: var(--text-muted);
   position: relative;
   background: none;
   border: none;
   cursor: pointer;
+  z-index: 1;
+  transition: color 0.2s ease;
 }
 
 .tab.active {
-  color: var(--primary-gold);
+  color: #111;
 }
 
 .indicator {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
   background-color: var(--primary-gold);
+  border-radius: 8px;
+  z-index: -1;
 }
 
 .content {
-  padding: 16px 0 120px;
+  padding: 16px 0 100px;
 }
 
 .tabContent {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .sectionLabel {
-  font-size: 12px;
-  font-weight: bold;
+  font-size: 10px;
+  font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .historyCard {
-  padding: 16px;
-  background-color: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .historyRejectWrap {
-  border-radius: 16px;
-  border: 1px solid rgba(248, 113, 113, 0.28);
-  background: rgba(248, 113, 113, 0.06);
-  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(248, 113, 113, 0.15);
+  background: rgba(248, 113, 113, 0.03);
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .historyRejectWrap .historyCard {
@@ -104,9 +113,9 @@
 }
 
 .rejectAdminNote {
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.45;
-  color: rgba(252, 165, 165, 0.95);
+  color: rgba(252, 165, 165, 0.85);
   margin: 0;
 }
 
@@ -116,24 +125,25 @@
 
 .resubmitBtn {
   width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(230, 174, 94, 0.45);
-  background: rgba(230, 174, 94, 0.12);
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(230, 174, 94, 0.35);
+  background: rgba(230, 174, 94, 0.08);
   color: var(--primary-gold);
   font-size: 11px;
-  font-weight: bold;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .resubmitBtn:hover {
-  background: rgba(230, 174, 94, 0.2);
+  background: rgba(230, 174, 94, 0.15);
 }
 
 .resubmitBlockedHint {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-muted);
   margin: 0;
   text-align: center;
@@ -155,14 +165,16 @@
 }
 
 .cardTitle {
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-light);
   margin-bottom: 4px;
 }
 
 .cardMeta {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
+  margin: 2px 0;
 }
 
 .cardStatus {
@@ -173,7 +185,7 @@
 }
 
 .statusValid {
-  color: #4ade80;
+  color: #10b981;
 }
 
 .statusPendingWrapper {
@@ -184,20 +196,20 @@
 }
 
 .statusPending {
-  color: #facc15;
+  color: #f59e0b;
 }
 
 .customStatusText {
   font-size: 8px;
   font-weight: bold;
-  color: #facc15;
+  color: #f59e0b;
   text-transform: uppercase;
 }
 
 .legend {
-  padding: 16px;
-  background-color: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.03);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -221,24 +233,29 @@
 
 .addBtn {
   width: 100%;
-  padding: 16px;
-  background: none;
-  border: 1px solid var(--primary-gold);
-  border-radius: 16px;
-  color: var(--primary-gold);
-  font-size: 12px;
-  font-weight: bold;
+  padding: 12px;
+  background-color: var(--primary-gold);
+  border: none;
+  border-radius: 12px;
+  color: black;
+  font-size: 11px;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+  transition: all 0.2s ease;
 }
 
 .addBtnDisabled {
-  opacity: 0.5;
-  border-color: rgba(255, 255, 255, 0.12);
-  color: var(--text-muted);
+  background-color: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 .addRequirementHint {
