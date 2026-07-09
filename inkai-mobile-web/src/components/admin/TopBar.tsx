@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { User, LogOut, Bell, Check, Shield, Trash2, X, Settings, Home } from 'lucide-react';
+import { User, LogOut, Bell, Check, Shield, Trash2, X, Settings, Home, Sun, Moon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +14,25 @@ export default function TopBar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [theme, setTheme] = useState<'day' | 'night'>('night');
+
+  useEffect(() => {
+    const current = document.documentElement.getAttribute('data-clock-phase') as 'day' | 'night' || 'night';
+    setTheme(current);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'day' ? 'night' : 'day';
+    localStorage.setItem('theme-preference', next);
+    document.documentElement.setAttribute('data-clock-phase', next);
+    document.documentElement.style.colorScheme = next === 'day' ? 'light' : 'dark';
+    
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute('content', next === 'day' ? '#f4f6f8' : '#12131a');
+    }
+    setTheme(next);
+  };
 
   // Tutup sheet hanya selama salah satu terbuka (hindari listener mengganggu tap di header)
   useEffect(() => {
@@ -147,6 +166,16 @@ export default function TopBar() {
             </span>
           </div>
         )}
+
+        {/* Theme Toggle */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label="Toggle tema siang/malam"
+          className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+        >
+          {theme === 'day' ? <Moon size={20} strokeWidth={2} /> : <Sun size={20} strokeWidth={2} />}
+        </button>
 
         {/* Separator */}
         <div className="h-5 w-px bg-white/10 mx-0.5" />

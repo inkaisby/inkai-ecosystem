@@ -9,7 +9,8 @@ export function computeClockPhase(): "day" | "night" {
 }
 
 export function applyClockPhaseToDocument() {
-  const phase = computeClockPhase();
+  const pref = typeof window !== 'undefined' ? localStorage.getItem("theme-preference") as "day" | "night" | null : null;
+  const phase = pref || computeClockPhase();
   document.documentElement.setAttribute("data-clock-phase", phase);
   document.documentElement.style.colorScheme =
     phase === "day" ? "light" : "dark";
@@ -20,7 +21,7 @@ export function applyClockPhaseToDocument() {
     meta.setAttribute("name", "theme-color");
     document.head.appendChild(meta);
   }
-  meta.setAttribute("content", phase === "day" ? "#f4f6f8" : "#0a0a0c");
+  meta.setAttribute("content", phase === "day" ? "#f4f6f8" : "#12131a");
 }
 
 export function msUntilNextClockBoundary(now: Date = new Date()): number {
