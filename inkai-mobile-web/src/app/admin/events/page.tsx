@@ -1286,7 +1286,7 @@ export default function EventsPage() {
                           <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                             Kategori & Nama Agenda
                           </label>
-                          <div className="relative">
+                          <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative">
                             <select
                               name="categoryAndTitle"
                               required
@@ -1313,7 +1313,7 @@ export default function EventsPage() {
                                   title: v.slice(sep + AGENDA_COMBINED_SEP.length),
                                 });
                               }}
-                              className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-amber-500/30 transition-all appearance-none cursor-pointer text-white shadow-sm"
+                              className="w-full min-h-[46px] bg-transparent border-0 rounded-xl px-4 py-2.5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 appearance-none cursor-pointer text-white"
                               style={{ colorScheme: "dark" }}
                             >
                               <option value="">
@@ -1369,7 +1369,7 @@ export default function EventsPage() {
                             </select>
                             <ChevronRight
                               size={14}
-                              className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none"
+                              className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none"
                             />
                           </div>
                         </div>
@@ -1441,7 +1441,7 @@ export default function EventsPage() {
                                   </label>
                                 </div>
                                 {wilayahScope === "branch" && isSuper && (
-                                  <div className="relative">
+                                  <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative">
                                     <select
                                       value={formData.eventProvinceId}
                                       onChange={(e) =>
@@ -1451,7 +1451,7 @@ export default function EventsPage() {
                                           branchId: "",
                                         })
                                       }
-                                      className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-amber-500/30 appearance-none cursor-pointer text-white shadow-sm"
+                                      className="w-full min-h-[46px] bg-transparent border-0 rounded-xl px-4 py-2.5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 appearance-none cursor-pointer text-white"
                                       style={{ colorScheme: "dark" }}
                                     >
                                       <option value="">Pilih provinsi…</option>
@@ -1463,12 +1463,12 @@ export default function EventsPage() {
                                     </select>
                                     <ChevronRight
                                       size={14}
-                                      className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none"
+                                      className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none"
                                     />
                                   </div>
                                 )}
                                 {wilayahScope === "branch" && (
-                                  <div className="relative">
+                                  <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative">
                                     <select
                                       value={formData.branchId}
                                       onChange={(e) =>
@@ -1477,7 +1477,7 @@ export default function EventsPage() {
                                           branchId: e.target.value,
                                         })
                                       }
-                                      className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-amber-500/30 appearance-none cursor-pointer text-white shadow-sm"
+                                      className="w-full min-h-[46px] bg-transparent border-0 rounded-xl px-4 py-2.5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 appearance-none cursor-pointer text-white"
                                       style={{ colorScheme: "dark" }}
                                     >
                                       <option value="">
@@ -1493,7 +1493,7 @@ export default function EventsPage() {
                                     </select>
                                     <ChevronRight
                                       size={14}
-                                      className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-500 pointer-events-none"
+                                      className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none"
                                     />
                                   </div>
                                 )}
@@ -1507,9 +1507,9 @@ export default function EventsPage() {
                           <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                             Lokasi
                           </label>
-                          <div className="relative">
+                          <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative flex items-center">
                             <MapPin
-                              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
+                              className="absolute left-4 text-gray-500 pointer-events-none"
                               size={16}
                             />
                             <input
@@ -1525,7 +1525,7 @@ export default function EventsPage() {
                                 })
                               }
                               placeholder="Gedung Olahraga, Kota..."
-                              className="w-full bg-white/[0.02] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/30 transition-all text-white placeholder:text-gray-600 shadow-sm"
+                              className="w-full min-h-[46px] bg-transparent border-0 rounded-xl pl-11 pr-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white placeholder:text-gray-500"
                               style={{ colorScheme: "dark" }}
                             />
                           </div>
@@ -1550,9 +1550,9 @@ export default function EventsPage() {
                                     <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-300 truncate">
                                       {row.name}
                                     </span>
-                                    <div className="relative w-36">
+                                    <div className="adm-dark-field rounded-lg border border-white/10 bg-[#1e1e24] shadow-sm relative flex items-center w-36">
                                       <Wallet
-                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                                        className="absolute left-3 text-gray-500 pointer-events-none"
                                         size={14}
                                       />
                                       <input
@@ -1573,7 +1573,7 @@ export default function EventsPage() {
                                           )
                                         }
                                         placeholder="0"
-                                        className="w-full bg-[#141418] border border-white/5 rounded-lg pl-9 pr-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500/30 transition-all text-white placeholder:text-gray-600 shadow-sm [color-scheme:dark]"
+                                        className="w-full bg-transparent border-0 rounded-lg pl-9 pr-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white placeholder:text-gray-600 [color-scheme:dark]"
                                       />
                                     </div>
                                   </div>
@@ -1582,9 +1582,9 @@ export default function EventsPage() {
                             </div>
                           ) : (
                             <>
-                              <div className="relative">
+                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative flex items-center">
                                 <Wallet
-                                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
+                                  className="absolute left-4 text-gray-500 pointer-events-none"
                                   size={16}
                                 />
                                 <input
@@ -1602,7 +1602,7 @@ export default function EventsPage() {
                                     })
                                   }
                                   placeholder="0 = gratis"
-                                  className="w-full bg-white/[0.02] border border-white/5 rounded-xl pl-11 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/30 transition-all text-white placeholder:text-gray-600 shadow-sm [color-scheme:dark]"
+                                  className="w-full min-h-[46px] bg-transparent border-0 rounded-xl pl-11 pr-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white placeholder:text-gray-500 [color-scheme:dark]"
                                 />
                               </div>
                               <p className="text-[10px] text-gray-500 leading-relaxed font-medium ml-0.5">
@@ -1640,77 +1640,85 @@ export default function EventsPage() {
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                                 Tanggal Mulai
                               </label>
-                              <input
-                                type="date"
-                                name="startDate"
-                                required
-                                value={formData.startDate}
-                                onChange={(e) =>
-                                  setFormData((prev) =>
-                                    clampRegistrationCloseToStart({
-                                      ...prev,
-                                      startDate: e.target.value,
-                                    }),
-                                  )
-                                }
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/30 transition-all text-white shadow-sm"
-                                style={{ colorScheme: "dark" }}
-                              />
+                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                                <input
+                                  type="date"
+                                  name="startDate"
+                                  required
+                                  value={formData.startDate}
+                                  onChange={(e) =>
+                                    setFormData((prev) =>
+                                      clampRegistrationCloseToStart({
+                                        ...prev,
+                                        startDate: e.target.value,
+                                      }),
+                                    )
+                                  }
+                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
+                                  style={{ colorScheme: "dark" }}
+                                />
+                              </div>
                               <label className="text-[9px] font-semibold uppercase text-gray-500 tracking-wider ml-0.5">
                                 Jam Mulai
                               </label>
-                              <input
-                                type="time"
-                                name="startTime"
-                                required
-                                value={formData.startTime}
-                                onChange={(e) =>
-                                  setFormData((prev) =>
-                                    clampRegistrationCloseToStart({
-                                      ...prev,
-                                      startTime: e.target.value,
-                                    }),
-                                  )
-                                }
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/30 transition-all text-white shadow-sm"
-                                style={{ colorScheme: "dark" }}
-                              />
+                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                                <input
+                                  type="time"
+                                  name="startTime"
+                                  required
+                                  value={formData.startTime}
+                                  onChange={(e) =>
+                                    setFormData((prev) =>
+                                      clampRegistrationCloseToStart({
+                                        ...prev,
+                                        startTime: e.target.value,
+                                      }),
+                                    )
+                                  }
+                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
+                                  style={{ colorScheme: "dark" }}
+                                />
+                              </div>
                             </div>
                             <div className="space-y-1.5">
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                                 Tanggal Selesai
                               </label>
-                              <input
-                                type="date"
-                                name="endDate"
-                                required
-                                value={formData.endDate}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    endDate: e.target.value,
-                                  })
-                                }
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/30 transition-all text-white shadow-sm"
-                                style={{ colorScheme: "dark" }}
-                              />
+                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                                <input
+                                  type="date"
+                                  name="endDate"
+                                  required
+                                  value={formData.endDate}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      endDate: e.target.value,
+                                    })
+                                  }
+                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
+                                  style={{ colorScheme: "dark" }}
+                                />
+                              </div>
                               <label className="text-[9px] font-semibold uppercase text-gray-500 tracking-wider ml-0.5">
                                 Jam Selesai
                               </label>
-                              <input
-                                type="time"
-                                name="endTime"
-                                required
-                                value={formData.endTime}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    endTime: e.target.value,
-                                  })
-                                }
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/30 transition-all text-white shadow-sm"
-                                style={{ colorScheme: "dark" }}
-                              />
+                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                                <input
+                                  type="time"
+                                  name="endTime"
+                                  required
+                                  value={formData.endTime}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      endTime: e.target.value,
+                                    })
+                                  }
+                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
+                                  style={{ colorScheme: "dark" }}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1731,51 +1739,55 @@ export default function EventsPage() {
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                                 Tanggal Tutup
                               </label>
-                              <input
-                                type="date"
-                                name="registrationCloseDate"
-                                value={formData.registrationCloseDate}
-                                max={formData.startDate || undefined}
-                                onChange={(e) =>
-                                  setFormData((prev) =>
-                                    clampRegistrationCloseToStart({
-                                      ...prev,
-                                      registrationCloseDate: e.target.value,
-                                    }),
-                                  )
-                                }
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/30 transition-all text-white shadow-sm"
-                                style={{ colorScheme: "dark" }}
-                              />
+                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                                <input
+                                  type="date"
+                                  name="registrationCloseDate"
+                                  value={formData.registrationCloseDate}
+                                  max={formData.startDate || undefined}
+                                  onChange={(e) =>
+                                    setFormData((prev) =>
+                                      clampRegistrationCloseToStart({
+                                        ...prev,
+                                        registrationCloseDate: e.target.value,
+                                      }),
+                                    )
+                                  }
+                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
+                                  style={{ colorScheme: "dark" }}
+                                />
+                              </div>
                             </div>
                             <div className="space-y-1.5">
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                                 Jam Tutup
                               </label>
-                              <input
-                                type="time"
-                                name="registrationCloseTime"
-                                value={formData.registrationCloseTime}
-                                max={
-                                  formData.registrationCloseDate &&
-                                  formData.startDate &&
-                                  formData.registrationCloseDate ===
+                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                                <input
+                                  type="time"
+                                  name="registrationCloseTime"
+                                  value={formData.registrationCloseTime}
+                                  max={
+                                    formData.registrationCloseDate &&
                                     formData.startDate &&
-                                  formData.startTime
-                                    ? formData.startTime
-                                    : undefined
-                                }
-                                onChange={(e) =>
-                                  setFormData((prev) =>
-                                    clampRegistrationCloseToStart({
-                                      ...prev,
-                                      registrationCloseTime: e.target.value,
-                                    }),
-                                  )
-                                }
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/30 transition-all text-white shadow-sm"
-                                style={{ colorScheme: "dark" }}
-                              />
+                                    formData.registrationCloseDate ===
+                                      formData.startDate &&
+                                    formData.startTime
+                                      ? formData.startTime
+                                      : undefined
+                                  }
+                                  onChange={(e) =>
+                                    setFormData((prev) =>
+                                      clampRegistrationCloseToStart({
+                                        ...prev,
+                                        registrationCloseTime: e.target.value,
+                                      }),
+                                    )
+                                  }
+                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
+                                  style={{ colorScheme: "dark" }}
+                                />
+                              </div>
                             </div>
                           </div>
                           {formData.startDate &&
@@ -1795,21 +1807,23 @@ export default function EventsPage() {
                           <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                             Deskripsi Singkat
                           </label>
-                          <textarea
-                            name="description"
-                            rows={3}
-                            value={formData.description}
-                            autoComplete="off"
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                description: e.target.value,
-                              })
-                            }
-                            placeholder="Jelaskan detail kegiatan..."
-                            className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-amber-500/30 transition-all resize-none text-white placeholder:text-gray-600 shadow-sm"
-                            style={{ colorScheme: "dark" }}
-                          />
+                          <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                            <textarea
+                              name="description"
+                              rows={3}
+                              value={formData.description}
+                              autoComplete="off"
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  description: e.target.value,
+                                })
+                              }
+                              placeholder="Jelaskan detail kegiatan..."
+                              className="w-full bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white placeholder:text-gray-600 resize-none"
+                              style={{ colorScheme: "dark" }}
+                            />
+                          </div>
                         </div>
                       </div>
                     </form>
