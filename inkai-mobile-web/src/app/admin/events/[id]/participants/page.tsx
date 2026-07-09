@@ -688,7 +688,7 @@ export default function EventParticipantsPage() {
         {/* Header - Simplified as TopBar is already in layout */}
         <div className="flex items-center justify-between mb-6">
           <button 
-            onClick={() => router.back()}
+            onClick={() => router.push('/admin/events')}
             className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all"
           >
             <ChevronLeft size={20} />
