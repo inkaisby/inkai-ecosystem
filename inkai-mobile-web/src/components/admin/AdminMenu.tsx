@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, 
@@ -20,10 +20,12 @@ import {
   Award,
   FileText,
   Home,
-  ScrollText
+  ScrollText,
+  UserCheck
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 import styles from './AdminMenu.module.css';
 
 const adminItems = [
@@ -50,19 +52,38 @@ const memberItems = [
 
 export default function AdminMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [events, setEvents] = useState<any[]>([]);
+  const [showEventSub, setShowEventSub] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, logout, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (isOpen) {
+      api.events.getAll()
+        .then((res: any) => {
+          if (res && res.status === 'success' && Array.isArray(res.data)) {
+            setEvents(res.data);
+          } else if (Array.isArray(res)) {
+            setEvents(res);
+          }
+        })
+        .catch(err => console.error('Failed to load events in AdminMenu', err));
+    }
+  }, [isOpen]);
 
   if (isLoading || !isAuthenticated) return null;
 
   const handleNavigate = (path: string) => {
     setIsOpen(false);
+    setShowEventSub(false);
     router.push(path);
   };
 
   const handleLogout = () => {
     logout();
     setIsOpen(false);
+    setShowEventSub(false);
     router.push('/admin/login');
   };
 
@@ -90,44 +111,92 @@ export default function AdminMenu() {
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           >
             <div className={styles.header}>
-              <h2 className={styles.title}>MENU NAVIGASI</h2>
-              <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>
+              <h2 className={styles.title}>{showEventSub ? 'PESERTA EVENT' : 'MENU NAVIGASI'}</h2>
+              <button className={styles.closeBtn} onClick={() => { setIsOpen(false); setShowEventSub(false); }}>
                 <X size={24} />
               </button>
             </div>
 
             <div className={styles.menuContent}>
-              <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Administrator</h3>
-                <div className={styles.grid}>
-                  {adminItems.map((item) => (
+              {showEventSub ? (
+                <div className={styles.section}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className={styles.sectionTitle}>Pilih Event untuk Kelola Peserta</h3>
                     <button 
-                      key={item.label} 
-                      className={styles.menuItem}
-                      onClick={() => handleNavigate(item.path)}
+                      onClick={() => setShowEventSub(false)}
+                      className="text-xs text-amber-500 font-bold uppercase tracking-wider bg-white/5 px-3 py-1.5 rounded-lg"
                     >
-                      <div className={styles.iconWrapper}><item.icon size={20} /></div>
-                      <span className={styles.label}>{item.label}</span>
+                      ← Kembali
                     </button>
-                  ))}
+                  </div>
+                  <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
+                    <button 
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5 text-left text-xs font-bold text-amber-500"
+                      onClick={() => handleNavigate('/admin/events')}
+                    >
+                      <Calendar size={16} />
+                      <span>Semua Event / Kelola Event</span>
+                    </button>
+                    {events.length === 0 ? (
+                      <p className="text-xs text-gray-500 text-center py-8">Tidak ada event aktif</p>
+                    ) : (
+                      events.map((evt) => (
+                        <button 
+                          key={evt.id} 
+                          className="w-full flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 text-left active:scale-[0.98] transition-all"
+                          onClick={() => handleNavigate(`/admin/events/${evt.id}/participants`)}
+                        >
+                          <UserCheck size={16} className="text-amber-500 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-white truncate uppercase">{evt.title.replace('KEJURNAS: ', '').replace('UJIAN: ', '')}</p>
+                            <p className="text-[10px] text-gray-500 truncate mt-0.5">{evt.location || 'Lokasi tidak ditentukan'}</p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className={styles.section}>
+                    <h3 className={styles.sectionTitle}>Administrator</h3>
+                    <div className={styles.grid}>
+                      {adminItems.map((item) => (
+                        <button 
+                          key={item.label} 
+                          className={styles.menuItem}
+                          onClick={() => {
+                            if (item.path === '/admin/events') {
+                              setShowEventSub(true);
+                            } else {
+                              handleNavigate(item.path);
+                            }
+                          }}
+                        >
+                          <div className={styles.iconWrapper}><item.icon size={20} /></div>
+                          <span className={styles.label}>{item.label === 'Event' ? 'Event & Peserta' : item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Inkai Mobile (Member)</h3>
-                <div className={styles.grid}>
-                  {memberItems.map((item) => (
-                    <button 
-                      key={item.label} 
-                      className={styles.menuItem}
-                      onClick={() => handleNavigate(item.path)}
-                    >
-                      <div className={styles.iconWrapper}><item.icon size={20} /></div>
-                      <span className={styles.label}>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  <div className={styles.section}>
+                    <h3 className={styles.sectionTitle}>Inkai Mobile (Member)</h3>
+                    <div className={styles.grid}>
+                      {memberItems.map((item) => (
+                        <button 
+                          key={item.label} 
+                          className={styles.menuItem}
+                          onClick={() => handleNavigate(item.path)}
+                        >
+                          <div className={styles.iconWrapper}><item.icon size={20} /></div>
+                          <span className={styles.label}>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className={styles.footer}>
@@ -142,3 +211,4 @@ export default function AdminMenu() {
     </>
   );
 }
+
