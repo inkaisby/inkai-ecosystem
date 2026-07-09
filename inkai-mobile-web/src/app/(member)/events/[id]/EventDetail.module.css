@@ -107,10 +107,10 @@
 }
 
 .categoryItem {
-  padding: 16px;
-  background-color: var(--surface-row-bg);
-  border: 1px solid var(--surface-row-border);
-  border-radius: 16px;
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -128,61 +128,59 @@
 }
 
 .catName {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--text-light);
 }
 
 .catFee {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--primary-gold);
 }
 
 .paymentCard {
   margin-bottom: 24px;
-  padding: 18px;
-  background: linear-gradient(
-    135deg,
-    rgba(245, 158, 11, 0.14),
-    rgba(245, 158, 11, 0.05)
-  );
-  border: 1px solid rgba(245, 158, 11, 0.28);
-  border-radius: 18px;
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
 }
 
 .paymentCardTitle {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
-}
-
-.paymentCardAmount {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--primary-gold);
+  letter-spacing: 0.05em;
   margin-bottom: 8px;
 }
 
+.paymentCardAmount {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-gold);
+  margin-bottom: 6px;
+}
+
 .paymentCardHint {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
-  line-height: 1.5;
-  margin-bottom: 14px;
+  line-height: 1.45;
+  margin-bottom: 12px;
 }
 
 .paymentCardBtn {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   background: var(--primary-gold);
   color: #000;
   border: none;
-  border-radius: 14px;
+  border-radius: 12px;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -263,28 +261,33 @@
 
 .registerBtn {
   width: 100%;
-  padding: 16px;
+  padding: 12px;
   background-color: var(--primary-gold);
   color: black;
-  border-radius: 16px;
-  font-weight: bold;
-  font-size: 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.2s;
+  border: none;
+  cursor: pointer;
 }
 
 .registerBtn:disabled {
-  background-color: #333;
-  color: #666;
+  background-color: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.15);
+  cursor: not-allowed;
 }
 
 .registerBtn.registered {
-  background-color: var(--surface-row-bg);
+  background-color: rgba(255, 255, 255, 0.02);
   color: var(--text-muted);
-  border: 1px solid var(--surface-row-border);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 /** Tombol bayar biaya event (disetujui, tagihan pending) — tetap gold seperti CTA utama */
@@ -295,9 +298,9 @@
 }
 
 .registerBtn.waitingVerify {
-  background-color: rgba(168, 85, 247, 0.12);
+  background-color: rgba(168, 85, 247, 0.08);
   color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.25);
+  border: 1px solid rgba(168, 85, 247, 0.15);
 }
 
 .modalOverlay {
@@ -517,30 +520,30 @@
 }
 
 .bankCard {
-  background: var(--surface-row-bg);
-  border: 1px solid var(--border-light);
-  border-radius: 16px;
-  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 16px;
 }
 
 .bankLabel {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
 }
 
 .bankMain {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .bankName {
-  font-size: 13px;
-  font-weight: bold;
+  font-size: 12px;
+  font-weight: 800;
   color: var(--text-muted);
   margin-bottom: 2px;
 }
@@ -548,24 +551,24 @@
 .accountNumberGroup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .accountNumber {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--text-light);
   letter-spacing: 0.02em;
 }
 
 .accountName {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--primary-gold);
 }
 
 .proofUpload {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   transition: all 0.2s;
 }
 
@@ -575,10 +578,10 @@
 
 .dropZone {
   width: 100%;
-  padding: 32px 16px;
-  background: var(--surface-row-bg);
-  border: 2px dashed var(--border-light);
-  border-radius: 16px;
+  padding: 20px 16px;
+  background-color: rgba(255, 255, 255, 0.01);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -839,4 +842,57 @@
   color: var(--text-light);
   line-height: 1.45;
   font-weight: 500;
+}
+
+:global(html[data-clock-phase="day"]) .hero {
+  background: radial-gradient(circle at top, rgba(217, 119, 6, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+:global(html[data-clock-phase="day"]) .categoryItem {
+  background-color: white;
+  border-color: rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+}
+
+:global(html[data-clock-phase="day"]) .paymentCard {
+  background-color: white;
+  border-color: rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+}
+
+:global(html[data-clock-phase="day"]) .bankCard {
+  background-color: white;
+  border-color: rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+}
+
+:global(html[data-clock-phase="day"]) .dropZone {
+  background-color: rgba(15, 23, 42, 0.01);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+:global(html[data-clock-phase="day"]) .checkboxLabel {
+  background-color: white;
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+:global(html[data-clock-phase="day"]) .registerBtn:disabled {
+  background-color: rgba(15, 23, 42, 0.03);
+  color: rgba(15, 23, 42, 0.25);
+}
+
+:global(html[data-clock-phase="day"]) .registerBtn.registered {
+  background-color: rgba(15, 23, 42, 0.02);
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+:global(html[data-clock-phase="day"]) .modalSheet {
+  background-color: white;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 -10px 32px rgba(15, 23, 42, 0.06);
+}
+
+:global(html[data-clock-phase="day"]) .qrisPanel {
+  background-color: rgba(15, 23, 42, 0.01);
+  border-color: rgba(15, 23, 42, 0.06);
 }
