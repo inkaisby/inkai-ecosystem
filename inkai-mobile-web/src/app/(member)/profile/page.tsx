@@ -155,19 +155,6 @@ export default function Profile() {
         </div>
       </section>
 
-      {(user.roles?.includes('PARENT') || (Array.isArray(user.roles) && user.roles.some((r: any) => r === 'PARENT' || r.name === 'PARENT'))) && (
-        <section className={styles.menuSection}>
-          <p className={styles.sectionLabel}>AKUN TERHUBUNG:</p>
-          <div className={styles.emptyConnected}>
-            Belum ada data anak terhubung
-          </div>
-          <button className={styles.addChildBtn}>
-            <Plus size={18} />
-            Tambah Anak / Anggota Baru
-          </button>
-        </section>
-      )}
-
       <section className={styles.logoutSection}>
         <button className={styles.logoutBtn} onClick={() => { logout(); router.push("/"); }}>
           <LogOut size={20} />
