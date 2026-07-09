@@ -31,7 +31,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, getAssetUrl } from "@/lib/api";
 import toast from "react-hot-toast";
 import { MemberItemSkeleton } from "@/components/admin/Skeleton";
 import AdminModalPortal from "@/components/admin/AdminModalPortal";
@@ -154,12 +154,15 @@ function AdminMemberListCard({
   canEditNiaSabuk: boolean;
 }) {
   const [niaLocal, setNiaLocal] = useState(() => member.nia ?? "");
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     setNiaLocal(member.nia ?? "");
   }, [member.id, member.nia]);
 
   const rankValue = member.currentRank || "Putih (Kyu 10)";
+  const photoUrl = member.user?.photoUrl;
+  const photoSrc = photoUrl && !imageError ? getAssetUrl(photoUrl) : "";
 
   return (
     <div
@@ -174,12 +177,21 @@ function AdminMemberListCard({
         <button
           type="button"
           onClick={() => onOpenDetail(member)}
-          className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10"
+          className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10 overflow-hidden"
           title="Detail anggota"
         >
-          <span className="text-amber-500 font-bold text-xs">
-            {member.fullName?.charAt(0)}
-          </span>
+          {photoSrc ? (
+            <img
+              src={photoSrc}
+              alt={member.fullName}
+              className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <span className="text-amber-500 font-bold text-xs">
+              {member.fullName?.charAt(0)}
+            </span>
+          )}
         </button>
         <div className="min-w-0 flex-1 space-y-2">
           <button
@@ -308,6 +320,7 @@ function AdminMemberTableRow({
   onToggleStatus,
   onDelete,
   canEditNiaSabuk,
+  rowNumber,
 }: {
   member: any;
   saving: boolean;
@@ -320,28 +333,44 @@ function AdminMemberTableRow({
   onToggleStatus: (m: any) => void;
   onDelete: (id: string) => void;
   canEditNiaSabuk: boolean;
+  rowNumber: number;
 }) {
   const [niaLocal, setNiaLocal] = useState(() => member.nia ?? "");
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     setNiaLocal(member.nia ?? "");
   }, [member.id, member.nia]);
 
   const rankValue = member.currentRank || "Putih (Kyu 10)";
+  const photoUrl = member.user?.photoUrl;
+  const photoSrc = photoUrl && !imageError ? getAssetUrl(photoUrl) : "";
 
   return (
     <tr className={`hover:bg-white/[0.01] transition-all group border-b border-white/5 relative ${saving ? "opacity-70 pointer-events-none" : ""}`}>
+      <td className="py-4 pl-4 pr-2 text-left text-xs font-semibold text-gray-500 font-mono w-12">
+        {rowNumber}
+      </td>
       <td className="py-4 px-6 text-left">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => onOpenDetail(member)}
-            className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10"
+            className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-amber-500/20 to-transparent flex items-center justify-center border border-amber-500/10 overflow-hidden"
             title="Detail anggota"
           >
-            <span className="text-amber-500 font-bold text-xs">
-              {member.fullName?.charAt(0)}
-            </span>
+            {photoSrc ? (
+              <img
+                src={photoSrc}
+                alt={member.fullName}
+                className="w-full h-full object-cover"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <span className="text-amber-500 font-bold text-xs">
+                {member.fullName?.charAt(0)}
+              </span>
+            )}
           </button>
           <div className="min-w-0">
             <button
@@ -1049,6 +1078,7 @@ function MembersContent() {
                   <table className="w-full text-left text-sm border-collapse">
                     <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold bg-white/[0.01]">
                       <tr>
+                        <th className="py-4 pl-4 pr-2 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left w-12">No.</th>
                         <th className="py-4 px-6 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left">Nama Anggota</th>
                         <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left w-48">NIA</th>
                         <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left w-56">Sabuk & Kyu</th>
@@ -1058,8 +1088,9 @@ function MembersContent() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {members.map((member) => {
+                      {members.map((member, index) => {
                         const saving = listSavingId === member.id;
+                        const rowNumber = (meta.page - 1) * meta.limit + index + 1;
                         return (
                           <AdminMemberTableRow
                             key={member.id}
@@ -1071,6 +1102,7 @@ function MembersContent() {
                             onToggleStatus={handleToggleStatus}
                             onDelete={handleDelete}
                             canEditNiaSabuk={canEditNiaSabuk}
+                            rowNumber={rowNumber}
                           />
                         );
                       })}
