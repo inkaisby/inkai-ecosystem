@@ -1987,3 +1987,52 @@ input::-ms-clear {
   background-color: rgba(239, 68, 68, 0.08) !important;
   color: #ef4444 !important;
 }
+
+/* Event Form Fields Redesign Styles */
+.event-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.event-form-field {
+  width: 100% !important;
+  min-height: 48px !important;
+  background-color: #1e1e24 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  color: #f4f4f5 !important;
+  font-size: 14px !important;
+  padding: 12px 16px !important;
+  outline: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+  color-scheme: dark !important;
+}
+
+.event-form-field:focus {
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
+}
+
+.event-form-field::placeholder {
+  color: rgba(244, 244, 245, 0.45) !important;
+}
+
+.event-form-field-icon {
+  padding-left: 44px !important;
+}
+
+.event-field-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(244, 244, 245, 0.5) !important;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.event-form-textarea {
+  min-height: 100px !important;
+  resize: none !important;
+}

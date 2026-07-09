@@ -1286,7 +1286,7 @@ export default function EventsPage() {
                           <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                             Kategori & Nama Agenda
                           </label>
-                          <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative">
+                          <div className="event-input-container">
                             <select
                               name="categoryAndTitle"
                               required
@@ -1313,8 +1313,8 @@ export default function EventsPage() {
                                   title: v.slice(sep + AGENDA_COMBINED_SEP.length),
                                 });
                               }}
-                              className="w-full min-h-[46px] bg-transparent border-0 rounded-xl px-4 py-2.5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 appearance-none cursor-pointer text-white"
-                              style={{ colorScheme: "dark" }}
+                              className="event-form-field"
+                              style={{ paddingRight: "36px" }}
                             >
                               <option value="">
                                 Pilih kategori dan nama agenda…
@@ -1441,7 +1441,7 @@ export default function EventsPage() {
                                   </label>
                                 </div>
                                 {wilayahScope === "branch" && isSuper && (
-                                  <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative">
+                                  <div className="event-input-container">
                                     <select
                                       value={formData.eventProvinceId}
                                       onChange={(e) =>
@@ -1451,8 +1451,8 @@ export default function EventsPage() {
                                           branchId: "",
                                         })
                                       }
-                                      className="w-full min-h-[46px] bg-transparent border-0 rounded-xl px-4 py-2.5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 appearance-none cursor-pointer text-white"
-                                      style={{ colorScheme: "dark" }}
+                                      className="event-form-field"
+                                      style={{ paddingRight: "36px" }}
                                     >
                                       <option value="">Pilih provinsi…</option>
                                       {provinceOptions.map((p) => (
@@ -1468,7 +1468,7 @@ export default function EventsPage() {
                                   </div>
                                 )}
                                 {wilayahScope === "branch" && (
-                                  <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative">
+                                  <div className="event-input-container">
                                     <select
                                       value={formData.branchId}
                                       onChange={(e) =>
@@ -1477,8 +1477,8 @@ export default function EventsPage() {
                                           branchId: e.target.value,
                                         })
                                       }
-                                      className="w-full min-h-[46px] bg-transparent border-0 rounded-xl px-4 py-2.5 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 appearance-none cursor-pointer text-white"
-                                      style={{ colorScheme: "dark" }}
+                                      className="event-form-field"
+                                      style={{ paddingRight: "36px" }}
                                     >
                                       <option value="">
                                         Pilih cabang / ranting…
@@ -1507,9 +1507,9 @@ export default function EventsPage() {
                           <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                             Lokasi
                           </label>
-                          <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative flex items-center">
+                          <div className="event-input-container">
                             <MapPin
-                              className="absolute left-4 text-gray-500 pointer-events-none"
+                              className="event-field-icon"
                               size={16}
                             />
                             <input
@@ -1525,8 +1525,7 @@ export default function EventsPage() {
                                 })
                               }
                               placeholder="Gedung Olahraga, Kota..."
-                              className="w-full min-h-[46px] bg-transparent border-0 rounded-xl pl-11 pr-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white placeholder:text-gray-500"
-                              style={{ colorScheme: "dark" }}
+                              className="event-form-field event-form-field-icon"
                             />
                           </div>
                         </div>
@@ -1550,9 +1549,9 @@ export default function EventsPage() {
                                     <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-300 truncate">
                                       {row.name}
                                     </span>
-                                    <div className="adm-dark-field rounded-lg border border-white/10 bg-[#1e1e24] shadow-sm relative flex items-center w-36">
+                                    <div className="event-input-container" style={{ width: "144px" }}>
                                       <Wallet
-                                        className="absolute left-3 text-gray-500 pointer-events-none"
+                                        className="event-field-icon"
                                         size={14}
                                       />
                                       <input
@@ -1573,7 +1572,13 @@ export default function EventsPage() {
                                           )
                                         }
                                         placeholder="0"
-                                        className="w-full bg-transparent border-0 rounded-lg pl-9 pr-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white placeholder:text-gray-600 [color-scheme:dark]"
+                                        className="event-form-field event-form-field-icon"
+                                        style={{
+                                          minHeight: "38px",
+                                          padding: "8px 12px 8px 36px",
+                                          fontSize: "12px",
+                                          borderRadius: "8px"
+                                        }}
                                       />
                                     </div>
                                   </div>
@@ -1582,9 +1587,9 @@ export default function EventsPage() {
                             </div>
                           ) : (
                             <>
-                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm relative flex items-center">
+                              <div className="event-input-container">
                                 <Wallet
-                                  className="absolute left-4 text-gray-500 pointer-events-none"
+                                  className="event-field-icon"
                                   size={16}
                                 />
                                 <input
@@ -1602,7 +1607,7 @@ export default function EventsPage() {
                                     })
                                   }
                                   placeholder="0 = gratis"
-                                  className="w-full min-h-[46px] bg-transparent border-0 rounded-xl pl-11 pr-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white placeholder:text-gray-500 [color-scheme:dark]"
+                                  className="event-form-field event-form-field-icon"
                                 />
                               </div>
                               <p className="text-[10px] text-gray-500 leading-relaxed font-medium ml-0.5">
@@ -1640,7 +1645,7 @@ export default function EventsPage() {
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                                 Tanggal Mulai
                               </label>
-                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                              <div className="event-input-container">
                                 <input
                                   type="date"
                                   name="startDate"
@@ -1654,14 +1659,13 @@ export default function EventsPage() {
                                       }),
                                     )
                                   }
-                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
-                                  style={{ colorScheme: "dark" }}
+                                  className="event-form-field"
                                 />
                               </div>
                               <label className="text-[9px] font-semibold uppercase text-gray-500 tracking-wider ml-0.5">
                                 Jam Mulai
                               </label>
-                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                              <div className="event-input-container">
                                 <input
                                   type="time"
                                   name="startTime"
@@ -1675,8 +1679,7 @@ export default function EventsPage() {
                                       }),
                                     )
                                   }
-                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
-                                  style={{ colorScheme: "dark" }}
+                                  className="event-form-field"
                                 />
                               </div>
                             </div>
@@ -1684,7 +1687,7 @@ export default function EventsPage() {
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                                 Tanggal Selesai
                               </label>
-                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                              <div className="event-input-container">
                                 <input
                                   type="date"
                                   name="endDate"
@@ -1696,14 +1699,13 @@ export default function EventsPage() {
                                       endDate: e.target.value,
                                     })
                                   }
-                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
-                                  style={{ colorScheme: "dark" }}
+                                  className="event-form-field"
                                 />
                               </div>
                               <label className="text-[9px] font-semibold uppercase text-gray-500 tracking-wider ml-0.5">
                                 Jam Selesai
                               </label>
-                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                              <div className="event-input-container">
                                 <input
                                   type="time"
                                   name="endTime"
@@ -1715,8 +1717,7 @@ export default function EventsPage() {
                                       endTime: e.target.value,
                                     })
                                   }
-                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
-                                  style={{ colorScheme: "dark" }}
+                                  className="event-form-field"
                                 />
                               </div>
                             </div>
@@ -1739,7 +1740,7 @@ export default function EventsPage() {
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                                 Tanggal Tutup
                               </label>
-                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                              <div className="event-input-container">
                                 <input
                                   type="date"
                                   name="registrationCloseDate"
@@ -1753,8 +1754,7 @@ export default function EventsPage() {
                                       }),
                                     )
                                   }
-                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
-                                  style={{ colorScheme: "dark" }}
+                                  className="event-form-field"
                                 />
                               </div>
                             </div>
@@ -1762,7 +1762,7 @@ export default function EventsPage() {
                               <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                                 Jam Tutup
                               </label>
-                              <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                              <div className="event-input-container">
                                 <input
                                   type="time"
                                   name="registrationCloseTime"
@@ -1784,8 +1784,7 @@ export default function EventsPage() {
                                       }),
                                     )
                                   }
-                                  className="w-full min-h-[44px] bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white"
-                                  style={{ colorScheme: "dark" }}
+                                  className="event-form-field"
                                 />
                               </div>
                             </div>
@@ -1807,7 +1806,7 @@ export default function EventsPage() {
                           <label className="text-[10px] font-semibold uppercase text-amber-500 tracking-wider ml-0.5">
                             Deskripsi Singkat
                           </label>
-                          <div className="adm-dark-field rounded-xl border border-white/10 bg-[#1e1e24] shadow-sm">
+                          <div className="event-input-container">
                             <textarea
                               name="description"
                               rows={3}
@@ -1820,8 +1819,7 @@ export default function EventsPage() {
                                 })
                               }
                               placeholder="Jelaskan detail kegiatan..."
-                              className="w-full bg-transparent border-0 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-white placeholder:text-gray-600 resize-none"
-                              style={{ colorScheme: "dark" }}
+                              className="event-form-field event-form-textarea"
                             />
                           </div>
                         </div>
