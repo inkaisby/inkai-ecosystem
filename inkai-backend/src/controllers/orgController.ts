@@ -3,6 +3,7 @@ import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import { notifyAdmins } from '../utils/notification';
 import { getOrSetCache, invalidateCache } from '../utils/redis';
+import { generateSecurePassword } from '../utils/passwordValidator';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -161,7 +162,8 @@ export const createProvince = async (req: Request, res: Response) => {
     invalidateCache('org:provinces:all');
 
     // Create Admin User
-    const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
+    const fallbackPassword = adminPassword ? adminPassword : generateSecurePassword(12);
+    const passwordHash = await bcrypt.hash(fallbackPassword, 12);
     await prisma.user.upsert({
       where: { email: adminEmail },
       update: {
@@ -190,14 +192,14 @@ export const createProvince = async (req: Request, res: Response) => {
     // Notify PP INKAI
     await notifyAdmins({
       title: 'PENGPROV Baru',
-      content: `Provinsi ${province.name} telah didaftarkan dalam sistem.`,
+      content: `Provinsi ${province.name} telah didaftarkan dalam sistem. Default password admin jika tidak diset: ${fallbackPassword}`,
       type: 'SUCCESS',
       role: 'ADMIN_PUSAT'
     });
 
     res.json({ status: 'success', data: province });
   } catch (error: any) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -218,7 +220,8 @@ export const createBranch = async (req: Request, res: Response) => {
     invalidateCache('org:provinces:all');
 
     // Create Admin User
-    const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
+    const fallbackPassword = adminPassword ? adminPassword : generateSecurePassword(12);
+    const passwordHash = await bcrypt.hash(fallbackPassword, 12);
     await prisma.user.upsert({
       where: { email: adminEmail },
       update: {
@@ -247,21 +250,20 @@ export const createBranch = async (req: Request, res: Response) => {
     // Notify PENGPROV
     await notifyAdmins({
       title: 'PENGCAB Baru',
-      content: `Cabang ${branch.name} telah didaftarkan di ${branch.province.name}.`,
+      content: `Cabang ${branch.name} telah didaftarkan dalam sistem. Default password admin jika tidak diset: ${fallbackPassword}`,
       type: 'SUCCESS',
-      role: 'ADMIN_PROVINCE',
-      provinceId: branch.provinceId
+      role: 'ADMIN_PROVINCE'
     });
 
     res.json({ status: 'success', data: branch });
   } catch (error: any) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
 export const createDojo = async (req: Request, res: Response) => {
   try {
-    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, branchId, adminEmail, adminPassword, bankName, bankAccountNumber, bankAccountName } = req.body;
+    const { name, branchId, address, contactPerson, headName, kecamatan, tempatLatihan, phoneNumber, schedule, adminEmail, adminPassword, bankName, bankAccountNumber, bankAccountName } = req.body;
     
     if (!adminEmail) {
       return res.status(400).json({ status: 'error', message: 'Email Admin dojo wajib diisi' });
@@ -288,7 +290,8 @@ export const createDojo = async (req: Request, res: Response) => {
     // Invalidate cache
     invalidateCache('org:provinces:all');
 
-    const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : await bcrypt.hash('123456', 12);
+    const fallbackPassword = adminPassword ? adminPassword : generateSecurePassword(12);
+    const passwordHash = await bcrypt.hash(fallbackPassword, 12);
     await prisma.user.upsert({
       where: { email: adminEmail },
       update: {
@@ -352,11 +355,12 @@ export const updateProvince = async (req: Request, res: Response) => {
         data: { managedProvinceId: null }
       });
 
-      const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : undefined;
+      const fallbackPassword = adminPassword ? adminPassword : generateSecurePassword(12);
+      const passwordHash = await bcrypt.hash(fallbackPassword, 12);
       await prisma.user.upsert({
         where: { email: adminEmail },
         update: {
-          ...(passwordHash && { passwordHash }),
+          passwordHash,
           managedProvinceId: id,
           roles: {
             connectOrCreate: {
@@ -367,7 +371,7 @@ export const updateProvince = async (req: Request, res: Response) => {
         },
         create: {
           email: adminEmail,
-          passwordHash: passwordHash || (await bcrypt.hash('123456', 12)),
+          passwordHash,
           managedProvinceId: id,
           roles: {
             connectOrCreate: {
@@ -382,7 +386,7 @@ export const updateProvince = async (req: Request, res: Response) => {
     res.json({ status: 'success', data: province });
   } catch (error: any) {
     console.error('Update Province Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -407,11 +411,12 @@ export const updateBranch = async (req: Request, res: Response) => {
         data: { managedBranchId: null }
       });
 
-      const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : undefined;
+      const fallbackPassword = adminPassword ? adminPassword : generateSecurePassword(12);
+      const passwordHash = await bcrypt.hash(fallbackPassword, 12);
       await prisma.user.upsert({
         where: { email: adminEmail },
         update: {
-          ...(passwordHash && { passwordHash }),
+          passwordHash,
           managedBranchId: id,
           roles: {
             connectOrCreate: {
@@ -422,7 +427,7 @@ export const updateBranch = async (req: Request, res: Response) => {
         },
         create: {
           email: adminEmail,
-          passwordHash: passwordHash || (await bcrypt.hash('123456', 12)),
+          passwordHash,
           managedBranchId: id,
           roles: {
             connectOrCreate: {
@@ -437,7 +442,7 @@ export const updateBranch = async (req: Request, res: Response) => {
     res.json({ status: 'success', data: branch });
   } catch (error: any) {
     console.error('Update Branch Error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -460,11 +465,12 @@ export const updateDojo = async (req: Request, res: Response) => {
         data: { managedDojoId: null }
       });
 
-      const passwordHash = adminPassword ? await bcrypt.hash(adminPassword, 12) : undefined;
+      const fallbackPassword = adminPassword ? adminPassword : generateSecurePassword(12);
+      const passwordHash = await bcrypt.hash(fallbackPassword, 12);
       await prisma.user.upsert({
         where: { email: adminEmail },
         update: {
-          ...(passwordHash && { passwordHash }),
+          passwordHash,
           managedDojoId: id,
           phoneNumber: phoneNumber || undefined,
           roles: {
@@ -476,7 +482,7 @@ export const updateDojo = async (req: Request, res: Response) => {
         },
         create: {
           email: adminEmail,
-          passwordHash: passwordHash || (await bcrypt.hash('123456', 12)),
+          passwordHash,
           managedDojoId: id,
           phoneNumber: phoneNumber || undefined,
           roles: {

@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import * as billingController from '../controllers/billingController';
-import { authenticate } from '../middleware/authMiddleware';
+import { authenticate, authorize } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.get('/', authenticate, billingController.getAllBillings);
+router.get('/', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), billingController.getAllBillings);
 router.get('/my', authenticate, billingController.getMyBillings);
-router.get('/member/:memberId', authenticate, billingController.getMemberBillings);
-router.post('/', authenticate, billingController.createBilling);
+router.get('/member/:memberId', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), billingController.getMemberBillings);
+router.post('/', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), billingController.createBilling);
 router.post('/pay', authenticate, billingController.processPayment);
-router.post('/verify', authenticate, billingController.verifyPayment);
-router.delete('/:id', authenticate, billingController.deleteBilling);
+router.post('/verify', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), billingController.verifyPayment);
+router.delete('/:id', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT']), billingController.deleteBilling);
 
 export default router;

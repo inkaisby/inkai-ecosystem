@@ -6,6 +6,9 @@ import crypto from 'crypto';
 import prisma from '../utils/prisma';
 import { supabase } from '../utils/supabase';
 import path from 'path';
+import { validatePassword, generateSecurePassword } from '../utils/passwordValidator';
+import { logSecurityEvent, trackFailedLogin, resetFailedLogins, isAccountLocked } from '../utils/securityLogger';
+import { blacklistToken } from '../utils/tokenBlacklist';
 
 /** Payload ringkas untuk session (login / GET /auth/me) — selaras bentuk `/members/me` tanpa ranks/attendance/registrations besar */
 const sessionUserInclude = {
@@ -123,6 +126,12 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'Email sudah terdaftar' });
     }
 
+    // Validate password strength
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ status: 'error', message: pwCheck.message });
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
@@ -186,7 +195,17 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const parsedId = parseLoginIdentifier(identifier);
-    console.log(`Login attempt for: ${identifier}`);
+    // Check account lockout
+    if (isAccountLocked(identifier)) {
+      logSecurityEvent(req, 'LOGIN_BLOCKED_RATE_LIMIT', {
+        details: `Account locked: ${identifier.slice(0, 3)}***`,
+        severity: 'HIGH',
+      });
+      return res.status(429).json({
+        status: 'error',
+        message: 'Akun terkunci sementara karena terlalu banyak percobaan gagal. Tunggu 30 menit.',
+      });
+    }
 
     // Find user by email or NIA
     let user = await prisma.user.findFirst({
@@ -195,23 +214,36 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      console.log(`User NOT found: ${identifier}`);
+      trackFailedLogin(identifier);
+      logSecurityEvent(req, 'LOGIN_FAILED', { details: 'User not found' });
       return res.status(401).json({ message: 'Kredensial tidak valid' });
     }
 
     if (!user.isActive) {
-      console.log(`User DEACTIVATED: ${user.email}`);
+      logSecurityEvent(req, 'LOGIN_FAILED', { userId: user.id, details: 'Account deactivated' });
       return res.status(403).json({ message: 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.' });
     }
 
-    console.log(`User found: ${user.email}. Checking password...`);
+    // password check
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      console.log(`Password INVALID for user: ${user.email}`);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      const { shouldLock, attempts } = trackFailedLogin(identifier);
+      logSecurityEvent(req, 'LOGIN_FAILED', {
+        userId: user.id,
+        details: `Invalid password (attempt ${attempts})`,
+      });
+      if (shouldLock) {
+        logSecurityEvent(req, 'ACCOUNT_LOCKED', {
+          userId: user.id,
+          details: `Account locked after ${attempts} failed attempts`,
+          severity: 'CRITICAL',
+        });
+      }
+      return res.status(401).json({ message: 'Kredensial tidak valid' });
     }
-    console.log(`Password valid for user: ${user.email}`);
+    resetFailedLogins(identifier);
+    logSecurityEvent(req, 'LOGIN_SUCCESS', { userId: user.id });
 
     const uniquePermissions = collectPermissionSlugs(user.roles);
 
@@ -230,8 +262,8 @@ export const login = async (req: Request, res: Response) => {
         managedBranchName: user.managedBranch?.name,
         managedDojoName: user.managedDojo?.name
       },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '7d' }
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h', issuer: 'inkai-api', audience: 'inkai-app' }
     );
 
     const sessionUser = buildSessionUserResponse(user, uniquePermissions);
@@ -253,10 +285,7 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan pada server saat login',
-      debug:
-        process.env.NODE_ENV === 'development' || process.env.INKAI_LOGIN_DEBUG === '1'
-          ? error.message
-          : undefined,
+      debug: undefined, // Never leak debug info to client
     });
   }
 };
@@ -290,7 +319,7 @@ export const getSession = async (req: any, res: Response) => {
     });
   } catch (error: any) {
     console.error('[getSession]', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -378,8 +407,8 @@ export const adminLogin = async (req: Request, res: Response) => {
         managedBranchName: user.managedBranch?.name,
         managedDojoName: user.managedDojo?.name
       },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '7d' }
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h', issuer: 'inkai-api', audience: 'inkai-app' }
     );
 
     res.json({
@@ -415,10 +444,7 @@ export const adminLogin = async (req: Request, res: Response) => {
     res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan pada server saat login admin',
-      debug:
-        process.env.NODE_ENV === 'development' || process.env.INKAI_LOGIN_DEBUG === '1'
-          ? error.message
-          : undefined,
+      debug: undefined, // Never leak debug info to client
     });
   }
 };
@@ -438,15 +464,22 @@ export const changePassword = async (req: any, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'Kata sandi lama tidak sesuai' });
     }
 
+    const pwCheck = validatePassword(newPassword);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ status: 'error', message: pwCheck.message });
+    }
+
     const hashedNewPassword = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({
       where: { id: userId },
       data: { passwordHash: hashedNewPassword }
     });
 
+    logSecurityEvent(req, 'PASSWORD_CHANGED', { userId });
+
     res.json({ status: 'success', message: 'Kata sandi berhasil diperbarui' });
   } catch (error: any) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -490,7 +523,7 @@ export const uploadProfilePhoto = async (req: any, res: Response) => {
       photoUrl: fileUrl 
     });
   } catch (error: any) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -525,7 +558,7 @@ export const uploadFile = async (req: any, res: Response) => {
       fileUrl: publicUrl 
     });
   } catch (error: any) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -543,7 +576,11 @@ export const forgotPassword = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json({ status: 'error', message: 'User tidak ditemukan' });
+      // Don't reveal whether user exists — always return success
+      return res.json({
+        status: 'success',
+        message: 'Jika akun ditemukan, instruksi pemulihan telah dikirim ke WhatsApp Anda'
+      });
     }
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -557,23 +594,29 @@ export const forgotPassword = async (req: Request, res: Response) => {
       }
     });
 
+    logSecurityEvent(req, 'PASSWORD_RESET_REQUESTED', { userId: user.id });
+
     const resetLink = `inkai://reset-password?token=${token}`;
     console.log(`\n📧 [RESET PASSWORD] Link untuk ${user.email}:\n${resetLink}\n`);
 
     if (user.phoneNumber) {
       try {
-        const fonnteToken = process.env.FONNTE_TOKEN || "mXTpegz69aVwQkDx3y2s";
-        await fetch("https://api.fonnte.com/send", {
-          method: "POST",
-          headers: {
-            Authorization: fonnteToken,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            target: user.phoneNumber,
-            message: `Halo ${user.fullName || 'Anggota'},\n\nAnda baru saja meminta pemulihan kata sandi untuk akun Sistem Informasi INKAI.\n\nSilakan gunakan tautan berikut untuk mengatur ulang kata sandi Anda:\n${resetLink}\n\nJika Anda tidak merasa memintanya, abaikan pesan ini.\n\nSalam,\nSistem Informasi INKAI`
-          })
-        });
+        const fonnteToken = process.env.FONNTE_TOKEN;
+        if (!fonnteToken) {
+          console.error('[ForgotPassword] FONNTE_TOKEN not set');
+        } else {
+          await fetch("https://api.fonnte.com/send", {
+            method: "POST",
+            headers: {
+              Authorization: fonnteToken,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              target: user.phoneNumber,
+              message: `Halo ${user.fullName || 'Anggota'},\n\nAnda baru saja meminta pemulihan kata sandi untuk akun Sistem Informasi INKAI.\n\nSilakan gunakan tautan berikut untuk mengatur ulang kata sandi Anda:\n${resetLink}\n\nJika Anda tidak merasa memintanya, abaikan pesan ini.\n\nSalam,\nSistem Informasi INKAI`
+            })
+          });
+        }
       } catch (err) {
         console.error("Gagal mengirim WhatsApp Fonnte:", err);
       }
@@ -584,7 +627,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       message: 'Instruksi pemulihan telah dikirim ke WhatsApp Anda'
     });
   } catch (error: any) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -603,6 +646,11 @@ export const resetPassword = async (req: Request, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'Token tidak valid atau sudah kadaluarsa' });
     }
 
+    const pwCheck = validatePassword(newPassword);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ status: 'error', message: pwCheck.message });
+    }
+
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
     await prisma.user.update({
@@ -619,7 +667,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       message: 'Kata sandi berhasil diperbarui'
     });
   } catch (error: any) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
@@ -727,6 +775,21 @@ export const updateProfile = async (req: any, res: Response) => {
         message: `${field === 'nik' ? 'NIK' : 'Nomor WhatsApp'} sudah digunakan oleh akun lain` 
       });
     }
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
+  }
+};
+
+export const logout = async (req: any, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      await blacklistToken(token, 86400); // Blacklist for 24 hours
+      logSecurityEvent(req, 'TOKEN_REVOKED', {
+        userId: req.user?.userId,
+      });
+    }
+    res.json({ status: 'success', message: 'Berhasil logout' });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: 'Gagal logout' });
   }
 };

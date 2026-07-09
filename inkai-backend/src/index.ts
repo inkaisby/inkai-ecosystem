@@ -23,6 +23,7 @@ import newsCarouselRoutes from './routes/newsCarouselRoutes';
 import { createServer } from 'http';
 import prisma from './utils/prisma';
 import { initSentryBackend, captureSafeException } from './utils/sentry';
+import { globalRateLimiter, securityCCTV } from './middleware/securityMiddleware';
 
 dotenv.config();
 
@@ -41,20 +42,58 @@ if (
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginResourcePolicy: false,
-  frameguard: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https://*.supabase.co'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    }
+  },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  frameguard: { action: 'deny' },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
-app.use(cors());
+
+const ALLOWED_ORIGINS = [
+  'https://inkai-mobile-web.vercel.app',
+  'https://inkai-web-admin.vercel.app',
+  'https://inkai-ecosystem.vercel.app',
+  ...(process.env.NODE_ENV === 'development' ? ['http://localhost:3000', 'http://localhost:3001'] : []),
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400,
+}));
+
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use('/uploads', express.static('public/uploads'));
 
-// Global Request Logger for Debugging
-app.use((req, res, next) => {
-  console.log(`[DEBUG] Incoming Request: ${req.method} ${req.originalUrl}`);
-  next();
-});
+// Global rate limiting and Security CCTV Logging ("Digital Security Guards")
+app.use(globalRateLimiter);
+app.use(securityCCTV);
+
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`[DEBUG] Incoming Request: ${req.method} ${req.originalUrl}`);
+    next();
+  });
+}
 
 // Routes
 app.use('/v1/auth', authRoutes);

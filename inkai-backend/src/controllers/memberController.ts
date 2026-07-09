@@ -514,7 +514,9 @@ export const createMember = async (req: AuthRequest, res: Response) => {
           throw new Error('Email sudah terdaftar');
         }
 
-        const hashedPassword = await bcrypt.hash(password || '123456', 12);
+        const { generateSecurePassword } = require('../utils/passwordValidator');
+        const fallbackPassword = password ? password : generateSecurePassword(12);
+        const hashedPassword = await bcrypt.hash(fallbackPassword, 12);
         const user = await tx.user.create({
           data: {
             email,
@@ -663,7 +665,9 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
           const existingUser = await tx.user.findUnique({ where: { email } });
           if (existingUser) throw new Error('Email sudah terdaftar');
 
-          const hashedPassword = await bcrypt.hash(password || '123456', 12);
+          const { generateSecurePassword } = require('../utils/passwordValidator');
+          const fallbackPassword = password ? password : generateSecurePassword(12);
+          const hashedPassword = await bcrypt.hash(fallbackPassword, 12);
           const user = await tx.user.create({
             data: {
               email,
@@ -967,20 +971,22 @@ export const bulkCreateMembers = async (req: AuthRequest, res: Response) => {
               throw new Error(`Email ${email} sudah terdaftar`);
             }
 
-            const hashedPassword = await bcrypt.hash(password || '123456', 12);
-            const user = await tx.user.create({
-              data: {
-                email,
-                passwordHash: hashedPassword,
-                fullName,
-                roles: {
-                  connectOrCreate: {
-                    where: { name: 'MEMBER' },
-                    create: { name: 'MEMBER' }
-                  }
-                }
+        const { generateSecurePassword } = require('../utils/passwordValidator');
+        const fallbackPassword = password ? password : generateSecurePassword(12);
+        const hashedPassword = await bcrypt.hash(fallbackPassword, 12);
+        const user = await tx.user.create({
+          data: {
+            email,
+            passwordHash: hashedPassword,
+            fullName,
+            roles: {
+              connectOrCreate: {
+                where: { name: 'MEMBER' },
+                create: { name: 'MEMBER' }
               }
-            });
+            }
+          }
+        });
             userId = user.id;
           }
 
@@ -1188,7 +1194,9 @@ export const provisionMemberLogin = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash('123456', 12);
+    const { generateSecurePassword } = require('../utils/passwordValidator');
+    const defaultPassword = generateSecurePassword(12);
+    const hashedPassword = await bcrypt.hash(defaultPassword, 12);
 
     const user = await prisma.$transaction(async (tx) => {
       const u = await tx.user.create({
@@ -1214,17 +1222,17 @@ export const provisionMemberLogin = async (req: AuthRequest, res: Response) => {
     res.json({
       status: 'success',
       message:
-        'Akun login berhasil dibuat. Default password: 123456 — minta anggota segera mengganti sandi.',
+        `Akun login berhasil dibuat. Default password: ${defaultPassword} — minta anggota segera mengganti sandi.`,
       data: {
         memberId: member.id,
         userId: user.id,
         email: user.email,
-        defaultPassword: '123456',
+        defaultPassword,
       },
     });
   } catch (error: any) {
     console.error('[provisionMemberLogin]', error);
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 };
 
