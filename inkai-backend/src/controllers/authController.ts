@@ -626,7 +626,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 export const updateProfile = async (req: any, res: Response) => {
   try {
     const userId = req.user.userId;
-    const { fullName, phoneNumber, gender, birthPlace, birthDate, address, birthCertificateUrl, bpjsCardUrl, dojoId, nik } = req.body;
+    const { fullName, phoneNumber, gender, birthPlace, birthDate, address, birthCertificateUrl, bpjsCardUrl, bpjsCardNumber, dojoId, nik } = req.body;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -671,6 +671,7 @@ export const updateProfile = async (req: any, res: Response) => {
             address: address !== undefined ? address : user.member.address,
             birthCertificateUrl: birthCertificateUrl !== undefined ? birthCertificateUrl : user.member.birthCertificateUrl,
             bpjsCardUrl: bpjsCardUrl !== undefined ? bpjsCardUrl : user.member.bpjsCardUrl,
+            bpjsCardNumber: bpjsCardNumber !== undefined ? bpjsCardNumber : user.member.bpjsCardNumber,
             dojoId: (dojoId !== undefined && dojoId !== '') ? dojoId : user.member.dojoId,
             nik: nik !== undefined ? nik : user.member.nik
           },
@@ -688,6 +689,7 @@ export const updateProfile = async (req: any, res: Response) => {
             address: address,
             birthCertificateUrl: birthCertificateUrl,
             bpjsCardUrl: bpjsCardUrl,
+            bpjsCardNumber: bpjsCardNumber,
             nik: nik,
             status: 'PENDING'
           },

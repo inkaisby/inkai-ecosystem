@@ -36,7 +36,8 @@ function EditProfileContent() {
     provinceId: '',
     branchId: '',
     dojoId: '',
-    nik: ''
+    nik: '',
+    bpjsCardNumber: ''
   });
 
   const [provinces, setProvinces] = useState<any[]>([]);
@@ -99,6 +100,7 @@ function EditProfileContent() {
     
     if (formData.address !== dbAddress) fields.push('Alamat');
     if (formData.dojoId !== dbDojoId) fields.push('Dojo/Ranting');
+    if (formData.bpjsCardNumber !== (user.bpjsCardNumber || user.member?.bpjsCardNumber || '')) fields.push('Nomor BPJS');
     if (photoFile) fields.push('Foto Profil');
     
     return fields;
@@ -155,7 +157,8 @@ function EditProfileContent() {
         provinceId,
         branchId,
         dojoId,
-        nik: user.nik || user.member?.nik || ''
+        nik: user.nik || user.member?.nik || '',
+        bpjsCardNumber: user.bpjsCardNumber || user.member?.bpjsCardNumber || ''
       };
 
       // If first mount, check localStorage draft
@@ -403,6 +406,26 @@ function EditProfileContent() {
           </div>
           {formData.nik && formData.nik.length !== 16 && (
             <p className={styles.errorText}>NIK harus berjumlah 16 digit</p>
+          )}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Nomor Kartu BPJS</label>
+          <div className={styles.inputWrapper}>
+            <ShieldCheck size={20} className={styles.inputIcon} />
+            <input 
+              type="text" 
+              className={styles.input}
+              placeholder="13 Digit Nomor BPJS"
+              value={formData.bpjsCardNumber || ''}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').substring(0, 13);
+                setFormData({...formData, bpjsCardNumber: val});
+              }}
+            />
+          </div>
+          {formData.bpjsCardNumber && formData.bpjsCardNumber.length !== 13 && (
+            <p className={styles.errorText}>Nomor Kartu BPJS harus berjumlah 13 digit</p>
           )}
         </div>
 
