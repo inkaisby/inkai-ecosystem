@@ -517,7 +517,7 @@ function MembersContent() {
   const [meta, setMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [search, setSearch] = useState("");
   const [dojoInfo, setDojoInfo] = useState<any | null>(null);
-  const [stats, setStats] = useState({ hitam: 0, kyu: 0, nonAktif: 0 });
+  const [stats, setStats] = useState({ hitam: 0, kyu: 0, nonAktif: 0, kyuBreakdown: "" });
 
   // Modal states
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -653,6 +653,7 @@ function MembersContent() {
       let hitam = 0;
       let kyu = 0;
       let nonAktif = 0;
+      const kyuCounts: Record<string, number> = {};
       
       allMembers.forEach((m: any) => {
         if (m.status !== "Active") {
@@ -663,10 +664,28 @@ function MembersContent() {
           hitam++;
         } else if (rank !== "") {
           kyu++;
+          const kyuMatch = rank.match(/KYU\s+(\d+)/);
+          if (kyuMatch) {
+            const kyuNum = `Kyu ${kyuMatch[1]}`;
+            kyuCounts[kyuNum] = (kyuCounts[kyuNum] || 0) + 1;
+          } else {
+            const normalized = m.currentRank;
+            kyuCounts[normalized] = (kyuCounts[normalized] || 0) + 1;
+          }
         }
       });
+
+      const sortedKyuEntries = Object.entries(kyuCounts).sort((a, b) => {
+        const numA = parseInt(a[0].match(/\d+/)?.[0] || "0", 10);
+        const numB = parseInt(b[0].match(/\d+/)?.[0] || "0", 10);
+        return numB - numA;
+      });
+
+      const kyuBreakdownText = sortedKyuEntries
+        .map(([kyuName, count]) => `${kyuName}: ${count}`)
+        .join(" • ");
       
-      setStats({ hitam, kyu, nonAktif });
+      setStats({ hitam, kyu, nonAktif, kyuBreakdown: kyuBreakdownText });
     } catch (err) {
       console.error("Failed to fetch stats", err);
     }
@@ -1065,11 +1084,16 @@ function MembersContent() {
           <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl">
             <Award size={24} />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-gray-500 text-xs">Sabuk Kyu (Warna)</p>
             <h4 className="text-xl font-bold">
               {stats.kyu}
             </h4>
+            {stats.kyuBreakdown && (
+              <p className="text-[10px] text-gray-500/70 mt-0.5 truncate" title={stats.kyuBreakdown.replace(/ • /g, ", ")}>
+                {stats.kyuBreakdown}
+              </p>
+            )}
           </div>
         </div>
 
