@@ -18,7 +18,8 @@ import {
   UserCheck,
   Lock,
   Pencil,
-  Eye
+  Eye,
+  Download
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -42,6 +43,14 @@ function OrganizationContent() {
   const [branchesLoading, setBranchesLoading] = useState(false);
   const [dojos, setDojos] = useState<any[]>([]);
   const [dojosLoading, setDojosLoading] = useState(false);
+
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [viewState, searchQuery]);
   
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -300,6 +309,75 @@ function OrganizationContent() {
     }
   };
 
+  const handleExportCSV = () => {
+    let headers: string[] = [];
+    let rows: any[][] = [];
+    let filename = '';
+
+    if (viewState === 'provinces') {
+      headers = ['No', 'Nama Wilayah', 'Ketua Pengprov', 'Jumlah Cabang', 'Jumlah Dojo', 'Jumlah Anggota'];
+      rows = filteredProvinces.map((p, idx) => {
+        const totalDojos = p.branches?.reduce((acc: number, b: any) => acc + (b._count?.dojos || 0), 0) || 0;
+        const totalMembers = p.branches?.reduce((acc: number, b: any) => acc + (b.dojos?.reduce((acc2: number, d: any) => acc2 + (d._count?.members || 0), 0) || 0), 0) || 0;
+        return [
+          idx + 1,
+          p.name,
+          p.headName || '-',
+          p._count?.branches || 0,
+          totalDojos,
+          totalMembers
+        ];
+      });
+      filename = 'daftar_wilayah.csv';
+    } else if (viewState === 'branches') {
+      headers = ['No', 'Nama Cabang', 'Ketua Cabang', 'Jumlah Dojo', 'Jumlah Anggota'];
+      rows = filteredBranches.map((b, idx) => {
+        const totalMembers = b.dojos?.reduce((acc: number, d: any) => acc + (d._count?.members || 0), 0) || 0;
+        return [
+          idx + 1,
+          b.name,
+          b.headName || '-',
+          b._count?.dojos || 0,
+          totalMembers
+        ];
+      });
+      filename = `daftar_cabang_${selectedProvince?.name || 'wilayah'}.csv`;
+    } else if (viewState === 'dojos') {
+      headers = ['No', 'Nama Dojo', 'PIC / Ketua', 'Kecamatan', 'WhatsApp', 'Tempat Latihan', 'Jadwal', 'Jumlah Anggota'];
+      rows = filteredDojos.map((d, idx) => [
+        idx + 1,
+        d.name,
+        d.headName || d.contactPerson || '-',
+        d.kecamatan || '-',
+        d.phoneNumber || '-',
+        d.tempatLatihan || '-',
+        d.schedule || '-',
+        d._count?.members || 0
+      ]);
+      filename = `daftar_dojo_${selectedBranch?.name || 'cabang'}.csv`;
+    } else {
+      return;
+    }
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(val => {
+        const strVal = String(val).replace(/"/g, '""');
+        return strVal.includes(',') || strVal.includes('\n') || strVal.includes('"') ? `"${strVal}"` : strVal;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename.toLowerCase().replace(/\s+/g, '_'));
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Data berhasil diekspor ke CSV!');
+  };
+
   const filteredProvinces = provinces.filter(prov => 
     prov.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     prov.headName?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -538,6 +616,59 @@ function OrganizationContent() {
     router.push(`/admin/members?dojoId=${dojo.id}&dojoName=${encodeURIComponent(dojo.name)}&branchId=${selectedBranch?.id}&provinceId=${selectedProvince?.id}`);
   };
 
+  const renderSkeletonRows = (colsCount: number) => {
+    return Array.from({ length: 5 }).map((_, idx) => (
+      <tr key={idx} className="animate-pulse border-b border-white/5">
+        <td className="py-4 pl-4 text-center">
+          <div className="h-4 w-4 bg-white/5 rounded mx-auto"></div>
+        </td>
+        <td className="py-4 pl-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/5 rounded-xl shrink-0"></div>
+            <div className="h-4 bg-white/5 rounded w-32"></div>
+          </div>
+        </td>
+        {Array.from({ length: colsCount - 2 }).map((_, cIdx) => (
+          <td key={cIdx} className="py-4 px-2">
+            <div className="h-4 bg-white/5 rounded w-16 mx-auto"></div>
+          </td>
+        ))}
+      </tr>
+    ));
+  };
+
+  const stats = React.useMemo(() => {
+    if (viewState === 'provinces') {
+      const totalProvs = provinces.length;
+      const totalBrs = provinces.reduce((acc, p) => acc + (p._count?.branches || 0), 0);
+      const totalDjs = provinces.reduce((acc, p) => acc + (p.branches?.reduce((acc2: number, b: any) => acc2 + (b._count?.dojos || 0), 0) || 0), 0);
+      const totalMbs = provinces.reduce((acc, p) => acc + (p.branches?.reduce((acc2: number, b: any) => acc2 + (b.dojos?.reduce((acc3: number, d: any) => acc3 + (d._count?.members || 0), 0) || 0), 0) || 0), 0);
+      return { val1: totalProvs, lbl1: 'Total Wilayah', val2: totalBrs, lbl2: 'Total Cabang', val3: totalDjs, lbl3: 'Total Dojo', val4: totalMbs, lbl4: 'Total Anggota' };
+    } else if (viewState === 'branches') {
+      const totalBrs = branches.length;
+      const totalDjs = branches.reduce((acc, b) => acc + (b._count?.dojos || 0), 0);
+      const totalMbs = branches.reduce((acc, b) => acc + (b.dojos?.reduce((acc2: number, d: any) => acc2 + (d._count?.members || 0), 0) || 0), 0);
+      return { val1: selectedProvince?.name || '-', lbl1: 'Wilayah Aktif', val2: totalBrs, lbl2: 'Total Cabang', val3: totalDjs, lbl3: 'Total Dojo', val4: totalMbs, lbl4: 'Total Anggota' };
+    } else if (viewState === 'dojos') {
+      const totalDjs = dojos.length;
+      const totalMbs = dojos.reduce((acc, d) => acc + (d._count?.members || 0), 0);
+      return { val1: selectedBranch?.name || '-', lbl1: 'Cabang Aktif', val2: totalDjs, lbl2: 'Total Dojo/Ranting', val3: totalMbs, lbl3: 'Total Anggota', val4: 'AKTIF', lbl4: 'Status Cabang' };
+    }
+    return null;
+  }, [viewState, provinces, branches, dojos, selectedProvince, selectedBranch]);
+
+  const paginatedProvinces = React.useMemo(() => {
+    return filteredProvinces.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredProvinces, currentPage, pageSize]);
+
+  const paginatedBranches = React.useMemo(() => {
+    return filteredBranches.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredBranches, currentPage, pageSize]);
+
+  const paginatedDojos = React.useMemo(() => {
+    return filteredDojos.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredDojos, currentPage, pageSize]);
+
   return (
     <div suppressHydrationWarning className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Area */}
@@ -545,6 +676,7 @@ function OrganizationContent() {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button 
+              type="button"
               onClick={viewState === 'provinces' ? () => router.push('/admin') : handleBack}
               className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
             >
@@ -578,6 +710,7 @@ function OrganizationContent() {
             (viewState === 'branches' && (isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id))) ||
             (viewState === 'dojos' && (isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || (isAdminBranch && user?.managedBranchId === selectedBranch?.id)))) && (
             <button 
+              type="button"
               onClick={() => {
                 if (viewState === 'provinces') setShowAddModal(true);
                 else if (viewState === 'branches') setShowAddBranchModal(true);
@@ -590,35 +723,68 @@ function OrganizationContent() {
           )}
         </div>
 
-        {/* Search Bar */}
-        {!user?.managedDojoId && (
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-amber-500 transition-colors">
-              <Search size={16} />
+        {/* Stats Section */}
+        {stats && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="glass-card p-4 border border-white/5 rounded-2xl flex flex-col justify-center min-w-0" style={{ transform: 'none' }}>
+              <span className="text-[10px] uppercase font-black text-gray-500 tracking-widest mb-1 truncate">{stats.lbl1}</span>
+              <span className="text-sm lg:text-base font-black text-white truncate">{stats.val1}</span>
             </div>
-            <input 
-              type="text" 
-              placeholder={
-                viewState === 'provinces' ? "Cari wilayah..." : 
-                viewState === 'branches' ? "Cari cabang..." : "Cari dojo..."
-              }
-              className="glass-input w-full h-12 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-white placeholder:text-gray-600 font-medium"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div className="glass-card p-4 border border-white/5 rounded-2xl flex flex-col justify-center min-w-0" style={{ transform: 'none' }}>
+              <span className="text-[10px] uppercase font-black text-gray-500 tracking-widest mb-1 truncate">{stats.lbl2}</span>
+              <span className="text-sm lg:text-base font-black text-amber-500 truncate">{stats.val2}</span>
+            </div>
+            <div className="glass-card p-4 border border-white/5 rounded-2xl flex flex-col justify-center min-w-0" style={{ transform: 'none' }}>
+              <span className="text-[10px] uppercase font-black text-gray-500 tracking-widest mb-1 truncate">{stats.lbl3}</span>
+              <span className="text-sm lg:text-base font-black text-white truncate">{stats.val3}</span>
+            </div>
+            <div className="glass-card p-4 border border-white/5 rounded-2xl flex flex-col justify-center min-w-0" style={{ transform: 'none' }}>
+              <span className="text-[10px] uppercase font-black text-gray-500 tracking-widest mb-1 truncate">{stats.lbl4}</span>
+              {stats.val4 === 'AKTIF' ? (
+                <div>
+                  <span className="px-2 py-0.5 bg-green-500/10 text-green-500 text-[10px] font-black rounded uppercase tracking-widest border border-green-500/20">{stats.val4}</span>
+                </div>
+              ) : (
+                <span className="text-sm lg:text-base font-black text-white truncate">{stats.val4}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Search Bar & Export Area */}
+        {!user?.managedDojoId && (
+          <div className="flex gap-4 items-center w-full">
+            <div className="relative flex-1 group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-amber-500 transition-colors">
+                <Search size={16} />
+              </div>
+              <input 
+                type="text" 
+                placeholder={
+                  viewState === 'provinces' ? "Cari wilayah..." : 
+                  viewState === 'branches' ? "Cari cabang..." : "Cari dojo..."
+                }
+                className="glass-input w-full h-12 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-white placeholder:text-gray-600 font-medium"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {viewState !== 'details' && (
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="flex items-center gap-2 px-4 h-12 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-wider shrink-0 cursor-pointer"
+                title="Ekspor ke CSV"
+              >
+                <Download size={16} />
+                <span className="hidden sm:inline">Ekspor CSV</span>
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-32 gap-6">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-            <Map className="absolute inset-0 m-auto text-amber-500 animate-pulse" size={24} />
-          </div>
-          <p className="text-gray-400 font-medium tracking-wide">Menyelaraskan data organisasi...</p>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="p-12 text-center glass-card border-red-500/20 bg-red-500/5">
           <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Filter size={32} />
@@ -641,17 +807,20 @@ function OrganizationContent() {
                   <th className="pb-4 text-center font-medium whitespace-nowrap">Cabang</th>
                   <th className="pb-4 text-center font-medium whitespace-nowrap">Dojo</th>
                   <th className="pb-4 text-center font-medium whitespace-nowrap">Anggota</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Status</th>
                   <th className="pb-4 text-center font-medium pr-4 whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredProvinces.map((prov, index) => {
+                {loading ? renderSkeletonRows(8) : paginatedProvinces.map((prov, index) => {
                   const totalDojos = prov.branches?.reduce((acc: number, b: any) => acc + (b._count?.dojos || 0), 0) || 0;
                   const totalMembers = prov.branches?.reduce((acc: number, b: any) => acc + (b.dojos?.reduce((acc2: number, d: any) => acc2 + (d._count?.members || 0), 0) || 0), 0) || 0;
                   const canManage = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === prov.id);
+                  const actualIndex = (currentPage - 1) * pageSize + index + 1;
+                  const statusText = (prov._count?.branches || 0) > 0 ? 'AKTIF' : 'BARU';
                   return (
                     <tr key={prov.id} className="hover:bg-white/[0.02] transition-all group">
-                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{index + 1}</td>
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{actualIndex}</td>
                       <td className="py-4 pl-2 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center font-black text-sm text-black shadow-md shadow-amber-500/10 shrink-0">
@@ -664,6 +833,13 @@ function OrganizationContent() {
                       <td className="py-4 text-center text-white font-medium whitespace-nowrap">{prov._count?.branches || 0}</td>
                       <td className="py-4 text-center text-white font-medium whitespace-nowrap">{totalDojos}</td>
                       <td className="py-4 text-center text-white font-medium whitespace-nowrap">{totalMembers}</td>
+                      <td className="py-4 text-center whitespace-nowrap">
+                        <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-wider ${
+                          statusText === 'AKTIF' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                        }`}>
+                          {statusText}
+                        </span>
+                      </td>
                       <td className="py-4 pr-4 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2 relative z-10">
                           <button
@@ -715,7 +891,52 @@ function OrganizationContent() {
               </tbody>
             </table>
           </div>
-          {filteredProvinces.length === 0 && (
+
+          {/* Pagination Provinces */}
+          {!loading && filteredProvinces.length > 0 && (
+            <div className="flex items-center justify-between mt-6 pt-6 border-t border-white/5 text-xs text-gray-400">
+              <div className="flex items-center gap-2">
+                <span>Tampilkan</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-amber-500/50"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>entri</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span>Halaman {currentPage} dari {Math.ceil(filteredProvinces.length / pageSize)}</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white disabled:opacity-30 disabled:hover:text-gray-300 transition-all font-bold cursor-pointer"
+                  >
+                    Sebelumnya
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage >= Math.ceil(filteredProvinces.length / pageSize)}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredProvinces.length / pageSize)))}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white disabled:opacity-30 disabled:hover:text-gray-300 transition-all font-bold cursor-pointer"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!loading && filteredProvinces.length === 0 && (
             <div className="p-16 text-center text-gray-500 text-xs italic">
               Tidak ada data wilayah ditemukan.
             </div>
@@ -777,16 +998,19 @@ function OrganizationContent() {
                   <th className="pb-4 pl-2 font-medium whitespace-nowrap">Ketua Cabang</th>
                   <th className="pb-4 text-center font-medium whitespace-nowrap">Total Dojo</th>
                   <th className="pb-4 text-center font-medium whitespace-nowrap">Total Anggota</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Status</th>
                   <th className="pb-4 text-center font-medium pr-4 whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredBranches.map((branch, index) => {
+                {branchesLoading ? renderSkeletonRows(7) : paginatedBranches.map((branch, index) => {
                   const totalMembers = branch.dojos?.reduce((acc: number, d: any) => acc + (d._count?.members || 0), 0) || 0;
                   const canManage = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || (isAdminBranch && user?.managedBranchId === branch.id);
+                  const actualIndex = (currentPage - 1) * pageSize + index + 1;
+                  const statusText = (branch._count?.dojos || 0) > 0 ? 'AKTIF' : 'BARU';
                   return (
                     <tr key={branch.id} className="hover:bg-white/[0.02] transition-all group">
-                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{index + 1}</td>
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{actualIndex}</td>
                       <td className="py-4 pl-2 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-black shadow-md shadow-amber-500/10 shrink-0">
@@ -798,6 +1022,13 @@ function OrganizationContent() {
                       <td className="py-4 pl-2 text-white font-medium whitespace-nowrap">{branch.headName || '-'}</td>
                       <td className="py-4 text-center text-white font-medium whitespace-nowrap">{branch._count?.dojos || 0}</td>
                       <td className="py-4 text-center text-white font-medium whitespace-nowrap">{totalMembers}</td>
+                      <td className="py-4 text-center whitespace-nowrap">
+                        <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-wider ${
+                          statusText === 'AKTIF' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                        }`}>
+                          {statusText}
+                        </span>
+                      </td>
                       <td className="py-4 pr-4 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2 relative z-10">
                           {canManage ? (
@@ -838,7 +1069,52 @@ function OrganizationContent() {
               </tbody>
             </table>
           </div>
-          {filteredBranches.length === 0 && (
+
+          {/* Pagination Branches */}
+          {!branchesLoading && filteredBranches.length > 0 && (
+            <div className="flex items-center justify-between mt-6 pt-6 border-t border-white/5 text-xs text-gray-400">
+              <div className="flex items-center gap-2">
+                <span>Tampilkan</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-amber-500/50"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>entri</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span>Halaman {currentPage} dari {Math.ceil(filteredBranches.length / pageSize)}</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white disabled:opacity-30 disabled:hover:text-gray-300 transition-all font-bold cursor-pointer"
+                  >
+                    Sebelumnya
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage >= Math.ceil(filteredBranches.length / pageSize)}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredBranches.length / pageSize)))}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white disabled:opacity-30 disabled:hover:text-gray-300 transition-all font-bold cursor-pointer"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!branchesLoading && filteredBranches.length === 0 && (
             <div className="p-16 text-center text-gray-500 text-xs italic">
               Tidak ada data cabang ditemukan.
             </div>
@@ -858,15 +1134,18 @@ function OrganizationContent() {
                   <th className="pb-4 pl-2 font-medium whitespace-nowrap">Tempat Latihan</th>
                   <th className="pb-4 pl-2 font-medium whitespace-nowrap">Jadwal</th>
                   <th className="pb-4 text-center font-medium whitespace-nowrap">Anggota</th>
+                  <th className="pb-4 text-center font-medium whitespace-nowrap">Status</th>
                   <th className="pb-4 text-center font-medium pr-4 whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredDojos.map((dojo, index) => {
+                {dojosLoading ? renderSkeletonRows(10) : paginatedDojos.map((dojo, index) => {
                   const canEdit = isSuperAdmin || isAdminPusat || (isAdminProvince && user?.managedProvinceId === selectedProvince?.id) || (isAdminBranch && user?.managedBranchId === selectedBranch?.id) || (isAdminDojo && user?.managedDojoId === dojo.id);
+                  const actualIndex = (currentPage - 1) * pageSize + index + 1;
+                  const statusText = (dojo._count?.members || 0) > 0 ? 'AKTIF' : 'BARU';
                   return (
                     <tr key={dojo.id} className="hover:bg-white/[0.02] transition-all group">
-                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{index + 1}</td>
+                      <td className="py-4 pl-4 text-center text-gray-400 font-medium whitespace-nowrap">{actualIndex}</td>
                       <td className="py-4 pl-2 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-black shadow-md shadow-amber-500/10 shrink-0">
@@ -881,6 +1160,13 @@ function OrganizationContent() {
                       <td className="py-4 pl-2 text-white font-medium whitespace-normal min-w-[250px]" title={dojo.tempatLatihan}>{dojo.tempatLatihan || '-'}</td>
                       <td className="py-4 pl-2 text-white font-medium whitespace-nowrap" title={dojo.schedule}>{dojo.schedule || '-'}</td>
                       <td className="py-4 text-center text-white font-medium whitespace-nowrap">{dojo._count?.members || 0}</td>
+                      <td className="py-4 text-center whitespace-nowrap">
+                        <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-wider ${
+                          statusText === 'AKTIF' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                        }`}>
+                          {statusText}
+                        </span>
+                      </td>
                       <td className="py-4 pr-4 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2 relative z-10">
                           <button
@@ -915,7 +1201,52 @@ function OrganizationContent() {
               </tbody>
             </table>
           </div>
-          {filteredDojos.length === 0 && (
+
+          {/* Pagination Dojos */}
+          {!dojosLoading && filteredDojos.length > 0 && (
+            <div className="flex items-center justify-between mt-6 pt-6 border-t border-white/5 text-xs text-gray-400">
+              <div className="flex items-center gap-2">
+                <span>Tampilkan</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-amber-500/50"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>entri</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span>Halaman {currentPage} dari {Math.ceil(filteredDojos.length / pageSize)}</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white disabled:opacity-30 disabled:hover:text-gray-300 transition-all font-bold cursor-pointer"
+                  >
+                    Sebelumnya
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage >= Math.ceil(filteredDojos.length / pageSize)}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredDojos.length / pageSize)))}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white disabled:opacity-30 disabled:hover:text-gray-300 transition-all font-bold cursor-pointer"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!dojosLoading && filteredDojos.length === 0 && (
             <div className="p-16 text-center text-gray-500 text-xs italic">
               Tidak ada data dojo ditemukan.
             </div>
