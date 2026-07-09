@@ -44,10 +44,10 @@
 
 .infoBox {
   margin-top: 16px;
-  padding: 20px;
-  background-color: var(--surface-row-bg);
-  border-radius: 20px;
-  border: 1px solid var(--surface-row-border);
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .infoLabel {
@@ -55,19 +55,19 @@
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 8px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
   display: block;
 }
 
 .infoValue {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .formSection {
-  margin-top: 32px;
+  margin-top: 24px;
 }
 
 .sectionToggle {
@@ -87,34 +87,34 @@
 }
 
 .pendingNotice {
-  margin-top: 24px;
-  padding: 16px;
+  margin-top: 20px;
+  padding: 12px;
   background-color: rgba(245, 158, 11, 0.05);
   border: 1px solid rgba(245, 158, 11, 0.1);
-  border-radius: 16px;
+  border-radius: 12px;
   color: #f59e0b;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
   text-align: center;
 }
 
 .sectionHeading {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--primary-gold);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 20px;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
 }
 
 .fieldGroup {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .fieldLabel {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   display: block;
 }
 
@@ -125,12 +125,12 @@
 
 .select {
   width: 100%;
-  padding: 16px 40px 16px 16px;
-  background-color: var(--surface-row-bg);
-  border: 1px solid var(--surface-row-border);
-  border-radius: 16px;
+  padding: 12px 36px 12px 12px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
   color: var(--text-light);
-  font-size: 14px;
+  font-size: 13px;
   appearance: none;
   cursor: pointer;
   transition: all 0.2s;
@@ -149,7 +149,7 @@
 
 .selectIcon {
   position: absolute;
-  right: 16px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--primary-gold);
@@ -158,13 +158,13 @@
 
 .textarea {
   width: 100%;
-  padding: 16px;
-  background-color: var(--surface-row-bg);
-  border: 1px solid var(--surface-row-border);
-  border-radius: 16px;
+  padding: 12px 16px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
   color: var(--text-light);
-  font-size: 14px;
-  min-height: 120px;
+  font-size: 13px;
+  min-height: 100px;
   resize: vertical;
   font-family: inherit;
 }
@@ -177,22 +177,23 @@
 
 .submitBtn {
   width: 100%;
-  padding: 18px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  padding: 12px;
+  background-color: var(--primary-gold);
   color: black;
   border: none;
-  border-radius: 16px;
+  border-radius: 12px;
   font-weight: 800;
-  font-size: 14px;
-  letter-spacing: 1px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
-  box-shadow: 0 10px 20px -5px rgba(217, 119, 6, 0.3);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  transition: all 0.3s;
-  margin-top: 32px;
+  gap: 8px;
+  transition: all 0.2s ease;
+  margin-top: 24px;
 }
 
 .submitBtn:active {
@@ -203,6 +204,7 @@
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .workflowSection {
@@ -251,25 +253,25 @@
 }
 
 .historySection {
-  margin-top: 48px;
-  padding-top: 32px;
-  border-top: 1px solid var(--surface-row-border);
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .historyList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .historyCard {
-  background-color: var(--surface-row-bg);
-  border-radius: 20px;
-  border: 1px solid var(--surface-row-border);
-  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .historyHeader {
@@ -279,18 +281,18 @@
 }
 
 .historyType {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .historyStatus {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
   text-transform: uppercase;
 }
 
@@ -310,31 +312,31 @@
 }
 
 .historyDate {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-light);
   font-weight: 600;
 }
 
 .historyDetails {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .adminNotes {
-  margin-top: 8px;
-  padding: 12px;
-  background-color: var(--background-dark);
-  border-radius: 12px;
-  font-size: 12px;
+  margin-top: 4px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.01);
+  border-radius: 8px;
+  font-size: 11px;
   border-left: 3px solid var(--primary-gold);
 }
 
 .emptyHistory {
   text-align: center;
-  padding: 40px 0;
+  padding: 32px 0;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .loadingContainer {
@@ -352,4 +354,33 @@
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+html[data-clock-phase="day"] .infoBox {
+  background-color: rgba(15, 23, 42, 0.02);
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+html[data-clock-phase="day"] .select,
+html[data-clock-phase="day"] .textarea {
+  background-color: rgba(15, 23, 42, 0.02);
+  border-color: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .select option {
+  background-color: white;
+  color: #0f172a;
+}
+
+html[data-clock-phase="day"] .historyCard {
+  background-color: white;
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+}
+
+html[data-clock-phase="day"] .submitBtn {
+  background: #d97706;
+  color: white;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
 }
