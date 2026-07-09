@@ -1591,7 +1591,12 @@ function MembersContent() {
                   <X size={20} />
                 </button>
                 <div className="absolute -bottom-12 left-8">
-                  <div className="w-24 h-24 rounded-2xl bg-dark-card p-1 border-4 border-white-5 shadow-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => window.open(`/v/${selectedMember.id}`, "_blank")}
+                    title="Buka Kartu Anggota (Profil)"
+                    className="w-24 h-24 rounded-2xl bg-dark-card p-1 border-4 border-white-5 shadow-xl overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer block text-left"
+                  >
                     {selectedMember.photoUrl || selectedMember.user?.photoUrl ? (
                       <img
                         src={getAssetUrl(selectedMember.photoUrl || selectedMember.user?.photoUrl)}
@@ -1606,7 +1611,7 @@ function MembersContent() {
                           .join("")}
                       </div>
                     )}
-                  </div>
+                  </button>
                 </div>
               </div>
 
