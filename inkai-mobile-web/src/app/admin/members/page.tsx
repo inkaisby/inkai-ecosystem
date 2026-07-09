@@ -1178,18 +1178,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "aktif" ? null : "aktif");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "aktif"
-              ? "bg-green-100 dark:bg-green-900/35 border-green-400 dark:border-green-500 shadow-sm shadow-green-500/10"
-              : "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-aktif ${
+            selectedKpi === "aktif" ? "selected" : ""
           }`}
         >
-          <div className="p-2 bg-green-500/15 text-green-600 dark:text-green-400 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <UserCheck size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-green-600 dark:text-green-400 text-[10px] uppercase font-black tracking-wider truncate">Aktif</p>
-            <h4 className="text-lg font-black text-green-800 dark:text-green-200 leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">Aktif</p>
+            <h4 className="text-lg font-black leading-tight">
               {allDojoMembers.filter(m => m.status === "Active").length || "0"}
             </h4>
           </div>
@@ -1201,18 +1199,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "kyu10" ? null : "kyu10");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "kyu10"
-              ? "bg-white dark:bg-white/15 border-slate-400 dark:border-white/40 shadow-sm"
-              : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-kyu10 ${
+            selectedKpi === "kyu10" ? "selected" : ""
           }`}
         >
-          <div className="p-2 bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <Award size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-black tracking-wider truncate">Kyu 10</p>
-            <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">Kyu 10</p>
+            <h4 className="text-lg font-black leading-tight">
               {stats.kyu10}
             </h4>
           </div>
@@ -1224,18 +1220,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "kyu8" ? null : "kyu8");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "kyu8"
-              ? "bg-yellow-100 dark:bg-yellow-900/35 border-yellow-400 dark:border-yellow-500 shadow-sm shadow-yellow-500/10"
-              : "bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-850"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-kyu8 ${
+            selectedKpi === "kyu8" ? "selected" : ""
           }`}
         >
-          <div className="p-2 bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <Award size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-yellow-600 dark:text-yellow-400 text-[10px] uppercase font-black tracking-wider truncate">Kyu 8</p>
-            <h4 className="text-lg font-black text-yellow-800 dark:text-yellow-200 leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">Kyu 8</p>
+            <h4 className="text-lg font-black leading-tight">
               {stats.kyu8}
             </h4>
           </div>
@@ -1247,18 +1241,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "kyu7" ? null : "kyu7");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "kyu7"
-              ? "bg-orange-100 dark:bg-orange-900/35 border-orange-400 dark:border-orange-500 shadow-sm shadow-orange-500/10"
-              : "bg-orange-50/50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-kyu7 ${
+            selectedKpi === "kyu7" ? "selected" : ""
           }`}
         >
-          <div className="p-2 bg-orange-500/15 text-orange-600 dark:text-orange-400 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <Award size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-orange-600 dark:text-orange-400 text-[10px] uppercase font-black tracking-wider truncate">Kyu 7</p>
-            <h4 className="text-lg font-black text-orange-800 dark:text-orange-200 leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">Kyu 7</p>
+            <h4 className="text-lg font-black leading-tight">
               {stats.kyu7}
             </h4>
           </div>
@@ -1270,18 +1262,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "kyu6" ? null : "kyu6");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "kyu6"
-              ? "bg-emerald-100 dark:bg-emerald-900/35 border-emerald-400 dark:border-emerald-500 shadow-sm shadow-emerald-500/10"
-              : "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-kyu6 ${
+            selectedKpi === "kyu6" ? "selected" : ""
           }`}
         >
-          <div className="p-2 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <Award size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-emerald-600 dark:text-emerald-400 text-[10px] uppercase font-black tracking-wider truncate">Kyu 6</p>
-            <h4 className="text-lg font-black text-emerald-800 dark:text-emerald-200 leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">Kyu 6</p>
+            <h4 className="text-lg font-black leading-tight">
               {stats.kyu6}
             </h4>
           </div>
@@ -1293,18 +1283,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "kyu5_4" ? null : "kyu5_4");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "kyu5_4"
-              ? "bg-blue-100 dark:bg-blue-900/35 border-blue-400 dark:border-blue-500 shadow-sm shadow-blue-500/10"
-              : "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-kyu5_4 ${
+            selectedKpi === "kyu5_4" ? "selected" : ""
           }`}
         >
-          <div className="p-2 bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <Award size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-blue-600 dark:text-blue-400 text-[10px] uppercase font-black tracking-wider truncate">Kyu 5-4</p>
-            <h4 className="text-lg font-black text-blue-800 dark:text-blue-200 leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">Kyu 5-4</p>
+            <h4 className="text-lg font-black leading-tight">
               {stats.kyu5_4}
             </h4>
           </div>
@@ -1316,19 +1304,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "kyu3_2_1" ? null : "kyu3_2_1");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "kyu3_2_1"
-              ? "bg-amber-100/60 dark:bg-amber-900/30 border-amber-400 dark:border-amber-700 shadow-sm"
-              : "bg-amber-50/50 dark:bg-amber-950/10 border-amber-200/60 dark:border-amber-900/40"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-kyu3_2_1 ${
+            selectedKpi === "kyu3_2_1" ? "selected" : ""
           }`}
-          style={selectedKpi === "kyu3_2_1" ? { borderColor: '#8B4513' } : undefined}
         >
-          <div className="p-2 bg-[#8B4513]/15 text-[#8B4513] dark:text-amber-400 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <Award size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-[#8B4513] dark:text-amber-400 text-[10px] uppercase font-black tracking-wider truncate">Kyu 3-1</p>
-            <h4 className="text-lg font-black text-[#5C2E0B] dark:text-amber-200 leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">Kyu 3-1</p>
+            <h4 className="text-lg font-black leading-tight">
               {stats.kyu3_2_1}
             </h4>
           </div>
@@ -1340,18 +1325,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "hitam" ? null : "hitam");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "hitam"
-              ? "bg-black text-white border-neutral-500 dark:border-neutral-600 shadow-sm shadow-black/20"
-              : "bg-neutral-800 text-neutral-200 border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:border-neutral-800"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-hitam ${
+            selectedKpi === "hitam" ? "selected" : ""
           }`}
         >
-          <div className="p-2 bg-neutral-750 text-neutral-100 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-600/30 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <Award size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-neutral-300 dark:text-neutral-400 text-[10px] uppercase font-black tracking-wider truncate">DAN</p>
-            <h4 className="text-lg font-black text-white leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">DAN</p>
+            <h4 className="text-lg font-black leading-tight">
               {stats.hitam}
             </h4>
           </div>
@@ -1363,18 +1346,16 @@ function MembersContent() {
             setSelectedKpi(prev => prev === "non-aktif" ? null : "non-aktif");
             setCurrentPage(1);
           }}
-          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl ${
-            selectedKpi === "non-aktif"
-              ? "bg-red-100 dark:bg-red-900/35 border-red-400 dark:border-red-500 shadow-sm shadow-red-500/10"
-              : "bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+          className={`flex items-center gap-3 py-3 px-3 text-left cursor-pointer transition-all duration-300 hover:scale-[1.02] border rounded-2xl kpi-button kpi-non-aktif ${
+            selectedKpi === "non-aktif" ? "selected" : ""
           }`}
         >
-          <div className="p-2 bg-red-500/15 text-red-600 dark:text-red-400 rounded-lg shrink-0">
+          <div className="p-2 icon-container rounded-lg shrink-0">
             <UserMinus size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-red-600 dark:text-red-400 text-[10px] uppercase font-black tracking-wider truncate">Non-Aktif</p>
-            <h4 className="text-lg font-black text-red-800 dark:text-red-200 leading-tight">
+            <p className="text-[10px] uppercase font-black tracking-wider truncate">Non-Aktif</p>
+            <h4 className="text-lg font-black leading-tight">
               {stats.nonAktif}
             </h4>
           </div>
