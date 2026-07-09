@@ -161,7 +161,7 @@ function AdminMemberListCard({
   }, [member.id, member.nia]);
 
   const rankValue = member.currentRank || "Putih (Kyu 10)";
-  const photoUrl = member.user?.photoUrl;
+  const photoUrl = member.photoUrl || member.user?.photoUrl;
   const photoSrc = photoUrl && !imageError ? getAssetUrl(photoUrl) : "";
 
   return (
@@ -343,7 +343,7 @@ function AdminMemberTableRow({
   }, [member.id, member.nia]);
 
   const rankValue = member.currentRank || "Putih (Kyu 10)";
-  const photoUrl = member.user?.photoUrl;
+  const photoUrl = member.photoUrl || member.user?.photoUrl;
   const photoSrc = photoUrl && !imageError ? getAssetUrl(photoUrl) : "";
 
   return (
