@@ -630,7 +630,7 @@ function OrganizationContent() {
           </button>
         </div>
       ) : viewState === 'provinces' ? (
-        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl" style={{ transform: 'none' }}>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
@@ -665,18 +665,26 @@ function OrganizationContent() {
                       <td className="py-4 text-center text-white font-medium">{totalDojos}</td>
                       <td className="py-4 text-center text-white font-medium">{totalMembers}</td>
                       <td className="py-4 pr-4">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-2 relative z-10">
                           <button
-                            onClick={() => handleViewDetails(prov)}
-                            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-300 bg-white/5 hover:bg-white/10 hover:text-white rounded-lg border border-white/10 transition-all"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewDetails(prov);
+                            }}
+                            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-300 bg-white/5 hover:bg-white/10 hover:text-white rounded-lg border border-white/10 transition-all cursor-pointer"
                             title="Detail Wilayah"
                           >
                             Detail
                           </button>
                           {canManage ? (
                             <button
-                              onClick={() => handleManageBranches(prov)}
-                              className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleManageBranches(prov);
+                              }}
+                              className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all cursor-pointer"
                               title="Kelola Cabang"
                             >
                               Kelola
@@ -688,8 +696,12 @@ function OrganizationContent() {
                           )}
                           {canManage && (
                             <button
-                              onClick={() => handleOpenEditProvince(prov)}
-                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditProvince(prov);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all cursor-pointer"
                               title="Edit Wilayah"
                             >
                               <Pencil size={14} />
@@ -745,6 +757,7 @@ function OrganizationContent() {
               <h4 className="font-bold text-2xl mb-2">Kelola Cabang</h4>
               <p className="text-gray-500 text-sm mb-8 leading-relaxed">Akses kontrol penuh untuk manajemen cabang dan dojo di wilayah ini.</p>
               <button 
+                type="button"
                 onClick={() => handleManageBranches(selectedProvince)}
                 className="btn-primary w-full py-4 font-black uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
               >
@@ -754,7 +767,7 @@ function OrganizationContent() {
           </div>
         </div>
       ) : viewState === 'branches' ? (
-        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl" style={{ transform: 'none' }}>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
@@ -786,11 +799,15 @@ function OrganizationContent() {
                       <td className="py-4 text-center text-white font-medium">{branch._count?.dojos || 0}</td>
                       <td className="py-4 text-center text-white font-medium">{totalMembers}</td>
                       <td className="py-4 pr-4">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-2 relative z-10">
                           {canManage ? (
                             <button
-                              onClick={() => handleManageDojos(branch)}
-                              className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleManageDojos(branch);
+                              }}
+                              className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all cursor-pointer"
                               title="Kelola Dojo"
                             >
                               Kelola Dojo
@@ -802,8 +819,12 @@ function OrganizationContent() {
                           )}
                           {canManage && (
                             <button
-                              onClick={() => handleOpenEditBranch(branch)}
-                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditBranch(branch);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all cursor-pointer"
                               title="Edit Cabang"
                             >
                               <Pencil size={14} />
@@ -824,7 +845,7 @@ function OrganizationContent() {
           )}
         </div>
       ) : (
-        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="glass-card p-6 border border-white/5 rounded-2xl overflow-hidden shadow-2xl" style={{ transform: 'none' }}>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead className="text-gray-500 border-b border-white/5 uppercase text-[10px] tracking-wider font-bold">
@@ -861,18 +882,26 @@ function OrganizationContent() {
                       <td className="py-4 pl-2 text-white font-medium truncate max-w-[120px]" title={dojo.schedule}>{dojo.schedule || '-'}</td>
                       <td className="py-4 text-center text-white font-medium">{dojo._count?.members || 0}</td>
                       <td className="py-4 pr-4">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-2 relative z-10">
                           <button
-                            onClick={() => handleViewMembers(dojo)}
-                            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewMembers(dojo);
+                            }}
+                            className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 rounded-lg shadow-sm transition-all cursor-pointer"
                             title="Lihat Anggota"
                           >
                             Anggota
                           </button>
                           {canEdit && (
                             <button
-                              onClick={() => handleOpenEditDojo(dojo)}
-                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditDojo(dojo);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all cursor-pointer"
                               title="Edit Dojo"
                             >
                               <Pencil size={14} />
