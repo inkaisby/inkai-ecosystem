@@ -1589,13 +1589,21 @@ function MembersContent() {
                   <X size={20} />
                 </button>
                 <div className="absolute -bottom-12 left-8">
-                  <div className="w-24 h-24 rounded-2xl bg-dark-card p-1 border-4 border-white-5 shadow-xl">
-                    <div className="w-full h-full rounded-xl bg-amber-500 flex items-center justify-center font-bold text-black text-3xl">
-                      {selectedMember.fullName
-                        .split(" ")
-                        .map((n: string) => n[0])
-                        .join("")}
-                    </div>
+                  <div className="w-24 h-24 rounded-2xl bg-dark-card p-1 border-4 border-white-5 shadow-xl overflow-hidden">
+                    {selectedMember.photoUrl || selectedMember.user?.photoUrl ? (
+                      <img
+                        src={getAssetUrl(selectedMember.photoUrl || selectedMember.user?.photoUrl)}
+                        alt={selectedMember.fullName}
+                        className="w-full h-full rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-xl bg-amber-500 flex items-center justify-center font-bold text-black text-3xl">
+                        {selectedMember.fullName
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .join("")}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -305,7 +305,8 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
         },
         user: {
           select: {
-            email: true
+            email: true,
+            photoUrl: true
           }
         }
       },
