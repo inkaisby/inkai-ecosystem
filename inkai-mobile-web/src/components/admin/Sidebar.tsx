@@ -56,8 +56,8 @@ export default function Sidebar() {
   return (
     <aside className="sidebar-aside flex flex-col">
       <div className="sidebar-logo flex items-center">
-        <div className="sidebar-logo-icon flex items-center justify-center">
-          I
+        <div className="sidebar-logo-icon flex items-center justify-center overflow-hidden">
+          <img src="/logo.png" alt="Logo INKAI" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }} />
         </div>
         <div className="sidebar-logo-text">
           <h1>INKAI</h1>
