@@ -1132,62 +1132,64 @@ export default function EventParticipantsPage() {
           </div>
 
           {/* Bulk Action Toolbar */}
-          <AnimatePresence>
-            {selectedCount > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 50 }}
-                className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[var(--card-dark)] border border-amber-500/30 rounded-2xl shadow-2xl p-4 flex flex-col md:flex-row items-center gap-4 w-[90%] max-w-4xl"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="bg-amber-500 text-black font-black text-xs px-2.5 py-1 rounded-lg">
-                    {selectedCount}
-                  </span>
-                  <span className="text-xs font-black uppercase tracking-wider text-[var(--text-light)]">
-                    Peserta Terpilih
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2 justify-center md:justify-end flex-1 w-full">
-                  <button
-                    onClick={handleBulkApprove}
-                    disabled={bulkProcessing}
-                    className="flex-1 md:flex-none px-3.5 py-2 bg-green-500 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    Setujui
-                  </button>
-                  <button
-                    onClick={handleBulkReject}
-                    disabled={bulkProcessing}
-                    className="flex-1 md:flex-none px-3.5 py-2 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    Tolak
-                  </button>
-                  <button
-                    onClick={handleBulkVerifyPayment}
-                    disabled={bulkProcessing}
-                    className="flex-1 md:flex-none px-3.5 py-2 bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    Verifikasi Bayar
-                  </button>
-                  <button
-                    onClick={handleBulkDelete}
-                    disabled={bulkProcessing}
-                    className="flex-1 md:flex-none px-3.5 py-2 bg-red-600 border border-red-500/20 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    Hapus
-                  </button>
-                  <button
-                    onClick={() => setSelectedIds({})}
-                    disabled={bulkProcessing}
-                    className="px-3.5 py-2 bg-white/5 border border-white/10 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95"
-                  >
-                    Batal
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <AdminModalPortal>
+            <AnimatePresence>
+              {selectedCount > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 50 }}
+                  className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[var(--card-dark)] border border-amber-500/30 rounded-2xl shadow-2xl p-4 flex flex-col md:flex-row items-center gap-4 w-[90%] max-w-4xl"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="bg-amber-500 text-black font-black text-xs px-2.5 py-1 rounded-lg">
+                      {selectedCount}
+                    </span>
+                    <span className="text-xs font-black uppercase tracking-wider text-[var(--text-light)]">
+                      Peserta Terpilih
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center md:justify-end flex-1 w-full">
+                    <button
+                      onClick={handleBulkApprove}
+                      disabled={bulkProcessing}
+                      className="flex-1 md:flex-none px-3.5 py-2 bg-green-500 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      Setujui
+                    </button>
+                    <button
+                      onClick={handleBulkReject}
+                      disabled={bulkProcessing}
+                      className="flex-1 md:flex-none px-3.5 py-2 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      Tolak
+                    </button>
+                    <button
+                      onClick={handleBulkVerifyPayment}
+                      disabled={bulkProcessing}
+                      className="flex-1 md:flex-none px-3.5 py-2 bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      Verifikasi Bayar
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={bulkProcessing}
+                      className="flex-1 md:flex-none px-3.5 py-2 bg-red-600 border border-red-500/20 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      Hapus
+                    </button>
+                    <button
+                      onClick={() => setSelectedIds({})}
+                      disabled={bulkProcessing}
+                      className="px-3.5 py-2 bg-white/5 border border-white/10 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </AdminModalPortal>
 
           {/* Desktop Table View (lg screens and above) */}
           <div className="hidden lg:block bg-[var(--card-dark)] border border-[var(--border-light)] rounded-[2rem] overflow-hidden shadow-2xl">
@@ -1407,53 +1409,53 @@ export default function EventParticipantsPage() {
 
                           {/* Actions */}
                           <td className="py-4 px-6 text-center">
-                            <div className="flex justify-center items-center gap-1.5">
+                            <div className="flex justify-center items-center gap-2.5">
                               {showPaymentIcon ? (
                                 <button
                                   type="button"
                                   onClick={() => setSelectedParticipant(p)}
-                                  className={`inline-flex p-1.5 rounded-lg border transition-colors active:scale-95 disabled:opacity-40 ${receiptBtnClass}`}
+                                  className={`inline-flex p-2 rounded-lg border transition-colors active:scale-95 disabled:opacity-40 ${receiptBtnClass}`}
                                   title="Detail Pembayaran"
                                 >
-                                  <Receipt size={14} />
+                                  <Receipt size={16} />
                                 </button>
                               ) : null}
                               <button
                                 type="button"
                                 disabled={!p.member?.user?.phoneNumber}
                                 onClick={() => handleWhatsAppParticipant(p)}
-                                className="inline-flex p-1.5 rounded-lg border border-white/10 bg-white/5 text-green-500 transition-colors hover:bg-white/10 active:scale-95 disabled:opacity-30"
+                                className="inline-flex p-2 rounded-lg border border-white/10 bg-white/5 text-green-500 transition-colors hover:bg-white/10 active:scale-95 disabled:opacity-30"
                                 title="WhatsApp"
                               >
-                                <Phone size={14} />
+                                <Phone size={16} />
                               </button>
                               <button
                                 type="button"
                                 disabled={!p.member?.userId}
                                 onClick={() => void handleChatParticipant(p)}
-                                className="inline-flex p-1.5 rounded-lg border border-white/10 bg-white/5 text-amber-500 transition-colors hover:bg-white/10 active:scale-95 disabled:opacity-30"
+                                className="inline-flex p-2 rounded-lg border border-white/10 bg-white/5 text-amber-500 transition-colors hover:bg-white/10 active:scale-95 disabled:opacity-30"
                                 title="Chat Aplikasi"
                               >
-                                <MessageSquare size={14} />
+                                <MessageSquare size={16} />
                               </button>
                               {isRegistrationApprovedForReport(p.status) ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleCopyParticipantResume(p)}
-                                  className="inline-flex p-1.5 rounded-lg border border-white/10 bg-white/5 text-sky-400 transition-colors hover:bg-white/10 active:scale-95"
+                                  className="inline-flex p-2 rounded-lg border border-white/10 bg-white/5 text-sky-400 transition-colors hover:bg-white/10 active:scale-95"
                                   title="Salin Ringkasan"
                                 >
-                                  <Copy size={14} />
+                                  <Copy size={16} />
                                 </button>
                               ) : null}
                               {!statusLocked && (
                                 <button
                                   type="button"
                                   onClick={() => openDeleteRegistrationPrompt(p.id, p.member?.fullName || '')}
-                                  className="inline-flex p-1.5 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 transition-colors hover:bg-red-500/10 active:scale-95"
+                                  className="inline-flex p-2 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 transition-colors hover:bg-red-500/10 active:scale-95"
                                   title="Hapus"
                                 >
-                                  <Trash2 size={14} />
+                                  <Trash2 size={16} />
                                 </button>
                               )}
                             </div>
