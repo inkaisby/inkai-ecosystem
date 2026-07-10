@@ -1395,8 +1395,8 @@ export default function EventParticipantsPage() {
                               disabled={rowBusy}
                               value={p.category?.name || p.member?.currentRank || ''}
                               onChange={(e) => handleRegistrationCategoryChange(p.id, p.memberId, p.category?.name || p.member?.currentRank, e.target.value)}
-                              className="bg-neutral-900 border border-white/10 rounded-lg text-xs px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 uppercase max-w-[160px]"
-                              style={{ colorScheme: "dark" }}
+                              className="bg-neutral-800 text-white font-black text-[11px] px-3 py-2 rounded-xl border border-white/10 uppercase focus:outline-none focus:border-amber-500 cursor-pointer max-w-[180px] disabled:opacity-50"
+                              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
                             >
                               <option value="">Pilih Kategori</option>
                               <optgroup label="Sabuk Putih">
@@ -1866,8 +1866,8 @@ export default function EventParticipantsPage() {
                         disabled={registrationUpdatingId === selectedParticipant.id}
                         value={selectedParticipant.category?.name || selectedParticipant.member?.currentRank || ''}
                         onChange={(e) => handleRegistrationCategoryChange(selectedParticipant.id, selectedParticipant.memberId, selectedParticipant.category?.name || selectedParticipant.member?.currentRank, e.target.value)}
-                        className="bg-neutral-900 border border-white/10 rounded-lg text-xs px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 mt-1 uppercase w-full"
-                        style={{ colorScheme: "dark" }}
+                        className="bg-neutral-800 text-white font-black text-xs px-3 py-2.5 rounded-xl border border-white/10 mt-1 uppercase w-full focus:outline-none focus:border-amber-500 cursor-pointer disabled:opacity-50"
+                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
                       >
                         <option value="">Pilih Kategori</option>
                         <optgroup label="Sabuk Putih">
