@@ -327,3 +327,23 @@ export const getMyBillings = async (req: any, res: Response) => {
   }
 };
 
+export const updateBillingAmount = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    const billing = await prisma.billing.update({
+      where: { id },
+      data: {
+        amount: Number(amount),
+        baseFeeAmount: Number(amount),
+      },
+    });
+
+    res.json({ status: 'success', data: billing });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+

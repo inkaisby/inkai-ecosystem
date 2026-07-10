@@ -1077,16 +1077,14 @@ export default function EventParticipantsPage() {
             >
               <Download size={20} />
             </button>
-            {canBulkRegister && (
-              <button
-                type="button"
-                onClick={handleOpenTemplateModal}
-                className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-amber-500 active:scale-90 transition-all hover:bg-white/10"
-                title="Edit Template Biaya Sabuk"
-              >
-                <Coins size={20} />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleOpenTemplateModal}
+              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-amber-500 active:scale-90 transition-all hover:bg-white/10"
+              title="Edit Template Biaya Sabuk"
+            >
+              <Coins size={20} />
+            </button>
             {canBulkRegister && (
               <button
                 type="button"
@@ -1539,9 +1537,37 @@ export default function EventParticipantsPage() {
                           </td>
 
                           {/* Payment */}
-                          <td className="py-4 px-4">
-                            <div className="text-xs font-semibold">
-                              <span className="text-[var(--text-light)] block">Rp {(billing?.baseFeeAmount ?? billing?.amount ?? eventFee).toLocaleString('id-ID')}</span>
+                          <td className="py-4 px-4 w-40">
+                            <div className="flex flex-col gap-1">
+                              {billing ? (
+                                <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1 border border-white/10 w-32 focus-within:border-amber-500/50">
+                                  <span className="text-gray-500 font-bold text-[10px]">Rp</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    defaultValue={billing.baseFeeAmount ?? billing.amount ?? 0}
+                                    onBlur={async (e) => {
+                                      const nextVal = parseFloat(e.target.value);
+                                      if (Number.isNaN(nextVal) || nextVal < 0) return;
+                                      if (nextVal === (billing.baseFeeAmount ?? billing.amount)) return;
+                                      
+                                      try {
+                                        setRegistrationUpdatingId(p.id);
+                                        await api.billing.updateAmount(billing.id, nextVal);
+                                        toast.success('Nominal biaya berhasil diperbarui');
+                                        await fetchData();
+                                      } catch {
+                                        toast.error('Gagal memperbarui nominal biaya');
+                                      } finally {
+                                        setRegistrationUpdatingId(null);
+                                      }
+                                    }}
+                                    className="bg-transparent text-white font-bold text-xs w-full focus:outline-none"
+                                  />
+                                </div>
+                              ) : (
+                                <span className="text-[var(--text-light)] block font-mono text-xs">Rp {eventFee.toLocaleString('id-ID')}</span>
+                              )}
                               {billing && (
                                 <span className={`text-[9px] font-bold uppercase ${payHighlight === 'paid' ? 'text-green-400' : payHighlight === 'waiting' ? 'text-amber-400' : 'text-gray-400'}`}>
                                   {payHighlight === 'paid' ? 'Lunas' : payHighlight === 'waiting' ? 'Verifikasi manual' : 'Belum bayar'}

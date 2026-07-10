@@ -247,6 +247,7 @@ export const api = Object.assign(apiInstance, {
     delete: (id: string) => apiInstance.delete(`/billing/${id}`).then(res => res.data),
     getMy: () => apiInstance.get('/billing/my').then(res => res.data),
     pay: (data: { billingId: string; paymentMethod: string; externalId?: string; proofUrl?: string }) => apiInstance.post('/billing/pay', data).then(res => res.data),
+    updateAmount: (id: string, amount: number) => apiInstance.patch(`/billing/${id}`, { amount }).then(res => res.data),
   },
   notifications: {
     broadcast: (data: { title: string; content: string; type: string }) => 
