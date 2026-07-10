@@ -31,8 +31,10 @@ import {
   UserPlus,
   Eye,
   Award,
+  ExternalLink,
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { api, getAssetUrl } from "@/lib/api";
 import toast from "react-hot-toast";
 import { MemberItemSkeleton } from "@/components/admin/Skeleton";
@@ -143,6 +145,7 @@ function AdminMemberListCard({
   onToggleStatus,
   onDelete,
   canEditNiaSabuk,
+  onPreviewDoc,
 }: {
   member: any;
   saving: boolean;
@@ -154,6 +157,7 @@ function AdminMemberListCard({
   onToggleStatus: (m: any) => void;
   onDelete: (id: string) => void;
   canEditNiaSabuk: boolean;
+  onPreviewDoc: (url: string, title: string) => void;
 }) {
   const [niaLocal, setNiaLocal] = useState(() => member.nia ?? "");
   const [imageError, setImageError] = useState(false);
@@ -279,28 +283,30 @@ function AdminMemberListCard({
           <div className="pt-2 border-t border-white/5 flex flex-wrap gap-1.5 items-center mt-2">
             <span className="text-[9px] text-gray-500 uppercase tracking-wider font-black mr-1">Dokumen:</span>
             {member.birthCertificateUrl ? (
-              <a
-                href={getAssetUrl(member.birthCertificateUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Lihat Akte Lahir / Ijazah"
-                className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                title="Pratinjau Akte Lahir / Ijazah"
+                className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 text-[9px] font-bold tracking-wider transition-all uppercase cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPreviewDoc(member.birthCertificateUrl, 'Akte Lahir / Ijazah');
+                }}
               >
                 Akte
-              </a>
+              </button>
             ) : null}
             {member.bpjsCardUrl ? (
-              <a
-                href={getAssetUrl(member.bpjsCardUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Lihat Kartu BPJS"
-                className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                title="Pratinjau Kartu BPJS"
+                className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-[9px] font-bold tracking-wider transition-all uppercase cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPreviewDoc(member.bpjsCardUrl, 'Kartu BPJS');
+                }}
               >
                 BPJS
-              </a>
+              </button>
             ) : null}
             {!member.birthCertificateUrl && !member.bpjsCardUrl && (
               <span className="text-[9px] text-gray-500 italic">Belum di-upload</span>
@@ -355,6 +361,7 @@ function AdminMemberTableRow({
   onDelete,
   canEditNiaSabuk,
   rowNumber,
+  onPreviewDoc,
 }: {
   member: any;
   saving: boolean;
@@ -368,6 +375,7 @@ function AdminMemberTableRow({
   onDelete: (id: string) => void;
   canEditNiaSabuk: boolean;
   rowNumber: number;
+  onPreviewDoc: (url: string, title: string) => void;
 }) {
   const [niaLocal, setNiaLocal] = useState(() => member.nia ?? "");
   const [imageError, setImageError] = useState(false);
@@ -483,26 +491,30 @@ function AdminMemberTableRow({
       <td className="py-4 px-4 text-center">
         <div className="flex items-center gap-1.5 justify-center">
           {member.birthCertificateUrl ? (
-            <a
-              href={getAssetUrl(member.birthCertificateUrl)}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Lihat Akte Lahir / Ijazah"
-              className="px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
+            <button
+              type="button"
+              title="Pratinjau Akte Lahir / Ijazah"
+              className="px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 text-[9px] font-bold tracking-wider transition-all uppercase cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreviewDoc(member.birthCertificateUrl, 'Akte Lahir / Ijazah');
+              }}
             >
               Akte
-            </a>
+            </button>
           ) : null}
           {member.bpjsCardUrl ? (
-            <a
-              href={getAssetUrl(member.bpjsCardUrl)}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Lihat Kartu BPJS"
-              className="px-2 py-1 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
+            <button
+              type="button"
+              title="Pratinjau Kartu BPJS"
+              className="px-2 py-1 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-[9px] font-bold tracking-wider transition-all uppercase cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreviewDoc(member.bpjsCardUrl, 'Kartu BPJS');
+              }}
             >
               BPJS
-            </a>
+            </button>
           ) : null}
           {!member.birthCertificateUrl && !member.bpjsCardUrl && (
             <span className="text-[10px] text-gray-500 font-mono">—</span>
@@ -620,6 +632,7 @@ function MembersContent() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dojoInfo, setDojoInfo] = useState<any | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
 
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -1486,6 +1499,7 @@ function MembersContent() {
                     onToggleStatus={handleToggleStatus}
                     onDelete={handleDelete}
                     canEditNiaSabuk={canEditNiaSabuk}
+                    onPreviewDoc={(url, title) => setPreviewDoc({ url, title })}
                   />
                 ))}
               </div>
@@ -1522,6 +1536,7 @@ function MembersContent() {
                             onDelete={handleDelete}
                             canEditNiaSabuk={canEditNiaSabuk}
                             rowNumber={rowNumber}
+                            onPreviewDoc={(url, title) => setPreviewDoc({ url, title })}
                           />
                         );
                       })}
@@ -2809,6 +2824,69 @@ function MembersContent() {
           </div>
         </AdminModalPortal>
       )}
+
+      {/* Document Preview Modal */}
+      <AdminModalPortal>
+        <AnimatePresence>
+          {previewDoc && (
+            <div key="doc-preview-modal" className="admin-modal-overlay flex items-center justify-center p-4 z-[10005]">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setPreviewDoc(null)}
+                className="admin-modal-backdrop-hitbox"
+                aria-hidden
+              />
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="admin-modal-dialog-panel relative w-full max-w-2xl p-5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                    Pratinjau Dokumen: {previewDoc.title}
+                  </h3>
+                  <button
+                    onClick={() => setPreviewDoc(null)}
+                    className="p-1.5 text-gray-500 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center max-h-[60vh]">
+                  <img 
+                    src={getAssetUrl(previewDoc.url)} 
+                    alt={previewDoc.title} 
+                    className="max-w-full max-h-[55vh] object-contain rounded"
+                  />
+                </div>
+
+                <div className="mt-4 flex gap-3">
+                  <a
+                    href={getAssetUrl(previewDoc.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 bg-amber-500 text-black font-black uppercase tracking-widest text-[10px] rounded-xl text-center active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-amber-600"
+                  >
+                    <ExternalLink size={14} />
+                    Buka di Tab Baru
+                  </a>
+                  <button
+                    onClick={() => setPreviewDoc(null)}
+                    className="flex-1 py-3 bg-white/5 text-[var(--text-light)] font-black uppercase tracking-widest text-[10px] rounded-xl border border-white/10 active:scale-95 transition-all"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </AdminModalPortal>
     </div>
   );
 }
