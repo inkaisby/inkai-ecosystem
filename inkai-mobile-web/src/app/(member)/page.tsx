@@ -141,7 +141,7 @@ export default function PublicLandingPage() {
           <div className={styles.brand}>
             <Image src="/logo.png" alt="INKAI Logo" width={34} height={34} priority unoptimized />
             <div>
-              <h1 className={styles.brandTitle}>INKAI</h1>
+              <h1 className={styles.brandTitle}>INKAI JAWA TIMUR</h1>
               <p className={styles.brandSubtitle}>Digital Ecosystem</p>
             </div>
           </div>
