@@ -86,7 +86,7 @@ export default function AdminLayout({
         <div className="flex-1 flex flex-col min-w-0 lg:pl-64 w-full">
           <div className="admin-topbar-spacer" aria-hidden />
           <TopBar />
-          <main className="relative min-w-0 flex-1 flex flex-col px-4 md:px-8 pt-4 pb-32 lg:pb-8 max-w-7xl mx-auto w-full">
+          <main className="relative min-w-0 flex-1 flex flex-col px-4 md:px-8 pt-4 pb-32 lg:pb-8 max-w-[1600px] mx-auto w-full">
             {children}
           </main>
         </div>
