@@ -839,6 +839,32 @@ export const updateRegistration = async (req: Request, res: Response) => {
       });
     }
 
+    const isUKT = registration.event.title.toUpperCase().includes('UKT') || registration.event.title.toUpperCase().includes('UJIAN');
+    if (isUKT && (registration.status === 'APPROVED' || registration.status === 'PAID' || registration.status === 'SUCCESS') && registration.category) {
+      await prisma.member.update({
+        where: { id: registration.memberId },
+        data: { currentRank: registration.category.name },
+      });
+
+      const hasRank = await prisma.memberRank.findFirst({
+        where: {
+          memberId: registration.memberId,
+          rank: registration.category.name,
+        }
+      });
+      if (!hasRank) {
+        await prisma.memberRank.create({
+          data: {
+            memberId: registration.memberId,
+            rank: registration.category.name,
+            date: registration.event.startDate,
+            location: registration.event.location,
+            isVerified: true
+          }
+        });
+      }
+    }
+
     res.json({ status: 'success', data: registration });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);

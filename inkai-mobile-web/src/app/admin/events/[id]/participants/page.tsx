@@ -560,6 +560,27 @@ export default function EventParticipantsPage() {
     }
   };
 
+  const handleRegistrationCategoryChange = async (
+    regId: string,
+    currentCategoryId: string | null,
+    nextCategoryId: string,
+  ) => {
+    if (nextCategoryId === currentCategoryId) return;
+    setRegistrationUpdatingId(regId);
+    try {
+      const res = await api.events.updateRegistration(regId, { categoryId: nextCategoryId });
+      if (res.status === 'success') {
+        toast.success('Kategori (KYU / DAN Baru) peserta diperbarui');
+        await fetchData();
+      }
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } };
+      toast.error(ax.response?.data?.message || 'Gagal mengubah kategori');
+    } finally {
+      setRegistrationUpdatingId(null);
+    }
+  };
+
   const openDeleteRegistrationPrompt = (regId: string, memberName: string) => {
     setDeleteRegPrompt({
       regId,
@@ -1244,10 +1265,11 @@ export default function EventParticipantsPage() {
                         Dojo / Ranting <ArrowUpDown size={12} />
                       </div>
                     </th>
-                    <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('category')}>
-                      <div className="flex items-center gap-1.5">
-                        Kategori <ArrowUpDown size={12} />
-                      </div>
+                    <th className="py-4 px-4 text-left">
+                      KYU / DAN Lama
+                    </th>
+                    <th className="py-4 px-4 text-left w-48">
+                      KYU / DAN Baru
                     </th>
                     <th className="py-4 px-4 text-center w-36">Dokumen</th>
                     <th className="py-4 px-4">Pembayaran</th>
@@ -1267,7 +1289,7 @@ export default function EventParticipantsPage() {
                 <tbody className="divide-y divide-[var(--hairline)]">
                   {loading ? (
                     <tr>
-                      <td colSpan={10} className="py-20 text-center">
+                      <td colSpan={11} className="py-20 text-center">
                         <div className="flex flex-col items-center justify-center gap-4">
                           <Loader2 className="animate-spin text-amber-500" size={32} />
                           <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Memuat data...</p>
@@ -1352,9 +1374,32 @@ export default function EventParticipantsPage() {
                             {p.member?.dojo?.name || 'Pusat'}
                           </td>
 
-                          {/* Category */}
-                          <td className="py-4 px-4 text-xs font-semibold text-[var(--text-light)]">
-                            {p.category?.name || '-'}
+                          {/* KYU / DAN Lama */}
+                          <td className="py-4 px-4 text-xs font-semibold text-[var(--text-muted)] uppercase">
+                            {p.member?.currentRank || '-'}
+                          </td>
+
+                          {/* KYU / DAN Baru */}
+                          <td className="py-4 px-4">
+                            {event?.categories?.length > 0 ? (
+                              <select
+                                disabled={rowBusy}
+                                value={p.categoryId || ''}
+                                onChange={(e) => handleRegistrationCategoryChange(p.id, p.categoryId, e.target.value)}
+                                className="bg-neutral-900 border border-white/10 rounded-lg text-xs px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 uppercase max-w-[160px]"
+                              >
+                                <option value="">Pilih Kategori</option>
+                                {event.categories.map((cat: { id: string; name: string }) => (
+                                  <option key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-xs font-semibold text-[var(--text-light)] uppercase">
+                                {p.category?.name || '-'}
+                              </span>
+                            )}
                           </td>
 
                           {/* Documents */}
@@ -1496,7 +1541,7 @@ export default function EventParticipantsPage() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={10} className="py-20 text-center">
+                      <td colSpan={11} className="py-20 text-center">
                         <Users className="mx-auto text-gray-800 mb-3" size={40} />
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Peserta tidak ditemukan</p>
                       </td>
@@ -1783,9 +1828,31 @@ export default function EventParticipantsPage() {
               <div className="space-y-4">
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/5">
-                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">Kategori</p>
-                    <p className="text-xs font-bold text-white uppercase">{selectedParticipant.category?.name || '-'}</p>
+                  <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/5 space-y-3">
+                    <div>
+                      <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">KYU / DAN Lama</p>
+                      <p className="text-xs font-bold text-white uppercase">{selectedParticipant.member?.currentRank || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">KYU / DAN Baru</p>
+                      {event?.categories?.length > 0 ? (
+                        <select
+                          disabled={registrationUpdatingId === selectedParticipant.id}
+                          value={selectedParticipant.categoryId || ''}
+                          onChange={(e) => handleRegistrationCategoryChange(selectedParticipant.id, selectedParticipant.categoryId, e.target.value)}
+                          className="bg-neutral-900 border border-white/10 rounded-lg text-xs px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 mt-1 uppercase w-full"
+                        >
+                          <option value="">Pilih Kategori</option>
+                          {event.categories.map((cat: { id: string; name: string }) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-xs font-bold text-white uppercase">{selectedParticipant.category?.name || '-'}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/5">
                     <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">Biaya kategori</p>

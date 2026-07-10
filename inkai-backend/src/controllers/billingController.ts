@@ -137,10 +137,37 @@ export const processPayment = async (req: Request, res: Response) => {
       });
 
       if (status === 'PAID' && updatedBilling.registrationId) {
-        await tx.eventRegistration.update({
+        const reg = await tx.eventRegistration.update({
           where: { id: updatedBilling.registrationId },
           data: { status: 'PAID' },
+          include: { event: true, category: true },
         });
+
+        const isUKT = reg.event.title.toUpperCase().includes('UKT') || reg.event.title.toUpperCase().includes('UJIAN');
+        if (isUKT && reg.category) {
+          await tx.member.update({
+            where: { id: reg.memberId },
+            data: { currentRank: reg.category.name },
+          });
+
+          const hasRank = await tx.memberRank.findFirst({
+            where: {
+              memberId: reg.memberId,
+              rank: reg.category.name,
+            }
+          });
+          if (!hasRank) {
+            await tx.memberRank.create({
+              data: {
+                memberId: reg.memberId,
+                rank: reg.category.name,
+                date: reg.event.startDate,
+                location: reg.event.location,
+                isVerified: true
+              }
+            });
+          }
+        }
       }
 
       return payment;

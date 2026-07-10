@@ -73,7 +73,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
             dojo: { include: { branch: { include: { province: true } } } },
             ranks: { orderBy: { date: 'desc' } },
             attendances: { take: 20, orderBy: { checkInAt: 'desc' }, include: { dojo: true } },
-            eventRegistrations: { include: { event: true } },
+            eventRegistrations: { include: { event: true, category: true } },
             _count: { select: { attendances: true, eventRegistrations: true } }
           }
         },

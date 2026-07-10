@@ -30,7 +30,7 @@ function AchievementContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') as TabType;
   
-  const { user, isLoading: isAuthLoading, isAdmin, isDocumentComplete } = useAuth();
+  const { user, isLoading: isAuthLoading, isAdmin, isDocumentComplete, fetchProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'Sabuk');
   const [mounted, setMounted] = useState(false);
   const [myVerifications, setMyVerifications] = useState<any[]>([]);
@@ -42,6 +42,9 @@ function AchievementContent() {
 
   useEffect(() => {
     setMounted(true);
+    if (user) {
+      fetchProfile().catch(console.error);
+    }
   }, []);
 
   useEffect(() => {
@@ -157,11 +160,11 @@ function AchievementContent() {
     return s || "—";
   };
 
-  // Filter UKT registrations that are PAID
+  // Filter UKT registrations that are PAID or APPROVED or SUCCESS
   const uktRegs = eventRegs.filter((reg: any) => {
     const title = reg.event?.title?.toUpperCase() || '';
     const isUKT = title.includes('UKT') || title.includes('UJIAN');
-    return isUKT && reg.status === 'PAID';
+    return isUKT && (reg.status === 'PAID' || reg.status === 'APPROVED' || reg.status === 'SUCCESS');
   });
 
   const renderEmptyState = (message: string) => (
@@ -325,15 +328,18 @@ function AchievementContent() {
                 resubmitClaimId: claim.id,
               });
             })}
-            {uktRegs.map((reg: any) => renderHistoryCard({
-              id: reg.id,
-              title: reg.event?.title || 'Ujian UKT',
-              date: reg.event?.startDate ? new Date(reg.event.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
-              location: reg.event?.location || 'Lokasi Ujian',
-              isValidated: false,
-              customStatus: 'Menunggu Hasil Ujian',
-              variant: "pending",
-            }))}
+             {uktRegs.map((reg: any) => {
+              const categoryLabel = reg.category?.name ? ` (${reg.category.name})` : '';
+              return renderHistoryCard({
+                id: reg.id,
+                title: `${reg.event?.title || 'Ujian UKT'}${categoryLabel}`,
+                date: reg.event?.startDate ? new Date(reg.event.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
+                location: reg.event?.location || 'Lokasi Ujian',
+                isValidated: false,
+                customStatus: 'Menunggu Hasil Ujian',
+                variant: "pending",
+              });
+            })}
             {ranks.map((rank: any) => renderHistoryCard({
               id: rank.id,
               title: rank.rank,

@@ -110,6 +110,7 @@ export default function Dashboard() {
     isAdmin,
     isProfileComplete,
     isDocumentComplete,
+    fetchProfile,
   } = useAuth();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [pastEvents, setPastEvents] = useState<any[]>([]);
@@ -123,6 +124,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     setMounted(true);
+    if (user) {
+      fetchProfile().catch(console.error);
+    }
   }, []);
 
   const rawRegDate = user?.createdAt || user?.member?.createdAt || user?.member?.joinedAt;
@@ -305,6 +309,25 @@ export default function Dashboard() {
 
   const highestBelt = (() => {
     if (isAdmin) return "—";
+
+    // Check if there is an approved/paid/success UKT registration
+    const uktRegs = (user.eventRegistrations || []).filter((reg: any) => {
+      const title = reg.event?.title?.toUpperCase() || '';
+      const isUKT = title.includes('UKT') || title.includes('UJIAN');
+      return isUKT && (reg.status === 'PAID' || reg.status === 'APPROVED' || reg.status === 'SUCCESS');
+    });
+
+    if (uktRegs.length > 0) {
+      const latestUKT = [...uktRegs].sort((a: any, b: any) => {
+        const dateA = new Date(a.event?.startDate || a.createdAt || 0).getTime();
+        const dateB = new Date(b.event?.startDate || b.createdAt || 0).getTime();
+        return dateB - dateA;
+      })[0];
+      if (latestUKT?.category?.name) {
+        return latestUKT.category.name;
+      }
+    }
+
     const fromCurrent =
       typeof user.currentRank === "string" ? user.currentRank.trim() : "";
     if (fromCurrent) return fromCurrent;
