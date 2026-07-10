@@ -2842,7 +2842,7 @@ function MembersContent() {
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="admin-modal-dialog-panel relative w-full max-w-2xl p-5"
+                className="admin-modal-dialog-panel relative w-[95%] !max-w-2xl p-4 sm:p-5"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex justify-between items-center mb-4">
@@ -2857,18 +2857,18 @@ function MembersContent() {
                   </button>
                 </div>
 
-                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center max-h-[60vh] min-h-[40vh] w-full">
+                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center h-[50vh] sm:h-[60vh] w-full">
                   {previewDoc.url.toLowerCase().split('?')[0].endsWith('.pdf') ? (
                     <iframe 
                       src={getAssetUrl(previewDoc.url)} 
                       title={previewDoc.title} 
-                      className="w-full h-[55vh] rounded border-0 bg-white"
+                      className="w-full h-full rounded border-0 bg-white"
                     />
                   ) : (
                     <img 
                       src={getAssetUrl(previewDoc.url)} 
                       alt={previewDoc.title} 
-                      className="max-w-full max-h-[55vh] object-contain rounded"
+                      className="max-w-full max-h-full object-contain rounded"
                     />
                   )}
                 </div>
