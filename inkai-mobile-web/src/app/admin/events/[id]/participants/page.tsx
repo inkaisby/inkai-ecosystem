@@ -1144,6 +1144,19 @@ export default function EventParticipantsPage() {
             >
               <Download size={20} />
             </button>
+            {selectedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const selected = participants.filter((p) => selectedIds[p.id]);
+                  setPrintParticipants(selected);
+                }}
+                className="p-2.5 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-400 active:scale-90 transition-all hover:bg-blue-500/35"
+                title={`Cetak Nota untuk ${selectedCount} peserta`}
+              >
+                <Printer size={20} />
+              </button>
+            )}
             <button
               type="button"
               onClick={handleOpenTemplateModal}
