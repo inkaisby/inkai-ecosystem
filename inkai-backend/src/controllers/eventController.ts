@@ -400,11 +400,12 @@ export const registerForEvent = async (req: Request, res: Response) => {
       });
     }
 
+    const memberRecord = await prisma.member.findUnique({
+      where: { id: memberId },
+      select: { currentRank: true, dojo: { select: { branchId: true } } },
+    });
+
     if (eventRecord.branchId) {
-      const memberRecord = await prisma.member.findUnique({
-        where: { id: memberId },
-        select: { dojo: { select: { branchId: true } } },
-      });
       const mBranch = memberRecord?.dojo?.branchId;
       if (!mBranch || mBranch !== eventRecord.branchId) {
         return res.status(403).json({
@@ -428,6 +429,7 @@ export const registerForEvent = async (req: Request, res: Response) => {
         registeredByUserId: jwtUser?.userId ?? null,
         categoryId,
         status: 'PENDING',
+        registeredRank: memberRecord?.currentRank || null,
       },
       include: {
         member: {
@@ -565,6 +567,7 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
         dojoId: true,
         userId: true,
         fullName: true,
+        currentRank: true,
         dojo: { select: { branchId: true, branch: { select: { provinceId: true } } } },
       },
     });
@@ -605,6 +608,7 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
             registeredByUserId: jwtUser?.userId ?? null,
             categoryId: resolvedCategoryId,
             status: 'PENDING',
+            registeredRank: memberRow?.currentRank || null,
           },
           include: {
             member: {

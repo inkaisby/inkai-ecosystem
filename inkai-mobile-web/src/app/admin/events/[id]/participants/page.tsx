@@ -1387,7 +1387,7 @@ export default function EventParticipantsPage() {
 
                           {/* KYU / DAN Lama */}
                           <td className="py-4 px-4 text-xs font-semibold text-[var(--text-muted)] uppercase">
-                            {p.member?.currentRank || '-'}
+                            {p.registeredRank || p.member?.currentRank || '-'}
                           </td>
 
                           <td className="py-4 px-4">
@@ -1858,7 +1858,7 @@ export default function EventParticipantsPage() {
                   <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/5 space-y-3">
                     <div>
                       <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">KYU / DAN Lama</p>
-                      <p className="text-xs font-bold text-white uppercase">{selectedParticipant.member?.currentRank || '-'}</p>
+                      <p className="text-xs font-bold text-white uppercase">{selectedParticipant.registeredRank || selectedParticipant.member?.currentRank || '-'}</p>
                     </div>
                     <div>
                       <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">KYU / DAN Baru</p>
