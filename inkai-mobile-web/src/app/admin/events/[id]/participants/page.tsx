@@ -1713,7 +1713,7 @@ export default function EventParticipantsPage() {
       <AdminModalPortal>
       <AnimatePresence>
         {selectedParticipant && (
-          <div key="participant-drawer" className="admin-modal-overlay admin-modal-overlay--bottom">
+          <div key="participant-drawer" className="admin-modal-overlay flex items-end sm:items-center justify-center">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1727,8 +1727,7 @@ export default function EventParticipantsPage() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="admin-modal-drawer-sheet mobile-hpad pt-6 pb-[calc(env(safe-area-inset-bottom,24px)+24px)]"
-              style={{ maxHeight: '90vh' }}
+              className="admin-modal-drawer-sheet mobile-hpad pt-6 pb-[calc(env(safe-area-inset-bottom,24px)+24px)] sm:rounded-[2.5rem] sm:border sm:border-white/10 sm:max-h-[85vh] overflow-y-auto max-h-[90vh]"
             >
               <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6 opacity-50" />
               
