@@ -695,7 +695,7 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
 export const updateRegistration = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { categoryId, status } = req.body as { categoryId?: unknown; status?: unknown };
+    const { categoryId, status, registeredRank } = req.body as { categoryId?: unknown; status?: unknown; registeredRank?: unknown };
     const jwtUser = (req as Request & { user?: JwtEventUser }).user as JwtEventUser | undefined;
 
     if (!userCanBulkRegisterMembersForEvents(jwtUser)) {
@@ -728,7 +728,10 @@ export const updateRegistration = async (req: Request, res: Response) => {
       return res.status(403).json({ status: 'error', message: 'Akses wilayah ditolak' });
     }
 
-    const patch: { categoryId?: string | null; status?: string } = {};
+    const patch: { categoryId?: string | null; status?: string; registeredRank?: string } = {};
+    if (!existing.registeredRank && existing.member?.currentRank) {
+      patch.registeredRank = existing.member.currentRank;
+    }
     if (categoryId !== undefined) {
       patch.categoryId =
         categoryId === null || categoryId === '' ? null : String(categoryId);
@@ -740,7 +743,9 @@ export const updateRegistration = async (req: Request, res: Response) => {
       }
       patch.status = status;
     }
-
+    if (registeredRank !== undefined) {
+      patch.registeredRank = registeredRank === null || registeredRank === '' ? null : String(registeredRank);
+    }
     if (Object.keys(patch).length === 0) {
       return res.status(400).json({ status: 'error', message: 'Tidak ada perubahan' });
     }
