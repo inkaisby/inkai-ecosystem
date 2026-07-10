@@ -2184,7 +2184,8 @@ export default function EventParticipantsPage() {
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="admin-modal-dialog-panel relative w-[95%] sm:w-[90%] !max-w-5xl p-4 sm:p-6"
+                className="admin-modal-dialog-panel relative p-4 sm:p-6"
+                style={{ maxWidth: '1024px', width: '95%' }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex justify-between items-center mb-4">
