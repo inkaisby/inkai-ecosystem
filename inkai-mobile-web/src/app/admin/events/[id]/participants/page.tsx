@@ -207,6 +207,27 @@ export default function EventParticipantsPage() {
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
   const [verifying, setVerifying] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
+  const [previewDocSize, setPreviewDocSize] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!previewDoc) {
+      setPreviewDocSize(null);
+      return;
+    }
+    const controller = new AbortController();
+    fetch(getAssetUrl(previewDoc.url), { method: 'HEAD', signal: controller.signal })
+      .then((res) => {
+        const len = res.headers.get('content-length');
+        if (len) {
+          const bytes = parseInt(len, 10);
+          if (bytes < 1024) setPreviewDocSize(`${bytes} B`);
+          else if (bytes < 1024 * 1024) setPreviewDocSize(`${(bytes / 1024).toFixed(1)} KB`);
+          else setPreviewDocSize(`${(bytes / (1024 * 1024)).toFixed(1)} MB`);
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [previewDoc]);
 
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkMembers, setBulkMembers] = useState<any[]>([]);
@@ -2190,7 +2211,7 @@ export default function EventParticipantsPage() {
               >
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-sm font-black uppercase tracking-wider text-white">
-                    Pratinjau Dokumen: {previewDoc.title}
+                    Pratinjau Dokumen: {previewDoc.title} {previewDocSize ? `(${previewDocSize})` : ''}
                   </h3>
                   <button
                     onClick={() => setPreviewDoc(null)}
