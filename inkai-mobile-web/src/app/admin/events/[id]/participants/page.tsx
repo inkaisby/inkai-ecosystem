@@ -2199,12 +2199,20 @@ export default function EventParticipantsPage() {
                   </button>
                 </div>
 
-                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center max-h-[60vh]">
-                  <img 
-                    src={getAssetUrl(previewDoc.url)} 
-                    alt={previewDoc.title} 
-                    className="max-w-full max-h-[55vh] object-contain rounded"
-                  />
+                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center max-h-[60vh] min-h-[40vh] w-full">
+                  {previewDoc.url.toLowerCase().split('?')[0].endsWith('.pdf') ? (
+                    <iframe 
+                      src={getAssetUrl(previewDoc.url)} 
+                      title={previewDoc.title} 
+                      className="w-full h-[55vh] rounded border-0 bg-white"
+                    />
+                  ) : (
+                    <img 
+                      src={getAssetUrl(previewDoc.url)} 
+                      alt={previewDoc.title} 
+                      className="max-w-full max-h-[55vh] object-contain rounded"
+                    />
+                  )}
                 </div>
 
                 <div className="mt-4 flex gap-3">
