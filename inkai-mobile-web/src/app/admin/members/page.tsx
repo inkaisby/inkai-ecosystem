@@ -2842,7 +2842,7 @@ function MembersContent() {
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="admin-modal-dialog-panel relative w-[95%] !max-w-2xl p-4 sm:p-5"
+                className="admin-modal-dialog-panel relative w-[95%] sm:w-[90%] !max-w-5xl p-4 sm:p-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex justify-between items-center mb-4">
@@ -2857,7 +2857,7 @@ function MembersContent() {
                   </button>
                 </div>
 
-                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center h-[50vh] sm:h-[60vh] w-full">
+                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center h-[55vh] sm:h-[75vh] w-full">
                   {previewDoc.url.toLowerCase().split('?')[0].endsWith('.pdf') ? (
                     <iframe 
                       src={getAssetUrl(previewDoc.url)} 
