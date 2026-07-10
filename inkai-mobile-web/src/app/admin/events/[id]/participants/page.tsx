@@ -28,6 +28,7 @@ import {
   ArrowUpDown,
   Coins,
   ChevronDown,
+  Printer,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, getAssetUrl } from '@/lib/api';
@@ -189,6 +190,16 @@ function FixedAvatar({ size = 56, ...props }: any) {
   );
 }
 
+function getBeltGroup(categoryName: string | null | undefined): string {
+  const name = String(categoryName ?? '').toUpperCase();
+  if (name.includes('PUTIH') || name.includes('KYU 10') || name.includes('KYU 9')) return 'PUTIH';
+  if (name.includes('KUNING') || name.includes('ORANGE') || name.includes('KYU 8') || name.includes('KYU 7')) return 'KUNING';
+  if (name.includes('HIJAU') || name.includes('KYU 6')) return 'HIJAU';
+  if (name.includes('BIRU') || name.includes('KYU 5') || name.includes('KYU 4')) return 'BIRU';
+  if (name.includes('COKLAT') || name.includes('COKELAT') || name.includes('KYU 3') || name.includes('KYU 2') || name.includes('KYU 1')) return 'COKELAT';
+  return 'LAINNYA';
+}
+
 export default function EventParticipantsPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -208,6 +219,62 @@ export default function EventParticipantsPage() {
   const [verifying, setVerifying] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
   const [previewDocSize, setPreviewDocSize] = useState<string | null>(null);
+
+  const [printParticipants, setPrintParticipants] = useState<any[] | null>(null);
+  const [printConfig, setPrintConfig] = useState<Record<string, {
+    notaNo: string;
+    semester: string;
+    year: string;
+    rusak: number;
+    hilang: number;
+    komisi: number;
+    fees: Record<string, number>;
+  }>>({});
+
+  useEffect(() => {
+    if (!printParticipants || !event) return;
+    
+    const dojos = Array.from(new Set(printParticipants.map(p => p.member?.dojo?.name || 'Pusat')));
+    
+    const dateVal = new Date(event?.date || event?.createdAt || new Date());
+    const yearVal = String(dateVal.getFullYear());
+    const semVal = dateVal.getMonth() < 6 ? 'I' : 'II';
+    
+    const newConfig: Record<string, any> = {};
+    dojos.forEach(dojo => {
+      const slug = dojo.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const notaNo = `UKT/SBY/${slug}/${semVal}/${yearVal}`;
+      
+      const fees: Record<string, number> = {
+        PUTIH: 285000,
+        KUNING: 295000,
+        HIJAU: 305000,
+        BIRU: 315000,
+        COKELAT: 345000
+      };
+      
+      if (Array.isArray(event.categories)) {
+        event.categories.forEach((cat: any) => {
+          const group = getBeltGroup(cat.name);
+          if (group !== 'LAINNYA') {
+            fees[group] = Number(cat.fee);
+          }
+        });
+      }
+      
+      newConfig[dojo] = {
+        notaNo,
+        semester: `${semVal} / ${yearVal}`,
+        year: yearVal,
+        rusak: 0,
+        hilang: 0,
+        komisi: 50000,
+        fees
+      };
+    });
+    
+    setPrintConfig(newConfig);
+  }, [printParticipants, event]);
 
   useEffect(() => {
     if (!previewDoc) {
@@ -1300,6 +1367,17 @@ export default function EventParticipantsPage() {
                       Hapus
                     </button>
                     <button
+                      onClick={() => {
+                        const selected = participants.filter((p) => selectedIds[p.id]);
+                        setPrintParticipants(selected);
+                      }}
+                      disabled={bulkProcessing}
+                      className="flex-1 md:flex-none px-3.5 py-2 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      <Printer size={12} />
+                      Cetak Nota
+                    </button>
+                    <button
                       onClick={() => setSelectedIds({})}
                       disabled={bulkProcessing}
                       className="px-3.5 py-2 bg-white/5 border border-white/10 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95"
@@ -1332,11 +1410,13 @@ export default function EventParticipantsPage() {
                       </button>
                     </th>
                     <th className="py-4 px-2 text-center w-10">No</th>
+                    <th className="py-4 px-4 text-center w-16">Foto</th>
                     <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('name')}>
                       <div className="flex items-center gap-1.5">
-                        Peserta <ArrowUpDown size={12} />
+                        Nama Peserta <ArrowUpDown size={12} />
                       </div>
                     </th>
+                    <th className="py-4 px-4 text-left w-32">NIA</th>
                     <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('dojo')}>
                       <div className="flex items-center gap-1.5">
                         Dojo / Ranting <ArrowUpDown size={12} />
@@ -1366,7 +1446,7 @@ export default function EventParticipantsPage() {
                 <tbody className="divide-y divide-[var(--hairline)]">
                   {loading ? (
                     <tr>
-                      <td colSpan={11} className="py-20 text-center">
+                      <td colSpan={13} className="py-20 text-center">
                         <div className="flex flex-col items-center justify-center gap-4">
                           <Loader2 className="animate-spin text-amber-500" size={32} />
                           <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Memuat data...</p>
@@ -1425,25 +1505,29 @@ export default function EventParticipantsPage() {
                             {idx + 1}
                           </td>
 
-                          {/* Profile */}
+                          {/* Foto */}
+                          <td className="py-4 px-4 text-center w-16">
+                            <FixedAvatar
+                              size={32}
+                              fullName={p.member?.fullName}
+                              currentRank={p.member?.currentRank}
+                              photoUrl={p.member?.user?.photoUrl}
+                            />
+                          </td>
+
+                          {/* Nama Peserta */}
                           <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <FixedAvatar
-                                size={32}
-                                fullName={p.member?.fullName}
-                                currentRank={p.member?.currentRank}
-                                photoUrl={p.member?.user?.photoUrl}
-                              />
-                              <div className="min-w-0">
-                                <button
-                                  onClick={() => setSelectedParticipant(p)}
-                                  className="text-left font-bold text-[var(--text-light)] hover:text-amber-500 transition-colors text-xs truncate max-w-[180px] uppercase block"
-                                >
-                                  {p.member?.fullName || 'Anonim'}
-                                </button>
-                                <span className="text-[9px] font-mono text-[var(--text-muted)]">{p.member?.nia || 'TANPA NIA'}</span>
-                              </div>
-                            </div>
+                            <button
+                              onClick={() => setSelectedParticipant(p)}
+                              className="text-left font-bold text-[var(--text-light)] hover:text-amber-500 transition-colors text-xs truncate max-w-[220px] uppercase block"
+                            >
+                              {p.member?.fullName || 'Anonim'}
+                            </button>
+                          </td>
+
+                          {/* NIA */}
+                          <td className="py-4 px-4 text-xs font-semibold text-[var(--text-muted)] font-mono uppercase">
+                            {p.member?.nia || 'TANPA NIA'}
                           </td>
 
                           {/* Dojo */}
@@ -1662,7 +1746,7 @@ export default function EventParticipantsPage() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={11} className="py-20 text-center">
+                      <td colSpan={13} className="py-20 text-center">
                         <Users className="mx-auto text-gray-800 mb-3" size={40} />
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Peserta tidak ditemukan</p>
                       </td>
@@ -2096,6 +2180,14 @@ export default function EventParticipantsPage() {
                       Chat
                     </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setPrintParticipants([selectedParticipant])}
+                    className="w-full py-3.5 bg-blue-500 hover:bg-blue-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Printer size={14} />
+                    Cetak Nota Pembayaran
+                  </button>
                   {!(selectedParticipant.status === 'PAID' || selectedParticipant.status === 'SUCCESS') && (
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <button
@@ -2558,6 +2650,558 @@ export default function EventParticipantsPage() {
               </motion.div>
             </div>
           )}
+        </AnimatePresence>
+      </AdminModalPortal>
+
+      <AdminModalPortal>
+        <AnimatePresence>
+          {printParticipants && printParticipants.length > 0 && (() => {
+            const dojos = Array.from(new Set(printParticipants.map(p => p.member?.dojo?.name || 'Pusat')));
+            const [activeDojo, setActiveDojo] = useState(dojos[0]);
+
+            return (
+              <div key="print-modal" className="admin-modal-overlay flex items-center justify-center p-4 z-[10006] no-print">
+                <style dangerouslySetInnerHTML={{ __html: `
+                  @media print {
+                    body * {
+                      visibility: hidden;
+                    }
+                    #print-document-root, #print-document-root * {
+                      visibility: visible;
+                    }
+                    #print-document-root {
+                      position: absolute;
+                      left: 0;
+                      top: 0;
+                      width: 100%;
+                      background: white !important;
+                      color: black !important;
+                    }
+                    .admin-modal-overlay {
+                      background: transparent !important;
+                      position: static !important;
+                      display: block !important;
+                      overflow: visible !important;
+                    }
+                    .no-print {
+                      display: none !important;
+                    }
+                  }
+                `}} />
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setPrintParticipants(null)}
+                  className="admin-modal-backdrop-hitbox"
+                  aria-hidden
+                />
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-[var(--card-dark)] border border-white/10 rounded-[2.5rem] p-6 w-full max-w-6xl h-[90vh] flex flex-col relative z-10 overflow-hidden shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Modal Header */}
+                  <div className="flex justify-between items-center pb-4 border-b border-white/10 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Printer className="text-amber-500" size={20} />
+                      <h3 className="text-sm font-black uppercase text-amber-500 tracking-[0.2em]">
+                        Nota Pembayaran Ujian Kenaikan Tingkat
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setPrintParticipants(null)}
+                      className="p-1.5 text-gray-500 hover:text-white rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  {/* Modal Body (2 Columns on large screens) */}
+                  <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-6 py-6 min-h-0">
+                    {/* Left Panel: Configuration Controls */}
+                    <div className="w-full lg:w-[350px] shrink-0 overflow-y-auto space-y-5 pr-2 border-r border-white/5 lg:border-white/10">
+                      {/* Dojo Tab Selector if multiple */}
+                      {dojos.length > 1 && (
+                        <div>
+                          <label className="text-[9px] font-black uppercase text-gray-500 tracking-wider mb-2 block">
+                            Pilih Ranting / Dojo ({dojos.length})
+                          </label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {dojos.map((d) => (
+                              <button
+                                key={d}
+                                onClick={() => setActiveDojo(d)}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                                  activeDojo === d
+                                    ? 'bg-amber-500 text-black'
+                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                }`}
+                              >
+                                {d}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Config Form for Active Dojo */}
+                      {printConfig[activeDojo] && (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                              Nomor Nota ({activeDojo})
+                            </label>
+                            <input
+                              type="text"
+                              value={printConfig[activeDojo].notaNo}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setPrintConfig((prev) => ({
+                                  ...prev,
+                                  [activeDojo]: { ...prev[activeDojo], notaNo: val }
+                                }));
+                              }}
+                              className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                              Semester / Tahun
+                            </label>
+                            <input
+                              type="text"
+                              value={printConfig[activeDojo].semester}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setPrintConfig((prev) => ({
+                                  ...prev,
+                                  [activeDojo]: { ...prev[activeDojo], semester: val }
+                                }));
+                              }}
+                              className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                                Buku Rusak (Qty)
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={printConfig[activeDojo].rusak}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value, 10) || 0;
+                                  setPrintConfig((prev) => ({
+                                    ...prev,
+                                    [activeDojo]: { ...prev[activeDojo], rusak: val }
+                                  }));
+                                }}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                                Buku Hilang (Qty)
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={printConfig[activeDojo].hilang}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value, 10) || 0;
+                                  setPrintConfig((prev) => ({
+                                    ...prev,
+                                    [activeDojo]: { ...prev[activeDojo], hilang: val }
+                                  }));
+                                }}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                              Komisi Ranting / Orang
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                                Rp
+                              </span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={printConfig[activeDojo].komisi}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value, 10) || 0;
+                                  setPrintConfig((prev) => ({
+                                    ...prev,
+                                    [activeDojo]: { ...prev[activeDojo], komisi: val }
+                                  }));
+                                }}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Editable Fees */}
+                          <div className="border-t border-white/5 pt-4 space-y-3">
+                            <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-500">
+                              Daftar Biaya Sabuk (Dapat Diedit)
+                            </h4>
+                            {Object.keys(printConfig[activeDojo].fees).map((belt) => (
+                              <div key={belt} className="flex justify-between items-center gap-3">
+                                <span className="text-[9px] font-black uppercase text-gray-400">
+                                  {belt}
+                                </span>
+                                <div className="relative w-36">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 text-[10px] font-bold">
+                                    Rp
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={printConfig[activeDojo].fees[belt]}
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      setPrintConfig((prev) => ({
+                                        ...prev,
+                                        [activeDojo]: {
+                                          ...prev[activeDojo],
+                                          fees: { ...prev[activeDojo].fees, [belt]: val }
+                                        }
+                                      }));
+                                    }}
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-7 pr-2 py-1.5 text-xs text-white text-right focus:outline-none focus:border-amber-500/50"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Panel: Screen Live Preview */}
+                    <div className="flex-1 bg-neutral-900 border border-white/5 rounded-3xl overflow-y-auto p-6 flex justify-center items-start min-h-0 select-none">
+                      {printConfig[activeDojo] && (() => {
+                        const list = printParticipants.filter(p => (p.member?.dojo?.name || 'Pusat') === activeDojo);
+                        const config = printConfig[activeDojo];
+                        const counts = { PUTIH: 0, KUNING: 0, HIJAU: 0, BIRU: 0, COKELAT: 0, LAINNYA: 0 };
+                        list.forEach(p => {
+                          const grp = getBeltGroup(p.category?.name || p.member?.currentRank);
+                          if (grp in counts) counts[grp as keyof typeof counts]++;
+                          else counts.LAINNYA++;
+                        });
+
+                        const subtotalA =
+                          (counts.PUTIH * config.fees.PUTIH) +
+                          (counts.KUNING * config.fees.KUNING) +
+                          (counts.HIJAU * config.fees.HIJAU) +
+                          (counts.BIRU * config.fees.BIRU) +
+                          (counts.COKELAT * config.fees.COKELAT);
+
+                        const subtotalB = (config.rusak * 15000) + (config.hilang * 100000);
+                        const totalC = list.length * config.komisi;
+                        const grandTotal = (subtotalA + subtotalB) - totalC;
+
+                        const dateStr = new Date().toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        });
+
+                        const qrData = `Nota No: ${config.notaNo}\nRanting: ${activeDojo}\nJumlah Peserta: ${list.length}\nTotal Tagihan: Rp ${grandTotal.toLocaleString('id-ID')}\nVerified by Bendahara : Habibur Rahman`;
+                        const qrCodeUrl = `https://chart.googleapis.com/chart?chs=100&cht=qr&chl=${encodeURIComponent(qrData)}&choe=UTF-8`;
+
+                        return (
+                          <div className="bg-white text-black p-8 shadow-xl max-w-[620px] w-full font-mono text-[11px] leading-relaxed border border-gray-300">
+                            {/* Logo and Kop */}
+                            <div className="flex justify-between items-center pb-4 border-b-2 border-black mb-4">
+                              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e4/Logo_FORKI.svg" alt="FORKI" className="h-12 w-auto object-contain" />
+                              <div className="text-center font-bold text-xs uppercase flex-1 px-4">
+                                <div className="text-sm">INKAI</div>
+                                <div>INSTITUT KARATE-DO INDONESIA</div>
+                                <div className="text-[10px]">KOTA SURABAYA</div>
+                              </div>
+                              <img src="/logo.png" alt="INKAI" className="h-12 w-auto object-contain" />
+                            </div>
+
+                            <h4 className="text-center font-bold text-sm uppercase tracking-wide mb-5">
+                              NOTA PEMBAYARAN UJIAN KENAIKAN TINGKAT
+                            </h4>
+
+                            {/* Info */}
+                            <div className="grid grid-cols-2 gap-4 mb-4 text-left">
+                              <div>
+                                <span className="inline-block w-20">Nota No.</span>
+                                <span>: {config.notaNo || '................................'}</span>
+                              </div>
+                              <div>
+                                <span className="inline-block w-20">SEMESTER</span>
+                                <span>: {config.semester}</span>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="inline-block w-20">RANTING</span>
+                                <span className="uppercase font-bold">: {activeDojo}</span>
+                              </div>
+                            </div>
+
+                            {/* Perincian */}
+                            <div className="space-y-1 mb-4">
+                              <div className="font-bold border-b border-black pb-1 mb-1">PERINCIAN :</div>
+                              
+                              <div className="flex justify-between">
+                                <span>SABUK PUTIH : {counts.PUTIH} X Rp. {config.fees.PUTIH.toLocaleString('id-ID')}</span>
+                                <span>= Rp. { (counts.PUTIH * config.fees.PUTIH).toLocaleString('id-ID') }</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>SABUK KUNING : {counts.KUNING} X Rp. {config.fees.KUNING.toLocaleString('id-ID')}</span>
+                                <span>= Rp. { (counts.KUNING * config.fees.KUNING).toLocaleString('id-ID') }</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>SABUK HIJAU : {counts.HIJAU} X Rp. {config.fees.HIJAU.toLocaleString('id-ID')}</span>
+                                <span>= Rp. { (counts.HIJAU * config.fees.HIJAU).toLocaleString('id-ID') }</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>SABUK BIRU : {counts.BIRU} X Rp. {config.fees.BIRU.toLocaleString('id-ID')}</span>
+                                <span>= Rp. { (counts.BIRU * config.fees.BIRU).toLocaleString('id-ID') }</span>
+                              </div>
+                              <div className="flex justify-between border-b border-black pb-1">
+                                <span>SABUK COKELAT : {counts.COKELAT} X Rp. {config.fees.COKELAT.toLocaleString('id-ID')}</span>
+                                <span>= Rp. { (counts.COKELAT * config.fees.COKELAT).toLocaleString('id-ID') }</span>
+                              </div>
+                              
+                              <div className="flex justify-between font-bold">
+                                <span>TOTAL A</span>
+                                <span>= Rp. {subtotalA.toLocaleString('id-ID')}</span>
+                              </div>
+                            </div>
+
+                            {/* Ganti Buku */}
+                            <div className="space-y-1 mb-4">
+                              <div className="font-bold border-b border-black pb-1 mb-1">GANTI BUKU :</div>
+                              <div className="flex justify-between">
+                                <span>&gt; RUSAK : {config.rusak} X Rp. 15.000</span>
+                                <span>= Rp. {(config.rusak * 15000).toLocaleString('id-ID')}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-black pb-1">
+                                <span>&gt; HILANG : {config.hilang} X Rp. 100.000</span>
+                                <span>= Rp. {(config.hilang * 100000).toLocaleString('id-ID')}</span>
+                              </div>
+                              
+                              <div className="flex justify-between font-bold">
+                                <span>TOTAL B</span>
+                                <span>= Rp. {subtotalB.toLocaleString('id-ID')}</span>
+                              </div>
+                            </div>
+
+                            {/* Komisi and Grand Total */}
+                            <div className="space-y-1 mb-5 border-t border-black pt-2">
+                              <div className="flex justify-between">
+                                <span>KOMISI RANTING: {list.length} X Rp. {config.komisi.toLocaleString('id-ID')}</span>
+                                <span>TOTAL C = Rp. {totalC.toLocaleString('id-ID')}</span>
+                              </div>
+                              <div className="flex justify-between border-t-2 border-b-4 border-black py-1 text-sm font-bold mt-2">
+                                <span>TOTAL ((A + B) - C)</span>
+                                <span>= Rp. {grandTotal.toLocaleString('id-ID')}</span>
+                              </div>
+                            </div>
+
+                            {/* QR and Footer Signatures */}
+                            <div className="flex justify-between items-end mt-8 pt-4">
+                              <div>
+                                <img src={qrCodeUrl} alt="QR Validasi" className="h-20 w-20 object-contain border border-gray-200 p-1" />
+                                <div className="text-[8px] text-gray-500 mt-1 uppercase font-bold">Status Pembayaran: LUNAS</div>
+                              </div>
+                              <div className="text-center w-52">
+                                <div>Surabaya, {dateStr}</div>
+                                <div className="mb-14">Pengurus Kota INKAI Surabaya,</div>
+                                <div className="font-bold border-t border-black pt-1">Bendahara : Habibur Rahman</div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Modal Action Footer */}
+                  <div className="border-t border-white/10 pt-4 flex gap-3 shrink-0">
+                    <button
+                      onClick={() => window.print()}
+                      className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-widest text-[11px] rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-98 transition-all"
+                    >
+                      <Printer size={16} />
+                      Cetak Nota ke PDF / Kertas
+                    </button>
+                    <button
+                      onClick={() => setPrintParticipants(null)}
+                      className="px-8 py-3.5 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-xl border border-white/10 active:scale-95 transition-all cursor-pointer"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                </motion.div>
+
+                {/* Print Layout Root (Render all dojos on separate pages for browser print) */}
+                <div id="print-document-root" className="hidden">
+                  {dojos.map((dojoName) => {
+                    const list = printParticipants.filter(p => (p.member?.dojo?.name || 'Pusat') === dojoName);
+                    const config = printConfig[dojoName] || {
+                      notaNo: '', semester: '', rusak: 0, hilang: 0, komisi: 50000,
+                      fees: { PUTIH: 285000, KUNING: 295000, HIJAU: 305000, BIRU: 315000, COKELAT: 345000 }
+                    };
+
+                    const counts = { PUTIH: 0, KUNING: 0, HIJAU: 0, BIRU: 0, COKELAT: 0, LAINNYA: 0 };
+                    list.forEach(p => {
+                      const grp = getBeltGroup(p.category?.name || p.member?.currentRank);
+                      if (grp in counts) counts[grp as keyof typeof counts]++;
+                      else counts.LAINNYA++;
+                    });
+
+                    const subtotalA =
+                      (counts.PUTIH * config.fees.PUTIH) +
+                      (counts.KUNING * config.fees.KUNING) +
+                      (counts.HIJAU * config.fees.HIJAU) +
+                      (counts.BIRU * config.fees.BIRU) +
+                      (counts.COKELAT * config.fees.COKELAT);
+
+                    const subtotalB = (config.rusak * 15000) + (config.hilang * 100000);
+                    const totalC = list.length * config.komisi;
+                    const grandTotal = (subtotalA + subtotalB) - totalC;
+
+                    const dateStr = new Date().toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    });
+
+                    const qrData = `Nota No: ${config.notaNo}\nRanting: ${dojoName}\nJumlah Peserta: ${list.length}\nTotal Tagihan: Rp ${grandTotal.toLocaleString('id-ID')}\nVerified by Bendahara : Habibur Rahman`;
+                    const qrCodeUrl = `https://chart.googleapis.com/chart?chs=150&cht=qr&chl=${encodeURIComponent(qrData)}&choe=UTF-8`;
+
+                    return (
+                      <div
+                        key={dojoName}
+                        className="bg-white text-black p-12 max-w-[800px] mx-auto font-mono text-xs leading-relaxed border-2 border-black"
+                        style={{ pageBreakAfter: 'always', minHeight: '290mm' }}
+                      >
+                        {/* Logo and Kop */}
+                        <div className="flex justify-between items-center pb-4 border-b-2 border-black mb-6">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/e/e4/Logo_FORKI.svg" alt="FORKI" className="h-16 w-auto object-contain" />
+                          <div className="text-center font-bold text-sm uppercase flex-1 px-4">
+                            <div className="text-lg">INKAI</div>
+                            <div>INSTITUT KARATE-DO INDONESIA</div>
+                            <div className="text-xs">KOTA SURABAYA</div>
+                          </div>
+                          <img src="/logo.png" alt="INKAI" className="h-16 w-auto object-contain" />
+                        </div>
+
+                        <h4 className="text-center font-bold text-base uppercase tracking-wide mb-8">
+                          NOTA PEMBAYARAN UJIAN KENAIKAN TINGKAT
+                        </h4>
+
+                        {/* Info */}
+                        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+                          <div>
+                            <span className="inline-block w-24">Nota No.</span>
+                            <span>: {config.notaNo || '................................'}</span>
+                          </div>
+                          <div>
+                            <span className="inline-block w-24">SEMESTER</span>
+                            <span>: {config.semester}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="inline-block w-24">RANTING</span>
+                            <span className="uppercase font-bold">: {dojoName}</span>
+                          </div>
+                        </div>
+
+                        {/* Perincian */}
+                        <div className="space-y-2 mb-6 text-sm">
+                          <div className="font-bold border-b border-black pb-1 mb-2">PERINCIAN :</div>
+                          
+                          <div className="flex justify-between">
+                            <span>SABUK PUTIH : {counts.PUTIH} X Rp. {config.fees.PUTIH.toLocaleString('id-ID')}</span>
+                            <span>= Rp. { (counts.PUTIH * config.fees.PUTIH).toLocaleString('id-ID') }</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>SABUK KUNING : {counts.KUNING} X Rp. {config.fees.KUNING.toLocaleString('id-ID')}</span>
+                            <span>= Rp. { (counts.KUNING * config.fees.KUNING).toLocaleString('id-ID') }</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>SABUK HIJAU : {counts.HIJAU} X Rp. {config.fees.HIJAU.toLocaleString('id-ID')}</span>
+                            <span>= Rp. { (counts.HIJAU * config.fees.HIJAU).toLocaleString('id-ID') }</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>SABUK BIRU : {counts.BIRU} X Rp. {config.fees.BIRU.toLocaleString('id-ID')}</span>
+                            <span>= Rp. { (counts.BIRU * config.fees.BIRU).toLocaleString('id-ID') }</span>
+                          </div>
+                          <div className="flex justify-between border-b border-black pb-1">
+                            <span>SABUK COKELAT : {counts.COKELAT} X Rp. {config.fees.COKELAT.toLocaleString('id-ID')}</span>
+                            <span>= Rp. { (counts.COKELAT * config.fees.COKELAT).toLocaleString('id-ID') }</span>
+                          </div>
+                          
+                          <div className="flex justify-between font-bold text-base mt-2">
+                            <span>TOTAL A</span>
+                            <span>= Rp. {subtotalA.toLocaleString('id-ID')}</span>
+                          </div>
+                        </div>
+
+                        {/* Ganti Buku */}
+                        <div className="space-y-2 mb-6 text-sm">
+                          <div className="font-bold border-b border-black pb-1 mb-2">GANTI BUKU :</div>
+                          <div className="flex justify-between">
+                            <span>&gt; RUSAK : {config.rusak} X Rp. 15.000</span>
+                            <span>= Rp. {(config.rusak * 15000).toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-black pb-1">
+                            <span>&gt; HILANG : {config.hilang} X Rp. 100.000</span>
+                            <span>= Rp. {(config.hilang * 100000).toLocaleString('id-ID')}</span>
+                          </div>
+                          
+                          <div className="flex justify-between font-bold text-base mt-2">
+                            <span>TOTAL B</span>
+                            <span>= Rp. {subtotalB.toLocaleString('id-ID')}</span>
+                          </div>
+                        </div>
+
+                        {/* Komisi and Grand Total */}
+                        <div className="space-y-2 mb-8 border-t border-black pt-4 text-sm">
+                          <div className="flex justify-between">
+                            <span>KOMISI RANTING: {list.length} X Rp. {config.komisi.toLocaleString('id-ID')}</span>
+                            <span>TOTAL C = Rp. {totalC.toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between border-t-2 border-b-4 border-black py-2 text-base font-bold mt-4">
+                            <span>TOTAL ((A + B) - C)</span>
+                            <span>= Rp. {grandTotal.toLocaleString('id-ID')}</span>
+                          </div>
+                        </div>
+
+                        {/* QR and Footer Signatures */}
+                        <div className="flex justify-between items-end mt-12 pt-8">
+                          <div>
+                            <img src={qrCodeUrl} alt="QR Validasi" className="h-28 w-28 object-contain border border-gray-300 p-1" />
+                            <div className="text-[10px] text-gray-500 mt-2 uppercase font-bold">Status Pembayaran: LUNAS</div>
+                          </div>
+                          <div className="text-center w-72 text-sm">
+                            <div>Surabaya, {dateStr}</div>
+                            <div className="mb-24">Pengurus Kota INKAI Surabaya,</div>
+                            <div className="font-bold border-t border-black pt-2">Bendahara : Habibur Rahman</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </AnimatePresence>
       </AdminModalPortal>
     </>
