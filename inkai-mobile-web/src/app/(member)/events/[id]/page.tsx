@@ -292,7 +292,7 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
         let file = proofFile;
         if (file.type.startsWith("image/")) {
           try {
-            file = await compressImage(file, 900);
+            file = await compressImage(file, 190);
           } catch {
             /* pakai asal */
           }

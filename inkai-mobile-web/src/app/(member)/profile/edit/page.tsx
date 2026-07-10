@@ -282,7 +282,7 @@ function EditProfileContent() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       try {
-        const compressed = await compressImage(file, 250);
+        const compressed = await compressImage(file, 190);
         setPhotoFile(compressed);
         const reader = new FileReader();
         reader.onloadend = () => {

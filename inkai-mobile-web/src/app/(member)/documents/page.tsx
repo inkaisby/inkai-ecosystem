@@ -183,7 +183,7 @@ export default function Documents() {
     }
     setIsCompressing(true);
     try {
-      const compressed = await compressImage(file, 250);
+      const compressed = await compressImage(file, 190);
       if (type === 'bc') setBcFile(compressed);
       else setBpjsFile(compressed);
     } catch (err) {

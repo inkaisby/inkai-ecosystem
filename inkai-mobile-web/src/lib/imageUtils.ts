@@ -4,7 +4,7 @@
  * @param maxSizeKB The maximum allowed size in KB
  * @returns A promise that resolves to the compressed File
  */
-export async function compressImage(file: File, maxSizeKB: number = 250): Promise<File> {
+export async function compressImage(file: File, maxSizeKB: number = 190): Promise<File> {
   // Skip compression for PDF files
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
     return file;

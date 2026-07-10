@@ -182,7 +182,7 @@ function AddAchievementForm() {
 
     setIsCompressingCert(true);
     try {
-      const prepared = await compressImage(file, 800);
+      const prepared = await compressImage(file, 190);
       setCertificateFile(prepared);
     } catch {
       setCertificateFile(file);

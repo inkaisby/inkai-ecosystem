@@ -136,7 +136,7 @@ export default function Billing() {
         let file = proofFile;
         if (file.type.startsWith('image/')) {
           try {
-            file = await compressImage(file, 900);
+            file = await compressImage(file, 190);
           } catch {
             /* gunakan asal */
           }

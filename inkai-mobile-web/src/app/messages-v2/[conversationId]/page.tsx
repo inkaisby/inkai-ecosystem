@@ -8,6 +8,7 @@ import api, { getAssetUrl } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
+import { compressImage } from "@/lib/imageUtils";
 
 interface Message {
   id: string;
@@ -121,8 +122,16 @@ export default function ChatRoomPage({ params }: { params: Promise<{ conversatio
     setUploadingMedia(true);
 
     try {
+      let fileToUpload = file;
+      if (file.type.startsWith("image/")) {
+        try {
+          fileToUpload = await compressImage(file, 190);
+        } catch (err) {
+          console.error("Chat image compression failed", err);
+        }
+      }
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
 
       // Using the generic upload auth endpoint (which usually uploads and returns URL)
       const uploadRes = await api.auth.uploadFile(formData);
