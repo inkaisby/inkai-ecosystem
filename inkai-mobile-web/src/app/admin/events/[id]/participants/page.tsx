@@ -22,6 +22,11 @@ import {
   Receipt,
   Copy,
   ExternalLink,
+  Download,
+  Filter,
+  ArrowUpDown,
+  Coins,
+  ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, getAssetUrl } from '@/lib/api';
@@ -192,6 +197,12 @@ export default function EventParticipantsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua');
+  const [filterDojo, setFilterDojo] = useState('Semua');
+  const [filterCategory, setFilterCategory] = useState('Semua');
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
+  const [bulkProcessing, setBulkProcessing] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
   const [verifying, setVerifying] = useState(false);
 
@@ -555,20 +566,227 @@ export default function EventParticipantsPage() {
     }
   };
 
+  const uniqueDojos = useMemo(() => {
+    const dojos = new Set<string>();
+    participants.forEach((p) => {
+      const name = p.member?.dojo?.name;
+      if (name) dojos.add(name);
+    });
+    return Array.from(dojos).sort();
+  }, [participants]);
+
+  const uniqueCategories = useMemo(() => {
+    const categories = new Set<string>();
+    participants.forEach((p) => {
+      const name = p.category?.name;
+      if (name) categories.add(name);
+    });
+    return Array.from(categories).sort();
+  }, [participants]);
+
   const filteredParticipants = useMemo(() => {
-    return participants.filter(p => {
-      const matchesSearch = 
+    const filtered = participants.filter((p) => {
+      const matchesSearch =
         p.member?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.member?.nia?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = filterStatus === 'Semua' || 
-        (filterStatus === 'Disetujui' && (p.status === 'APPROVED' || p.status === 'SUCCESS' || p.status === 'PAID')) ||
+
+      const matchesStatus =
+        filterStatus === 'Semua' ||
+        (filterStatus === 'Disetujui' &&
+          (p.status === 'APPROVED' || p.status === 'SUCCESS' || p.status === 'PAID')) ||
         (filterStatus === 'Pending' && p.status === 'PENDING') ||
         (filterStatus === 'Ditolak' && p.status === 'REJECTED');
 
-      return matchesSearch && matchesStatus;
+      const matchesDojo =
+        filterDojo === 'Semua' || p.member?.dojo?.name === filterDojo;
+
+      const matchesCategory =
+        filterCategory === 'Semua' || p.category?.name === filterCategory;
+
+      return matchesSearch && matchesStatus && matchesDojo && matchesCategory;
     });
-  }, [participants, searchTerm, filterStatus]);
+
+    return [...filtered].sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'name') {
+        comparison = String(a.member?.fullName || '').localeCompare(String(b.member?.fullName || ''), 'id');
+      } else if (sortBy === 'dojo') {
+        comparison = String(a.member?.dojo?.name || '').localeCompare(String(b.member?.dojo?.name || ''), 'id');
+      } else if (sortBy === 'category') {
+        comparison = String(a.category?.name || '').localeCompare(String(b.category?.name || ''), 'id');
+      } else if (sortBy === 'date') {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === 'status') {
+        comparison = String(a.status || '').localeCompare(String(b.status || ''), 'id');
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [participants, searchTerm, filterStatus, filterDojo, filterCategory, sortBy, sortDirection]);
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const isAllSelected = useMemo(() => {
+    if (filteredParticipants.length === 0) return false;
+    return filteredParticipants.every((p) => selectedIds[p.id]);
+  }, [filteredParticipants, selectedIds]);
+
+  const handleSelectAll = () => {
+    const next = { ...selectedIds };
+    const allOn = filteredParticipants.every((p) => selectedIds[p.id]);
+    filteredParticipants.forEach((p) => {
+      next[p.id] = !allOn;
+    });
+    setSelectedIds(next);
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const handleBulkApprove = async () => {
+    const ids = Object.entries(selectedIds).filter(([, v]) => v).map(([k]) => k);
+    if (ids.length === 0) return;
+    setBulkProcessing(true);
+    let successCount = 0;
+    try {
+      for (const regId of ids) {
+        const p = participants.find((x) => x.id === regId);
+        if (p && p.status !== 'PAID' && p.status !== 'SUCCESS') {
+          await api.events.updateRegistration(regId, { status: 'APPROVED' });
+          successCount++;
+        }
+      }
+      toast.success(`Berhasil menyetujui ${successCount} peserta`);
+      setSelectedIds({});
+      await fetchData();
+    } catch (err) {
+      toast.error('Gagal memperbarui status beberapa peserta');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const handleBulkReject = async () => {
+    const ids = Object.entries(selectedIds).filter(([, v]) => v).map(([k]) => k);
+    if (ids.length === 0) return;
+    setBulkProcessing(true);
+    let successCount = 0;
+    try {
+      for (const regId of ids) {
+        const p = participants.find((x) => x.id === regId);
+        if (p && p.status !== 'PAID' && p.status !== 'SUCCESS') {
+          await api.events.updateRegistration(regId, { status: 'REJECTED' });
+          successCount++;
+        }
+      }
+      toast.success(`Berhasil menolak ${successCount} peserta`);
+      setSelectedIds({});
+      await fetchData();
+    } catch (err) {
+      toast.error('Gagal memperbarui status beberapa peserta');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Object.entries(selectedIds).filter(([, v]) => v).map(([k]) => k);
+    if (ids.length === 0) return;
+    if (!window.confirm(`Hapus ${ids.length} pendaftaran terpilih secara permanen?`)) return;
+    setBulkProcessing(true);
+    let successCount = 0;
+    try {
+      for (const regId of ids) {
+        const p = participants.find((x) => x.id === regId);
+        if (p && p.status !== 'PAID' && p.status !== 'SUCCESS') {
+          await api.events.deleteRegistration(regId);
+          successCount++;
+        }
+      }
+      toast.success(`Berhasil menghapus ${successCount} pendaftaran`);
+      setSelectedIds({});
+      await fetchData();
+    } catch (err) {
+      toast.error('Gagal menghapus beberapa pendaftaran');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const handleBulkVerifyPayment = async () => {
+    const ids = Object.entries(selectedIds).filter(([, v]) => v).map(([k]) => k);
+    if (ids.length === 0) return;
+    setBulkProcessing(true);
+    let successCount = 0;
+    try {
+      for (const regId of ids) {
+        const p = participants.find((x) => x.id === regId);
+        if (p) {
+          const billing = p.member?.billings?.find((b: any) => b.registrationId === p.id);
+          if (billing && billing.status === 'WAITING_VERIFICATION') {
+            await api.billing.verify({ billingId: billing.id });
+            successCount++;
+          }
+        }
+      }
+      toast.success(`Berhasil memverifikasi ${successCount} pembayaran`);
+      setSelectedIds({});
+      await fetchData();
+    } catch (err) {
+      toast.error('Gagal memverifikasi beberapa pembayaran');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (filteredParticipants.length === 0) {
+      toast.error('Tidak ada data untuk diekspor');
+      return;
+    }
+
+    const headers = ['No', 'Nama Lengkap', 'NIA', 'Dojo/Ranting', 'Kategori', 'Status Pendaftaran', 'Biaya', 'Status Pembayaran', 'Tanggal Daftar'];
+    const rows = filteredParticipants.map((p, index) => {
+      const billing = p.member?.billings?.find((b: any) => b.registrationId === p.id);
+      return [
+        index + 1,
+        p.member?.fullName || 'Anonim',
+        p.member?.nia || '-',
+        p.member?.dojo?.name || 'Pusat',
+        p.category?.name || '-',
+        p.status || '-',
+        p.category?.fee || 0,
+        billing?.status || 'UNPAID',
+        new Date(p.createdAt).toLocaleDateString('id-ID'),
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `peserta_event_${event?.title?.toLowerCase().replace(/\s+/g, '_') || 'export'}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Ekspor CSV berhasil diunduh');
+  };
 
   const scopedDojoLabel =
     participants.find((p) => p.member?.dojo?.name)?.member?.dojo?.name ||
@@ -642,6 +860,42 @@ export default function EventParticipantsPage() {
     );
   }, [participants]);
 
+  const kpiStats = useMemo(() => {
+    const total = participants.length;
+    const disetujuiLunas = participants.filter(
+      (p) => p.status === 'APPROVED' || p.status === 'SUCCESS' || p.status === 'PAID'
+    ).length;
+    const pending = participants.filter((p) => p.status === 'PENDING').length;
+    const ditolak = participants.filter((p) => p.status === 'REJECTED').length;
+
+    let totalTagihan = 0;
+    let totalTerbayar = 0;
+
+    participants.forEach((p) => {
+      const amt = participantAmountForBranchReport(p);
+      totalTagihan += amt;
+
+      const isPaid =
+        p.status === 'PAID' ||
+        p.status === 'SUCCESS' ||
+        p.member?.billings?.some(
+          (b: any) => b.registrationId === p.id && b.status === 'PAID'
+        );
+      if (isPaid) {
+        totalTerbayar += amt;
+      }
+    });
+
+    return {
+      total,
+      disetujuiLunas,
+      pending,
+      ditolak,
+      totalTagihan,
+      totalTerbayar,
+    };
+  }, [participants]);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PAID':
@@ -682,14 +936,18 @@ export default function EventParticipantsPage() {
     }
   };
 
+  const selectedCount = useMemo(() => {
+    return Object.entries(selectedIds).filter(([, v]) => v).length;
+  }, [selectedIds]);
+
   return (
     <>
       <div className="pb-10">
-        {/* Header - Simplified as TopBar is already in layout */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <button 
             onClick={() => router.push('/admin/events')}
-            className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all"
+            className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all hover:bg-white/10"
           >
             <ChevronLeft size={20} />
           </button>
@@ -698,11 +956,19 @@ export default function EventParticipantsPage() {
             <p className="text-[10px] font-bold text-gray-500 truncate uppercase tracking-widest">{event?.title || 'Loading...'}</p>
           </div>
           <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 active:scale-90 transition-all hover:bg-white/10 hover:text-white"
+              title="Ekspor CSV"
+            >
+              <Download size={20} />
+            </button>
             {canBulkRegister && (
               <button
                 type="button"
                 onClick={handleOpenBulkModal}
-                className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 active:scale-90 transition-all"
+                className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 active:scale-90 transition-all hover:bg-amber-500/25"
                 title="Daftarkan beberapa anggota sekaligus"
               >
                 <UserPlus size={20} />
@@ -713,7 +979,7 @@ export default function EventParticipantsPage() {
                 type="button"
                 onClick={() => void handleCopyBranchAggregateReport()}
                 className="p-2.5 rounded-xl bg-sky-500/15 border border-sky-500/35 text-sky-400 active:scale-90 transition-all"
-                title="Salin laporan cabang (WhatsApp): judul, dojo, daftar peserta disetujui, total"
+                title="Salin laporan cabang (WhatsApp)"
                 aria-label="Salin laporan cabang untuk WhatsApp"
               >
                 <Copy size={20} aria-hidden />
@@ -722,17 +988,70 @@ export default function EventParticipantsPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="mb-8">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-            <input 
-              type="text" 
-              placeholder="Cari nama atau NIA..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/50 transition-all"
-            />
+        {/* Filter and Search Bar */}
+        <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl mb-8 space-y-4 shadow-xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {/* Search */}
+            <div className="relative md:col-span-2">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+              <input 
+                type="text" 
+                placeholder="Cari nama atau NIA..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-white"
+              />
+            </div>
+
+            {/* Dojo Filter */}
+            <div className="relative">
+              <select
+                value={filterDojo}
+                onChange={(e) => setFilterDojo(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-gray-300 appearance-none cursor-pointer"
+                style={{ colorScheme: 'dark' }}
+              >
+                <option value="Semua">Semua Dojo ({uniqueDojos.length})</option>
+                {uniqueDojos.map((dojo) => (
+                  <option key={dojo} value={dojo}>{dojo}</option>
+                ))}
+              </select>
+              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+            </div>
+
+            {/* Category Filter */}
+            <div className="relative">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-gray-300 appearance-none cursor-pointer"
+                style={{ colorScheme: 'dark' }}
+              >
+                <option value="Semua">Semua Kategori ({uniqueCategories.length})</option>
+                {uniqueCategories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+            </div>
+          </div>
+
+          {/* Status Filter Tabs */}
+          <div className="flex flex-wrap gap-1 justify-start overflow-x-auto no-scrollbar pt-1">
+            {['Semua', 'Pending', 'Disetujui', 'Ditolak'].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFilterStatus(s)}
+                className={`whitespace-nowrap px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-wide transition-all ${
+                  filterStatus === s 
+                    ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
+                    : 'bg-white/5 text-gray-500 border border-white/10 hover:bg-white/10'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -757,48 +1076,406 @@ export default function EventParticipantsPage() {
             </div>
           )}
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 p-5 rounded-[2rem] shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -mr-10 -mt-10 blur-2xl group-hover:bg-white/10 transition-colors" />
-              <p className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-2">Total</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-white tracking-tighter">{participants.length}</span>
-                <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Orang</span>
+          {/* Expanded KPI Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -mr-8 -mt-8 blur-xl" />
+              <p className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-wider mb-1">Total Peserta</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black text-[var(--text-light)] tracking-tight">{kpiStats.total}</span>
+                <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase">Orang</span>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 p-5 rounded-[2rem] shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:bg-amber-500/20 transition-colors" />
-              <p className="text-[10px] font-black uppercase text-amber-500/60 tracking-[0.2em] mb-2">Lunas</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-amber-500 tracking-tighter">
-                  {participants.filter(p => p.status === 'APPROVED' || p.status === 'SUCCESS' || p.status === 'PAID').length}
-                </span>
-                <span className="text-[10px] font-bold text-amber-500/40 uppercase tracking-widest">Orang</span>
+
+            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+              <p className="text-[9px] font-black uppercase text-green-500/60 tracking-wider mb-1">Disetujui/Lunas</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black text-green-500 tracking-tight">{kpiStats.disetujuiLunas}</span>
+                <span className="text-[9px] font-bold text-green-500/40 uppercase">Orang</span>
+              </div>
+            </div>
+
+            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+              <p className="text-[9px] font-black uppercase text-amber-500/60 tracking-wider mb-1">Menunggu</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black text-amber-500 tracking-tight">{kpiStats.pending}</span>
+                <span className="text-[9px] font-bold text-amber-500/40 uppercase">Orang</span>
+              </div>
+            </div>
+
+            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+              <p className="text-[9px] font-black uppercase text-red-500/60 tracking-wider mb-1">Ditolak</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black text-red-500 tracking-tight">{kpiStats.ditolak}</span>
+                <span className="text-[9px] font-bold text-red-500/40 uppercase">Orang</span>
+              </div>
+            </div>
+
+            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group md:col-span-1">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+              <p className="text-[9px] font-black uppercase text-blue-400/60 tracking-wider mb-1">Total Tagihan</p>
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-lg font-black text-blue-400 truncate">Rp {kpiStats.totalTagihan.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+
+            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group md:col-span-1">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+              <p className="text-[9px] font-black uppercase text-emerald-400/60 tracking-wider mb-1">Total Terbayar</p>
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-lg font-black text-emerald-400 truncate">Rp {kpiStats.totalTerbayar.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
 
-          {/* Status Filter Tabs */}
-          <div className="flex flex-wrap gap-1 justify-start overflow-x-auto no-scrollbar pb-1">
-            {['Semua', 'Pending', 'Disetujui', 'Ditolak'].map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setFilterStatus(s)}
-                className={`whitespace-nowrap px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-wide transition-all ${
-                  filterStatus === s 
-                    ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
-                    : 'bg-white/5 text-gray-500 border border-white/10'
-                }`}
+          {/* Bulk Action Toolbar */}
+          <AnimatePresence>
+            {selectedCount > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 50 }}
+                className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[var(--card-dark)] border border-amber-500/30 rounded-2xl shadow-2xl p-4 flex flex-col md:flex-row items-center gap-4 w-[90%] max-w-4xl"
               >
-                {s}
-              </button>
-            ))}
+                <div className="flex items-center gap-2">
+                  <span className="bg-amber-500 text-black font-black text-xs px-2.5 py-1 rounded-lg">
+                    {selectedCount}
+                  </span>
+                  <span className="text-xs font-black uppercase tracking-wider text-[var(--text-light)]">
+                    Peserta Terpilih
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center md:justify-end flex-1 w-full">
+                  <button
+                    onClick={handleBulkApprove}
+                    disabled={bulkProcessing}
+                    className="flex-1 md:flex-none px-3.5 py-2 bg-green-500 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    Setujui
+                  </button>
+                  <button
+                    onClick={handleBulkReject}
+                    disabled={bulkProcessing}
+                    className="flex-1 md:flex-none px-3.5 py-2 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    Tolak
+                  </button>
+                  <button
+                    onClick={handleBulkVerifyPayment}
+                    disabled={bulkProcessing}
+                    className="flex-1 md:flex-none px-3.5 py-2 bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    Verifikasi Bayar
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={bulkProcessing}
+                    className="flex-1 md:flex-none px-3.5 py-2 bg-red-600 border border-red-500/20 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    Hapus
+                  </button>
+                  <button
+                    onClick={() => setSelectedIds({})}
+                    disabled={bulkProcessing}
+                    className="px-3.5 py-2 bg-white/5 border border-white/10 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Desktop Table View (lg screens and above) */}
+          <div className="hidden lg:block bg-[var(--card-dark)] border border-[var(--border-light)] rounded-[2rem] overflow-hidden shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[var(--glass-bg)] border-b border-[var(--border-light)] text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-black">
+                    <th className="py-4 px-4 text-center w-12">
+                      <button 
+                        type="button" 
+                        onClick={handleSelectAll} 
+                        className="text-gray-400 hover:text-white"
+                      >
+                        {isAllSelected ? (
+                          <CheckSquare size={16} className="text-amber-500" />
+                        ) : (
+                          <Square size={16} />
+                        )}
+                      </button>
+                    </th>
+                    <th className="py-4 px-2 text-center w-10">No</th>
+                    <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('name')}>
+                      <div className="flex items-center gap-1.5">
+                        Peserta <ArrowUpDown size={12} />
+                      </div>
+                    </th>
+                    <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('dojo')}>
+                      <div className="flex items-center gap-1.5">
+                        Dojo / Ranting <ArrowUpDown size={12} />
+                      </div>
+                    </th>
+                    <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('category')}>
+                      <div className="flex items-center gap-1.5">
+                        Kategori <ArrowUpDown size={12} />
+                      </div>
+                    </th>
+                    <th className="py-4 px-4 text-center w-36">Dokumen</th>
+                    <th className="py-4 px-4">Pembayaran</th>
+                    <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('date')}>
+                      <div className="flex items-center gap-1.5">
+                        Tgl Daftar <ArrowUpDown size={12} />
+                      </div>
+                    </th>
+                    <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('status')}>
+                      <div className="flex items-center gap-1.5">
+                        Status <ArrowUpDown size={12} />
+                      </div>
+                    </th>
+                    <th className="py-4 px-6 text-center w-36">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--hairline)]">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={10} className="py-20 text-center">
+                        <div className="flex flex-col items-center justify-center gap-4">
+                          <Loader2 className="animate-spin text-amber-500" size={32} />
+                          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Memuat data...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredParticipants.length > 0 ? (
+                    filteredParticipants.map((p, idx) => {
+                      const isSelected = !!selectedIds[p.id];
+                      const statusLocked = p.status === 'PAID' || p.status === 'SUCCESS';
+                      const selectValue = ['PENDING', 'APPROVED', 'REJECTED'].includes(p.status)
+                        ? p.status
+                        : 'PENDING';
+                      const rowBusy =
+                        registrationUpdatingId === p.id || registrationDeletingId === p.id;
+                      
+                      const eventFee = Number(p.category?.fee ?? 0);
+                      const billing = p.member?.billings?.find(
+                        (b: any) => b.registrationId === p.id,
+                      );
+                      const showPaymentIcon = eventFee > 0 || !!billing;
+                      let payHighlight: 'waiting' | 'paid' | 'pending' | null = null;
+                      if (billing?.status === 'WAITING_VERIFICATION') payHighlight = 'waiting';
+                      else if (billing?.status === 'PAID' || p.status === 'PAID' || p.status === 'SUCCESS') payHighlight = 'paid';
+                      else if (billing?.status === 'PENDING' || (showPaymentIcon && eventFee > 0)) payHighlight = 'pending';
+
+                      const receiptBtnClass =
+                        payHighlight === 'waiting'
+                          ? 'text-amber-400 border-amber-500/40 bg-amber-500/[0.12]'
+                          : payHighlight === 'paid'
+                            ? 'text-emerald-400 border-emerald-500/35 bg-emerald-500/[0.1]'
+                            : 'text-slate-400 border-white/12 bg-white/[0.06]';
+
+                      return (
+                        <tr 
+                          key={p.id}
+                          className={`hover:bg-white/[0.02] border-[var(--hairline)] transition-colors ${isSelected ? 'bg-amber-500/[0.04]' : ''}`}
+                        >
+                          {/* Checkbox */}
+                          <td className="py-4 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleSelectOne(p.id)}
+                              className="text-gray-400 hover:text-white"
+                            >
+                              {isSelected ? (
+                                <CheckSquare size={16} className="text-amber-500" />
+                              ) : (
+                                <Square size={16} />
+                              )}
+                            </button>
+                          </td>
+
+                          {/* Index */}
+                          <td className="py-4 px-2 text-center text-xs font-semibold text-[var(--text-muted)] font-mono">
+                            {idx + 1}
+                          </td>
+
+                          {/* Profile */}
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3">
+                              <FixedAvatar
+                                size={32}
+                                fullName={p.member?.fullName}
+                                currentRank={p.member?.currentRank}
+                                photoUrl={p.member?.user?.photoUrl}
+                              />
+                              <div className="min-w-0">
+                                <button
+                                  onClick={() => setSelectedParticipant(p)}
+                                  className="text-left font-bold text-[var(--text-light)] hover:text-amber-500 transition-colors text-xs truncate max-w-[180px] uppercase block"
+                                >
+                                  {p.member?.fullName || 'Anonim'}
+                                </button>
+                                <span className="text-[9px] font-mono text-[var(--text-muted)]">{p.member?.nia || 'TANPA NIA'}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Dojo */}
+                          <td className="py-4 px-4 text-xs font-semibold text-[var(--text-muted)] uppercase">
+                            {p.member?.dojo?.name || 'Pusat'}
+                          </td>
+
+                          {/* Category */}
+                          <td className="py-4 px-4 text-xs font-semibold text-[var(--text-light)]">
+                            {p.category?.name || '-'}
+                          </td>
+
+                          {/* Documents */}
+                          <td className="py-4 px-4 text-center">
+                            <div className="flex items-center gap-1.5 justify-center">
+                              {p.member?.birthCertificateUrl ? (
+                                <a
+                                  href={getAssetUrl(p.member.birthCertificateUrl)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Akte Lahir / Ijazah"
+                                  className="px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Akte
+                                </a>
+                              ) : null}
+                              {p.member?.bpjsCardUrl ? (
+                                <a
+                                  href={getAssetUrl(p.member.bpjsCardUrl)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Kartu BPJS"
+                                  className="px-2 py-1 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  BPJS
+                                </a>
+                              ) : null}
+                              {!p.member?.birthCertificateUrl && !p.member?.bpjsCardUrl && (
+                                <span className="text-[10px] text-gray-500 font-mono">—</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Payment */}
+                          <td className="py-4 px-4">
+                            <div className="text-xs font-semibold">
+                              <span className="text-[var(--text-light)] block">Rp {eventFee.toLocaleString('id-ID')}</span>
+                              {billing && (
+                                <span className={`text-[9px] font-bold uppercase ${payHighlight === 'paid' ? 'text-green-400' : payHighlight === 'waiting' ? 'text-amber-400' : 'text-gray-400'}`}>
+                                  {payHighlight === 'paid' ? 'Lunas' : payHighlight === 'waiting' ? 'Verifikasi manual' : 'Belum bayar'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Registered Date */}
+                          <td className="py-4 px-4 text-xs font-semibold text-[var(--text-muted)]">
+                            {new Date(p.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-4 px-4">
+                            {rowBusy ? (
+                              <Loader2 className="animate-spin text-amber-500" size={16} />
+                            ) : statusLocked ? (
+                              getStatusBadge(p.status)
+                            ) : (
+                              <select
+                                value={selectValue}
+                                disabled={registrationUpdatingId !== null || registrationDeletingId !== null}
+                                onChange={(e) => {
+                                  void handleRegistrationStatusChange(p.id, p.status, e.target.value);
+                                }}
+                                className="bg-white/10 border border-white/15 rounded-lg px-2 py-1 text-[10px] font-black uppercase text-[var(--text-light)] focus:outline-none focus:border-amber-500/40 cursor-pointer disabled:opacity-50"
+                                style={{ colorScheme: 'dark' }}
+                              >
+                                <option value="PENDING">Pending</option>
+                                <option value="APPROVED">Setujui</option>
+                                <option value="REJECTED">Tolak</option>
+                              </select>
+                            )}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-4 px-6 text-center">
+                            <div className="flex justify-center items-center gap-1.5">
+                              {showPaymentIcon ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedParticipant(p)}
+                                  className={`inline-flex p-1.5 rounded-lg border transition-colors active:scale-95 disabled:opacity-40 ${receiptBtnClass}`}
+                                  title="Detail Pembayaran"
+                                >
+                                  <Receipt size={14} />
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                disabled={!p.member?.user?.phoneNumber}
+                                onClick={() => handleWhatsAppParticipant(p)}
+                                className="inline-flex p-1.5 rounded-lg border border-white/10 bg-white/5 text-green-500 transition-colors hover:bg-white/10 active:scale-95 disabled:opacity-30"
+                                title="WhatsApp"
+                              >
+                                <Phone size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!p.member?.userId}
+                                onClick={() => void handleChatParticipant(p)}
+                                className="inline-flex p-1.5 rounded-lg border border-white/10 bg-white/5 text-amber-500 transition-colors hover:bg-white/10 active:scale-95 disabled:opacity-30"
+                                title="Chat Aplikasi"
+                              >
+                                <MessageSquare size={14} />
+                              </button>
+                              {isRegistrationApprovedForReport(p.status) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleCopyParticipantResume(p)}
+                                  className="inline-flex p-1.5 rounded-lg border border-white/10 bg-white/5 text-sky-400 transition-colors hover:bg-white/10 active:scale-95"
+                                  title="Salin Ringkasan"
+                                >
+                                  <Copy size={14} />
+                                </button>
+                              ) : null}
+                              {!statusLocked && (
+                                <button
+                                  type="button"
+                                  onClick={() => openDeleteRegistrationPrompt(p.id, p.member?.fullName || '')}
+                                  className="inline-flex p-1.5 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 transition-colors hover:bg-red-500/10 active:scale-95"
+                                  title="Hapus"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={10} className="py-20 text-center">
+                        <Users className="mx-auto text-gray-800 mb-3" size={40} />
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Peserta tidak ditemukan</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Participants List */}
-          <div className="space-y-4">
+          {/* Mobile View (under lg screens) */}
+          <div className="lg:hidden space-y-4">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <Loader2 className="animate-spin text-amber-500" size={32} />
@@ -806,6 +1483,7 @@ export default function EventParticipantsPage() {
               </div>
             ) : filteredParticipants.length > 0 ? (
               filteredParticipants.map((p) => {
+                const isSelected = !!selectedIds[p.id];
                 const statusLocked = p.status === 'PAID' || p.status === 'SUCCESS';
                 const selectValue = ['PENDING', 'APPROVED', 'REJECTED'].includes(p.status)
                   ? p.status
@@ -831,12 +1509,10 @@ export default function EventParticipantsPage() {
 
                 const paymentTitle =
                   payHighlight === 'waiting'
-                    ? 'Menunggu verifikasi pembayaran (tunai di ranting / dari aplikasi)'
+                    ? 'Menunggu verifikasi pembayaran'
                     : payHighlight === 'paid'
                       ? 'Pembayaran lunas'
-                      : payHighlight === 'pending'
-                        ? 'Belum ada pengajuan pembayaran atau masih menunggu dari anggota'
-                        : 'Status pembayaran';
+                      : 'Status pembayaran';
 
                 const receiptBtnClass =
                   payHighlight === 'waiting'
@@ -848,10 +1524,27 @@ export default function EventParticipantsPage() {
                 return (
                 <motion.div 
                   key={p.id}
-                  onClick={() => setSelectedParticipant(p)}
-                  className="bg-white/[0.03] border border-white/5 rounded-[2rem] flex min-h-[4.75rem] flex-row items-stretch overflow-hidden active:scale-[0.98] transition-all shadow-xl group"
+                  className={`bg-white/[0.03] border border-white/5 rounded-[2rem] flex min-h-[4.75rem] flex-row items-stretch overflow-hidden active:scale-[0.98] transition-all shadow-xl group ${isSelected ? 'bg-amber-500/[0.04] border-amber-500/20' : ''}`}
                 >
-                  <div className="w-[4.25rem] shrink-0 self-stretch">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectOne(p.id);
+                    }}
+                    className="flex items-center pl-4 pr-1 text-gray-500 hover:text-white cursor-pointer"
+                  >
+                    {isSelected ? (
+                      <CheckSquare size={18} className="text-amber-500" />
+                    ) : (
+                      <Square size={18} />
+                    )}
+                  </button>
+
+                  <div 
+                    className="w-[4.25rem] shrink-0 self-stretch cursor-pointer"
+                    onClick={() => setSelectedParticipant(p)}
+                  >
                     <MemberAvatarRing
                       fullName={p.member?.fullName}
                       currentRank={p.member?.currentRank}
@@ -860,7 +1553,10 @@ export default function EventParticipantsPage() {
                     />
                   </div>
 
-                  <div className="flex min-w-0 flex-1 flex-col gap-1 py-3.5 pl-3 pr-2">
+                  <div 
+                    className="flex min-w-0 flex-1 flex-col gap-1 py-3.5 pl-3 pr-2 cursor-pointer"
+                    onClick={() => setSelectedParticipant(p)}
+                  >
                     <div className="flex justify-between items-start gap-2">
                       <h4 className="text-[13px] font-black text-white uppercase leading-snug tracking-tight break-words">
                         {p.member?.fullName || 'Anonim'}
