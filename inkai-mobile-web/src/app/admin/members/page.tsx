@@ -2858,7 +2858,7 @@ function MembersContent() {
                   </button>
                 </div>
 
-                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center h-[60vh] sm:h-[80vh] w-full">
+                <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40 p-2 flex items-center justify-center w-full" style={{ height: '70vh' }}>
                   {previewDoc.url.toLowerCase().split('?')[0].endsWith('.pdf') ? (
                     <iframe 
                       src={getAssetUrl(previewDoc.url) + '#view=FitH&toolbar=0&navpanes=0'} 
