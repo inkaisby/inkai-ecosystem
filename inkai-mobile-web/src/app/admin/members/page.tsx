@@ -275,6 +275,37 @@ function AdminMemberListCard({
               {member.dojo?.name || "Umum"}
             </span>
           </p>
+
+          <div className="pt-2 border-t border-white/5 flex flex-wrap gap-1.5 items-center mt-2">
+            <span className="text-[9px] text-gray-500 uppercase tracking-wider font-black mr-1">Dokumen:</span>
+            {member.birthCertificateUrl ? (
+              <a
+                href={getAssetUrl(member.birthCertificateUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Lihat Akte Lahir / Ijazah"
+                className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Akte
+              </a>
+            ) : null}
+            {member.bpjsCardUrl ? (
+              <a
+                href={getAssetUrl(member.bpjsCardUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Lihat Kartu BPJS"
+                className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
+                onClick={(e) => e.stopPropagation()}
+              >
+                BPJS
+              </a>
+            ) : null}
+            {!member.birthCertificateUrl && !member.bpjsCardUrl && (
+              <span className="text-[9px] text-gray-500 italic">Belum di-upload</span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-1 shrink-0 pt-1">
@@ -448,6 +479,35 @@ function AdminMemberTableRow({
         >
           {member.status === "Active" ? "Aktif" : "Non-Aktif"}
         </span>
+      </td>
+      <td className="py-4 px-4 text-center">
+        <div className="flex items-center gap-1.5 justify-center">
+          {member.birthCertificateUrl ? (
+            <a
+              href={getAssetUrl(member.birthCertificateUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Lihat Akte Lahir / Ijazah"
+              className="px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
+            >
+              Akte
+            </a>
+          ) : null}
+          {member.bpjsCardUrl ? (
+            <a
+              href={getAssetUrl(member.bpjsCardUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Lihat Kartu BPJS"
+              className="px-2 py-1 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 text-[9px] font-bold tracking-wider transition-all uppercase"
+            >
+              BPJS
+            </a>
+          ) : null}
+          {!member.birthCertificateUrl && !member.bpjsCardUrl && (
+            <span className="text-[10px] text-gray-500 font-mono">—</span>
+          )}
+        </div>
       </td>
       <td className="py-4 px-6 text-center">
         <div className="flex justify-center items-center gap-3">
@@ -1442,6 +1502,7 @@ function MembersContent() {
                         <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left w-56">Sabuk & Kyu</th>
                         <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-left">Dojo / Ranting</th>
                         <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-center w-28">Status</th>
+                        <th className="py-4 px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-center w-36">Dokumen</th>
                         <th className="py-4 px-6 font-semibold text-[10px] text-gray-500 uppercase tracking-wider text-center w-52">Aksi</th>
                       </tr>
                     </thead>
