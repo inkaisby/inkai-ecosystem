@@ -243,6 +243,53 @@ export default function EventParticipantsPage() {
     memberName: string;
   } | null>(null);
 
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesSaving, setTemplatesSaving] = useState(false);
+
+  const fetchTemplates = useCallback(async () => {
+    setTemplatesLoading(true);
+    try {
+      const res = await api.events.getRankFeeTemplates();
+      if (res.status === 'success') {
+        setTemplates(res.data || []);
+      }
+    } catch {
+      toast.error('Gagal memuat template biaya');
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, []);
+
+  const handleOpenTemplateModal = () => {
+    setTemplateModalOpen(true);
+    void fetchTemplates();
+  };
+
+  const handleSaveTemplates = async () => {
+    setTemplatesSaving(true);
+    try {
+      const res = await api.events.updateRankFeeTemplates(templates);
+      if (res.status === 'success') {
+        toast.success('Template biaya berhasil disimpan');
+        setTemplateModalOpen(false);
+        await fetchData();
+      }
+    } catch {
+      toast.error('Gagal menyimpan template biaya');
+    } finally {
+      setTemplatesSaving(false);
+    }
+  };
+
+  const handleTemplateFeeChange = (id: string, fee: string) => {
+    const val = parseFloat(fee);
+    setTemplates((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, fee: Number.isNaN(val) ? 0 : val } : t))
+    );
+  };
+
   const canBulkRegister = useMemo(() => {
     const roles = user?.roles;
     if (!Array.isArray(roles)) return false;
@@ -1030,6 +1077,16 @@ export default function EventParticipantsPage() {
             >
               <Download size={20} />
             </button>
+            {canBulkRegister && (
+              <button
+                type="button"
+                onClick={handleOpenTemplateModal}
+                className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-amber-500 active:scale-90 transition-all hover:bg-white/10"
+                title="Edit Template Biaya Sabuk"
+              >
+                <Coins size={20} />
+              </button>
+            )}
             {canBulkRegister && (
               <button
                 type="button"
@@ -2376,6 +2433,100 @@ export default function EventParticipantsPage() {
                     className="flex-1 py-3 bg-white/5 text-[var(--text-light)] font-black uppercase tracking-widest text-[10px] rounded-xl border border-white/10 active:scale-95 transition-all"
                   >
                     Tutup
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </AdminModalPortal>
+
+      <AdminModalPortal>
+        <AnimatePresence>
+          {templateModalOpen && (
+            <div key="template-modal" className="admin-modal-overlay flex items-center justify-center p-4 z-[10005]">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => !templatesSaving && setTemplateModalOpen(false)}
+                className="admin-modal-backdrop-hitbox"
+                aria-hidden
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="admin-modal-drawer-sheet mobile-hpad pt-6 pb-[calc(env(safe-area-inset-bottom,24px)+24px)] sm:rounded-[2.5rem] sm:border sm:border-white/10 sm:max-h-[85vh] overflow-y-auto max-h-[90vh] relative p-6 w-full max-w-md flex flex-col min-h-0"
+              >
+                <button
+                  type="button"
+                  onClick={() => !templatesSaving && setTemplateModalOpen(false)}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-white cursor-pointer"
+                  aria-label="Tutup"
+                >
+                  <X size={20} />
+                </button>
+
+                <h3 className="text-sm font-black uppercase text-amber-500 tracking-[0.2em] mb-4 text-center">
+                  Template Biaya Sabuk
+                </h3>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-6 text-center leading-normal">
+                  Biaya pendaftaran baru akan otomatis mengikuti template jika sabuk lama anggota sesuai dengan opsi di bawah ini.
+                </p>
+
+                <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-0">
+                  {templatesLoading ? (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                      <Loader2 className="animate-spin text-amber-500" size={28} />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                        Memuat template...
+                      </p>
+                    </div>
+                  ) : (
+                    templates.map((t) => (
+                      <div key={t.id} className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-black uppercase text-gray-400 tracking-wider">
+                          {t.rankName}
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                            Rp
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={t.fee}
+                            onChange={(e) => handleTemplateFeeChange(t.id, e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-xs focus:outline-none focus:border-amber-500/50"
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-6 flex gap-3 shrink-0">
+                  <button
+                    disabled={templatesSaving || templatesLoading}
+                    onClick={() => void handleSaveTemplates()}
+                    className="flex-1 py-3.5 bg-amber-500 text-black font-black uppercase tracking-widest text-[10px] rounded-xl text-center active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-amber-600 disabled:opacity-50 cursor-pointer"
+                  >
+                    {templatesSaving ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      'Simpan Perubahan'
+                    )}
+                  </button>
+                  <button
+                    disabled={templatesSaving}
+                    onClick={() => setTemplateModalOpen(false)}
+                    className="flex-1 py-3.5 bg-white/5 text-[var(--text-light)] font-black uppercase tracking-widest text-[10px] rounded-xl border border-white/10 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    Batal
                   </button>
                 </div>
               </motion.div>

@@ -210,6 +210,9 @@ export const api = Object.assign(apiInstance, {
       apiInstance.put(`/events/register/${registrationId}`, data).then((res) => res.data),
     deleteRegistration: (registrationId: string) =>
       apiInstance.delete(`/events/register/${registrationId}`).then((res) => res.data),
+    getRankFeeTemplates: () => apiInstance.get('/events/rank-fee-templates').then(res => res.data),
+    updateRankFeeTemplates: (templates: Array<{ id: string; rankName: string; fee: number }>) =>
+      apiInstance.put('/events/rank-fee-templates', { templates }).then((res) => res.data),
   },
   attendance: {
     getMy: (params?: { limit?: number }) =>
