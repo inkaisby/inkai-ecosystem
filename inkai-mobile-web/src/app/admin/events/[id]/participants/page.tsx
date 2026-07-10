@@ -562,20 +562,31 @@ export default function EventParticipantsPage() {
 
   const handleRegistrationCategoryChange = async (
     regId: string,
-    currentCategoryId: string | null,
-    nextCategoryId: string,
+    memberId: string,
+    currentCategoryName: string | null,
+    nextRank: string,
   ) => {
-    if (nextCategoryId === currentCategoryId) return;
+    if (nextRank === currentCategoryName) return;
     setRegistrationUpdatingId(regId);
     try {
-      const res = await api.events.updateRegistration(regId, { categoryId: nextCategoryId });
-      if (res.status === 'success') {
-        toast.success('Kategori (KYU / DAN Baru) peserta diperbarui');
-        await fetchData();
+      // 1. Find matching category in event
+      const matchingCategory = event?.categories?.find(
+        (cat: any) => cat.name.toUpperCase().trim() === nextRank.toUpperCase().trim()
+      );
+      
+      // 2. Update registration category (if matching exists)
+      if (matchingCategory) {
+        await api.events.updateRegistration(regId, { categoryId: matchingCategory.id });
       }
+      
+      // 3. Update member's rank directly to ensure synchronization
+      await api.members.update(memberId, { currentRank: nextRank });
+      
+      toast.success('KYU / DAN Baru peserta diperbarui');
+      await fetchData();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      toast.error(ax.response?.data?.message || 'Gagal mengubah kategori');
+      toast.error(ax.response?.data?.message || 'Gagal mengubah rank');
     } finally {
       setRegistrationUpdatingId(null);
     }
@@ -1379,27 +1390,43 @@ export default function EventParticipantsPage() {
                             {p.member?.currentRank || '-'}
                           </td>
 
-                          {/* KYU / DAN Baru */}
                           <td className="py-4 px-4">
-                            {event?.categories?.length > 0 ? (
-                              <select
-                                disabled={rowBusy}
-                                value={p.categoryId || ''}
-                                onChange={(e) => handleRegistrationCategoryChange(p.id, p.categoryId, e.target.value)}
-                                className="bg-neutral-900 border border-white/10 rounded-lg text-xs px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 uppercase max-w-[160px]"
-                              >
-                                <option value="">Pilih Kategori</option>
-                                {event.categories.map((cat: { id: string; name: string }) => (
-                                  <option key={cat.id} value={cat.id}>
-                                    {cat.name}
+                            <select
+                              disabled={rowBusy}
+                              value={p.category?.name || p.member?.currentRank || ''}
+                              onChange={(e) => handleRegistrationCategoryChange(p.id, p.memberId, p.category?.name || p.member?.currentRank, e.target.value)}
+                              className="bg-neutral-900 border border-white/10 rounded-lg text-xs px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 uppercase max-w-[160px]"
+                              style={{ colorScheme: "dark" }}
+                            >
+                              <option value="">Pilih Kategori</option>
+                              <optgroup label="Sabuk Putih">
+                                <option value="Putih (Kyu 10)">Putih (Kyu 10)</option>
+                                <option value="Putih (Kyu 9)">Putih (Kyu 9)</option>
+                              </optgroup>
+                              <optgroup label="Sabuk Kuning">
+                                <option value="Kuning (Kyu 8)">Kuning (Kyu 8)</option>
+                                <option value="Kuning (Kyu 7)">Orange (Kyu 7)</option>
+                              </optgroup>
+                              <optgroup label="Sabuk Hijau">
+                                <option value="Hijau (Kyu 6)">Hijau (Kyu 6)</option>
+                              </optgroup>
+                              <optgroup label="Sabuk Biru">
+                                <option value="Biru (Kyu 5)">Biru (Kyu 5)</option>
+                                <option value="Biru (Kyu 4)">Biru (Kyu 4)</option>
+                              </optgroup>
+                              <optgroup label="Sabuk Coklat">
+                                <option value="Coklat (Kyu 3)">Coklat (Kyu 3)</option>
+                                <option value="Coklat (Kyu 2)">Coklat (Kyu 2)</option>
+                                <option value="Coklat (Kyu 1)">Coklat (Kyu 1)</option>
+                              </optgroup>
+                              <optgroup label="Sabuk Hitam (DAN)">
+                                {[...Array(10)].map((_, i) => (
+                                  <option key={i} value={`Hitam (DAN ${i + 1})`}>
+                                    Hitam (DAN {i + 1})
                                   </option>
                                 ))}
-                              </select>
-                            ) : (
-                              <span className="text-xs font-semibold text-[var(--text-light)] uppercase">
-                                {p.category?.name || '-'}
-                              </span>
-                            )}
+                              </optgroup>
+                            </select>
                           </td>
 
                           {/* Documents */}
@@ -1835,23 +1862,42 @@ export default function EventParticipantsPage() {
                     </div>
                     <div>
                       <p className="text-[9px] text-gray-500 uppercase font-black mb-1 tracking-widest">KYU / DAN Baru</p>
-                      {event?.categories?.length > 0 ? (
-                        <select
-                          disabled={registrationUpdatingId === selectedParticipant.id}
-                          value={selectedParticipant.categoryId || ''}
-                          onChange={(e) => handleRegistrationCategoryChange(selectedParticipant.id, selectedParticipant.categoryId, e.target.value)}
-                          className="bg-neutral-900 border border-white/10 rounded-lg text-xs px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 mt-1 uppercase w-full"
-                        >
-                          <option value="">Pilih Kategori</option>
-                          {event.categories.map((cat: { id: string; name: string }) => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name}
+                      <select
+                        disabled={registrationUpdatingId === selectedParticipant.id}
+                        value={selectedParticipant.category?.name || selectedParticipant.member?.currentRank || ''}
+                        onChange={(e) => handleRegistrationCategoryChange(selectedParticipant.id, selectedParticipant.memberId, selectedParticipant.category?.name || selectedParticipant.member?.currentRank, e.target.value)}
+                        className="bg-neutral-900 border border-white/10 rounded-lg text-xs px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 mt-1 uppercase w-full"
+                        style={{ colorScheme: "dark" }}
+                      >
+                        <option value="">Pilih Kategori</option>
+                        <optgroup label="Sabuk Putih">
+                          <option value="Putih (Kyu 10)">Putih (Kyu 10)</option>
+                          <option value="Putih (Kyu 9)">Putih (Kyu 9)</option>
+                        </optgroup>
+                        <optgroup label="Sabuk Kuning">
+                          <option value="Kuning (Kyu 8)">Kuning (Kyu 8)</option>
+                          <option value="Kuning (Kyu 7)">Orange (Kyu 7)</option>
+                        </optgroup>
+                        <optgroup label="Sabuk Hijau">
+                          <option value="Hijau (Kyu 6)">Hijau (Kyu 6)</option>
+                        </optgroup>
+                        <optgroup label="Sabuk Biru">
+                          <option value="Biru (Kyu 5)">Biru (Kyu 5)</option>
+                          <option value="Biru (Kyu 4)">Biru (Kyu 4)</option>
+                        </optgroup>
+                        <optgroup label="Sabuk Coklat">
+                          <option value="Coklat (Kyu 3)">Coklat (Kyu 3)</option>
+                          <option value="Coklat (Kyu 2)">Coklat (Kyu 2)</option>
+                          <option value="Coklat (Kyu 1)">Coklat (Kyu 1)</option>
+                        </optgroup>
+                        <optgroup label="Sabuk Hitam (DAN)">
+                          {[...Array(10)].map((_, i) => (
+                            <option key={i} value={`Hitam (DAN ${i + 1})`}>
+                              Hitam (DAN {i + 1})
                             </option>
                           ))}
-                        </select>
-                      ) : (
-                        <p className="text-xs font-bold text-white uppercase">{selectedParticipant.category?.name || '-'}</p>
-                      )}
+                        </optgroup>
+                      </select>
                     </div>
                   </div>
                   <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/5">
