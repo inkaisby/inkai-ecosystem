@@ -988,18 +988,73 @@ export default function EventParticipantsPage() {
           </div>
         </div>
 
-        {/* Filter and Search Bar */}
-        <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl mb-8 space-y-4 shadow-xl">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        {/* Expanded KPI Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -mr-8 -mt-8 blur-xl" />
+            <p className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-wider mb-1">Total Peserta</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-[var(--text-light)] tracking-tight">{kpiStats.total}</span>
+              <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase">Orang</span>
+            </div>
+          </div>
+
+          <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+            <p className="text-[9px] font-black uppercase text-green-500/60 tracking-wider mb-1">Disetujui/Lunas</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-green-500 tracking-tight">{kpiStats.disetujuiLunas}</span>
+              <span className="text-[9px] font-bold text-green-500/40 uppercase">Orang</span>
+            </div>
+          </div>
+
+          <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+            <p className="text-[9px] font-black uppercase text-amber-500/60 tracking-wider mb-1">Menunggu</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-amber-500 tracking-tight">{kpiStats.pending}</span>
+              <span className="text-[9px] font-bold text-amber-500/40 uppercase">Orang</span>
+            </div>
+          </div>
+
+          <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+            <p className="text-[9px] font-black uppercase text-red-500/60 tracking-wider mb-1">Ditolak</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-red-500 tracking-tight">{kpiStats.ditolak}</span>
+              <span className="text-[9px] font-bold text-red-500/40 uppercase">Orang</span>
+            </div>
+          </div>
+
+          <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group md:col-span-1">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+            <p className="text-[9px] font-black uppercase text-blue-400/60 tracking-wider mb-1">Total Tagihan</p>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-lg font-black text-blue-400 truncate">Rp {kpiStats.totalTagihan.toLocaleString('id-ID')}</span>
+            </div>
+          </div>
+
+          <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group md:col-span-1">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
+            <p className="text-[9px] font-black uppercase text-emerald-400/60 tracking-wider mb-1">Total Terbayar</p>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-lg font-black text-emerald-400 truncate">Rp {kpiStats.totalTerbayar.toLocaleString('id-ID')}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter and Search Bar (Moved under KPI cards and made larger) */}
+        <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-5 rounded-2xl mb-8 space-y-5 shadow-xl">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div className="relative md:col-span-2">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="text" 
                 placeholder="Cari nama atau NIA..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-white"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-3.5 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-white placeholder-gray-500"
               />
             </div>
 
@@ -1008,7 +1063,7 @@ export default function EventParticipantsPage() {
               <select
                 value={filterDojo}
                 onChange={(e) => setFilterDojo(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-gray-300 appearance-none cursor-pointer"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-4 pr-10 py-3.5 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-gray-300 appearance-none cursor-pointer"
                 style={{ colorScheme: 'dark' }}
               >
                 <option value="Semua">Semua Dojo ({uniqueDojos.length})</option>
@@ -1016,7 +1071,7 @@ export default function EventParticipantsPage() {
                   <option key={dojo} value={dojo}>{dojo}</option>
                 ))}
               </select>
-              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+              <Filter className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
             </div>
 
             {/* Category Filter */}
@@ -1024,7 +1079,7 @@ export default function EventParticipantsPage() {
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-amber-500/50 transition-all text-gray-300 appearance-none cursor-pointer"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-4 pr-10 py-3.5 text-sm focus:outline-none focus:border-amber-500/50 transition-all text-gray-300 appearance-none cursor-pointer"
                 style={{ colorScheme: 'dark' }}
               >
                 <option value="Semua">Semua Kategori ({uniqueCategories.length})</option>
@@ -1032,21 +1087,21 @@ export default function EventParticipantsPage() {
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
-              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+              <Filter className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
             </div>
           </div>
 
           {/* Status Filter Tabs */}
-          <div className="flex flex-wrap gap-1 justify-start overflow-x-auto no-scrollbar pt-1">
+          <div className="flex flex-wrap gap-1.5 justify-start overflow-x-auto no-scrollbar pt-1">
             {['Semua', 'Pending', 'Disetujui', 'Ditolak'].map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => setFilterStatus(s)}
-                className={`whitespace-nowrap px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-wide transition-all ${
+                className={`whitespace-nowrap px-4 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all ${
                   filterStatus === s 
                     ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
-                    : 'bg-white/5 text-gray-500 border border-white/10 hover:bg-white/10'
+                    : 'bg-white/5 text-gray-500 border border-white/10 hover:bg-white/10 hover:text-gray-300'
                 }`}
               >
                 {s}
@@ -1075,61 +1130,6 @@ export default function EventParticipantsPage() {
               </p>
             </div>
           )}
-
-          {/* Expanded KPI Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -mr-8 -mt-8 blur-xl" />
-              <p className="text-[9px] font-black uppercase text-[var(--text-muted)] tracking-wider mb-1">Total Peserta</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-[var(--text-light)] tracking-tight">{kpiStats.total}</span>
-                <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase">Orang</span>
-              </div>
-            </div>
-
-            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
-              <p className="text-[9px] font-black uppercase text-green-500/60 tracking-wider mb-1">Disetujui/Lunas</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-green-500 tracking-tight">{kpiStats.disetujuiLunas}</span>
-                <span className="text-[9px] font-bold text-green-500/40 uppercase">Orang</span>
-              </div>
-            </div>
-
-            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
-              <p className="text-[9px] font-black uppercase text-amber-500/60 tracking-wider mb-1">Menunggu</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-amber-500 tracking-tight">{kpiStats.pending}</span>
-                <span className="text-[9px] font-bold text-amber-500/40 uppercase">Orang</span>
-              </div>
-            </div>
-
-            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
-              <p className="text-[9px] font-black uppercase text-red-500/60 tracking-wider mb-1">Ditolak</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-red-500 tracking-tight">{kpiStats.ditolak}</span>
-                <span className="text-[9px] font-bold text-red-500/40 uppercase">Orang</span>
-              </div>
-            </div>
-
-            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group md:col-span-1">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
-              <p className="text-[9px] font-black uppercase text-blue-400/60 tracking-wider mb-1">Total Tagihan</p>
-              <div className="flex items-baseline gap-0.5">
-                <span className="text-lg font-black text-blue-400 truncate">Rp {kpiStats.totalTagihan.toLocaleString('id-ID')}</span>
-              </div>
-            </div>
-
-            <div className="bg-[var(--card-dark)] border border-[var(--border-light)] p-4 rounded-2xl shadow-xl relative overflow-hidden group md:col-span-1">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full -mr-8 -mt-8 blur-xl" />
-              <p className="text-[9px] font-black uppercase text-emerald-400/60 tracking-wider mb-1">Total Terbayar</p>
-              <div className="flex items-baseline gap-0.5">
-                <span className="text-lg font-black text-emerald-400 truncate">Rp {kpiStats.totalTerbayar.toLocaleString('id-ID')}</span>
-              </div>
-            </div>
-          </div>
 
           {/* Bulk Action Toolbar */}
           <AdminModalPortal>
