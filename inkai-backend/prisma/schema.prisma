@@ -349,3 +349,12 @@ model NewsCarousel {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model RankFeeTemplate {
+  id        String   @id @default(uuid())
+  rankName  String   @unique
+  fee       Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

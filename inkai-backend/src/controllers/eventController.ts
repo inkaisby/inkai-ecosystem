@@ -24,6 +24,45 @@ function badRequest(message: string): Error {
   return new Error(`${BAD_REQ_PREFIX}${message}`);
 }
 
+async function getFeeFromTemplate(
+  tx: Prisma.TransactionClient | typeof prisma,
+  rank: string | null | undefined,
+): Promise<number | null> {
+  if (!rank) return null;
+  const normalized = rank.toLowerCase();
+
+  // Find templates from db
+  const templates = await tx.rankFeeTemplate.findMany();
+
+  let matchedTemplate = null;
+  if (normalized.includes('putih')) {
+    matchedTemplate = templates.find((t) => t.rankName.toLowerCase().includes('putih'));
+  } else if (
+    normalized.includes('orange') ||
+    normalized.includes('kuning') ||
+    normalized.includes('oranye')
+  ) {
+    matchedTemplate = templates.find(
+      (t) =>
+        t.rankName.toLowerCase().includes('kuning') ||
+        t.rankName.toLowerCase().includes('oranye'),
+    );
+  } else if (normalized.includes('hijau')) {
+    matchedTemplate = templates.find((t) => t.rankName.toLowerCase().includes('hijau'));
+  } else if (normalized.includes('biru')) {
+    matchedTemplate = templates.find((t) => t.rankName.toLowerCase().includes('biru'));
+  } else if (normalized.includes('coklat') || normalized.includes('cokelat')) {
+    matchedTemplate = templates.find(
+      (t) =>
+        t.rankName.toLowerCase().includes('coklat') ||
+        t.rankName.toLowerCase().includes('cokelat'),
+    );
+  }
+
+  return matchedTemplate ? matchedTemplate.fee : null;
+}
+
+
 /**
  * Menyamakan tarif nama kategori tanpa selalu menghapus baris —
  * menghindari melanggar FK `EventRegistration.categoryId`.
@@ -444,8 +483,11 @@ export const registerForEvent = async (req: Request, res: Response) => {
       },
     });
 
-    if (registration.category && registration.category.fee > 0) {
-      const fee = await pickUniqueEventFeeAmount(prisma, eventId, registration.category.fee);
+    const templateFee = await getFeeFromTemplate(prisma, registration.registeredRank || memberRecord?.currentRank);
+    const baseFee = templateFee !== null ? templateFee : (registration.category?.fee ?? 0);
+
+    if (baseFee > 0) {
+      const fee = await pickUniqueEventFeeAmount(prisma, eventId, baseFee);
       await prisma.billing.create({
         data: {
           memberId: registration.memberId,
@@ -454,7 +496,7 @@ export const registerForEvent = async (req: Request, res: Response) => {
           amount: fee.total,
           baseFeeAmount: fee.baseRounded,
           uniqueTail: fee.uniqueTail,
-          description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
+          description: `Biaya pendaftaran ${registration.event.title} - ${registration.category?.name || EVENT_CATEGORY_FALLBACK_NAME}`,
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           status: 'PENDING',
         },
@@ -464,7 +506,7 @@ export const registerForEvent = async (req: Request, res: Response) => {
         await createNotification({
           userId: registration.member.userId,
           title: 'Tagihan Pendaftaran Event',
-          content: `Silakan lanjut pembayaran untuk ${registration.event.title} kategori ${registration.category.name} sebesar Rp ${fee.total.toLocaleString('id-ID')} (nominal termasuk kode unik untuk pencocokan pembayaran).`,
+          content: `Silakan lanjut pembayaran untuk ${registration.event.title} kategori ${registration.category?.name || EVENT_CATEGORY_FALLBACK_NAME} sebesar Rp ${fee.total.toLocaleString('id-ID')} (nominal termasuk kode unik untuk pencocokan pembayaran).`,
           type: 'INFO',
         });
       }
@@ -623,8 +665,11 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
           },
         });
 
-        if (reg.category && reg.category.fee > 0) {
-          const fee = await pickUniqueEventFeeAmount(tx, eventId, reg.category.fee);
+        const templateFee = await getFeeFromTemplate(tx, reg.registeredRank || memberRow?.currentRank);
+        const baseFee = templateFee !== null ? templateFee : (reg.category?.fee ?? 0);
+
+        if (baseFee > 0) {
+          const fee = await pickUniqueEventFeeAmount(tx, eventId, baseFee);
           bulkNotifyAmount = fee.total;
           await tx.billing.create({
             data: {
@@ -634,7 +679,7 @@ export const bulkRegisterForEvent = async (req: Request, res: Response) => {
               amount: fee.total,
               baseFeeAmount: fee.baseRounded,
               uniqueTail: fee.uniqueTail,
-              description: `Biaya pendaftaran ${reg.event.title} - ${reg.category.name}`,
+              description: `Biaya pendaftaran ${reg.event.title} - ${reg.category?.name || EVENT_CATEGORY_FALLBACK_NAME}`,
               dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
               status: 'PENDING',
             },
@@ -728,7 +773,7 @@ export const updateRegistration = async (req: Request, res: Response) => {
       return res.status(403).json({ status: 'error', message: 'Akses wilayah ditolak' });
     }
 
-    const patch: { categoryId?: string | null; status?: string; registeredRank?: string } = {};
+    const patch: { categoryId?: string | null; status?: string; registeredRank?: string | null } = {};
     if (!existing.registeredRank && existing.member?.currentRank) {
       patch.registeredRank = existing.member.currentRank;
     }
@@ -785,7 +830,8 @@ export const updateRegistration = async (req: Request, res: Response) => {
       },
     });
 
-    if (categoryId !== undefined && registration.category && registration.category.fee > 0) {
+    const shouldUpdateBilling = categoryId !== undefined || registeredRank !== undefined;
+    if (shouldUpdateBilling) {
       const existingBilling = await prisma.billing.findFirst({
         where: {
           memberId: registration.memberId,
@@ -795,45 +841,50 @@ export const updateRegistration = async (req: Request, res: Response) => {
         },
       });
 
-      const fee = await pickUniqueEventFeeAmount(
-        prisma,
-        registration.eventId,
-        registration.category.fee,
-        existingBilling?.id,
-      );
+      const templateFee = await getFeeFromTemplate(prisma, registration.registeredRank || registration.member?.currentRank);
+      const baseFee = templateFee !== null ? templateFee : (registration.category?.fee ?? 0);
 
-      if (existingBilling) {
-        await prisma.billing.update({
-          where: { id: existingBilling.id },
-          data: {
-            amount: fee.total,
-            baseFeeAmount: fee.baseRounded,
-            uniqueTail: fee.uniqueTail,
-            description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          },
-        });
-      } else {
-        await prisma.billing.create({
-          data: {
-            memberId: registration.memberId,
-            registrationId: registration.id,
-            type: 'EVENT_FEE',
-            amount: fee.total,
-            baseFeeAmount: fee.baseRounded,
-            uniqueTail: fee.uniqueTail,
-            description: `Biaya pendaftaran ${registration.event.title} - ${registration.category.name}`,
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            status: 'PENDING',
-          },
-        });
+      if (baseFee > 0) {
+        const fee = await pickUniqueEventFeeAmount(
+          prisma,
+          registration.eventId,
+          baseFee,
+          existingBilling?.id,
+        );
+
+        if (existingBilling) {
+          await prisma.billing.update({
+            where: { id: existingBilling.id },
+            data: {
+              amount: fee.total,
+              baseFeeAmount: fee.baseRounded,
+              uniqueTail: fee.uniqueTail,
+              description: `Biaya pendaftaran ${registration.event.title} - ${registration.category?.name || EVENT_CATEGORY_FALLBACK_NAME}`,
+              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
+          });
+        } else {
+          await prisma.billing.create({
+            data: {
+              memberId: registration.memberId,
+              registrationId: registration.id,
+              type: 'EVENT_FEE',
+              amount: fee.total,
+              baseFeeAmount: fee.baseRounded,
+              uniqueTail: fee.uniqueTail,
+              description: `Biaya pendaftaran ${registration.event.title} - ${registration.category?.name || EVENT_CATEGORY_FALLBACK_NAME}`,
+              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              status: 'PENDING',
+            },
+          });
+        }
       }
 
       if (registration.member.userId) {
         await createNotification({
           userId: registration.member.userId,
           title: 'Pendaftaran Event Diperbarui',
-          content: `Pendaftaran Anda untuk ${registration.event.title} telah diperbarui ke kategori ${registration.category.name}. Silakan cek tagihan Anda.`,
+          content: `Pendaftaran Anda untuk ${registration.event.title} telah diperbarui ke kategori ${registration.category?.name || EVENT_CATEGORY_FALLBACK_NAME}. Silakan cek tagihan Anda.`,
           type: 'INFO',
         });
       }
@@ -1104,3 +1155,45 @@ export const deleteEvent = async (req: Request, res: Response) => {
     res.status(500).json({ status: 'error', message: errMessage });
   }
 };
+
+export const getRankFeeTemplates = async (req: Request, res: Response) => {
+  try {
+    const templates = await prisma.rankFeeTemplate.findMany({
+      orderBy: { createdAt: 'asc' },
+    });
+    return res.json({ status: 'success', data: templates });
+  } catch (error) {
+    console.error('[EventController] getRankFeeTemplates:', error);
+    return res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+};
+
+export const updateRankFeeTemplates = async (req: Request, res: Response) => {
+  try {
+    const { templates } = req.body as { templates: Array<{ id: string; rankName: string; fee: number }> };
+    if (!Array.isArray(templates)) {
+      return res.status(400).json({ status: 'error', message: 'Templates harus berupa array' });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const results = [];
+      for (const t of templates) {
+        const item = await tx.rankFeeTemplate.update({
+          where: { id: t.id },
+          data: {
+            rankName: t.rankName,
+            fee: Number(t.fee),
+          },
+        });
+        results.push(item);
+      }
+      return results;
+    });
+
+    return res.json({ status: 'success', data: updated });
+  } catch (error) {
+    console.error('[EventController] updateRankFeeTemplates:', error);
+    return res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+};
+

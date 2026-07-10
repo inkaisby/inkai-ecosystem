@@ -4,6 +4,8 @@ import { authenticate, optionalAuthenticate } from '../middleware/authMiddleware
 
 const router = Router();
 
+router.get('/rank-fee-templates', authenticate, eventController.getRankFeeTemplates);
+router.put('/rank-fee-templates', authenticate, eventController.updateRankFeeTemplates);
 router.get('/', optionalAuthenticate, eventController.getAllEvents);
 router.get('/my/registrations', authenticate, eventController.getMyEvents);
 router.get('/:id', optionalAuthenticate, eventController.getEventById);

@@ -831,7 +831,7 @@ export default function EventParticipantsPage() {
         p.member?.dojo?.name || 'Pusat',
         p.category?.name || '-',
         p.status || '-',
-        p.category?.fee || 0,
+        billing?.baseFeeAmount || billing?.amount || p.category?.fee || 0,
         billing?.status || 'UNPAID',
         new Date(p.createdAt).toLocaleDateString('id-ID'),
       ];
@@ -1294,7 +1294,7 @@ export default function EventParticipantsPage() {
                       KYU / DAN Baru
                     </th>
                     <th className="py-4 px-4 text-center w-36">Dokumen</th>
-                    <th className="py-4 px-4">Pembayaran</th>
+                    <th className="py-4 px-4">Biaya</th>
                     <th className="py-4 px-4 cursor-pointer hover:text-[var(--text-light)]" onClick={() => handleSort('date')}>
                       <div className="flex items-center gap-1.5">
                         Tgl Daftar <ArrowUpDown size={12} />
@@ -1484,7 +1484,7 @@ export default function EventParticipantsPage() {
                           {/* Payment */}
                           <td className="py-4 px-4">
                             <div className="text-xs font-semibold">
-                              <span className="text-[var(--text-light)] block">Rp {eventFee.toLocaleString('id-ID')}</span>
+                              <span className="text-[var(--text-light)] block">Rp {(billing?.baseFeeAmount ?? billing?.amount ?? eventFee).toLocaleString('id-ID')}</span>
                               {billing && (
                                 <span className={`text-[9px] font-bold uppercase ${payHighlight === 'paid' ? 'text-green-400' : payHighlight === 'waiting' ? 'text-amber-400' : 'text-gray-400'}`}>
                                   {payHighlight === 'paid' ? 'Lunas' : payHighlight === 'waiting' ? 'Verifikasi manual' : 'Belum bayar'}
