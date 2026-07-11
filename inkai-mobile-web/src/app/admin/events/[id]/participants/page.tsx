@@ -221,6 +221,8 @@ export default function EventParticipantsPage() {
   const [previewDocSize, setPreviewDocSize] = useState<string | null>(null);
 
   const [printParticipants, setPrintParticipants] = useState<any[] | null>(null);
+  const [isFloatingInvoiceOpen, setIsFloatingInvoiceOpen] = useState(false);
+  const [activeFloatingDojo, setActiveFloatingDojo] = useState<string | null>(null);
   const [printConfig, setPrintConfig] = useState<Record<string, {
     notaNo: string;
     semester: string;
@@ -231,50 +233,73 @@ export default function EventParticipantsPage() {
     fees: Record<string, number>;
   }>>({});
 
+  const selectedParticipants = useMemo(() => {
+    return participants.filter((p) => selectedIds[p.id]);
+  }, [participants, selectedIds]);
+
+  const dojos = useMemo(() => {
+    return Array.from(new Set(selectedParticipants.map(p => p.member?.dojo?.name || 'Pusat')));
+  }, [selectedParticipants]);
+
   useEffect(() => {
-    if (!printParticipants || !event) return;
-    
-    const dojos = Array.from(new Set(printParticipants.map(p => p.member?.dojo?.name || 'Pusat')));
+    if (dojos.length > 0) {
+      if (!activeFloatingDojo || !dojos.includes(activeFloatingDojo)) {
+        setActiveFloatingDojo(dojos[0]);
+      }
+    } else {
+      setActiveFloatingDojo(null);
+    }
+  }, [dojos, activeFloatingDojo]);
+
+  useEffect(() => {
+    if (selectedParticipants.length === 0 || !event) return;
     
     const dateVal = new Date(event?.date || event?.createdAt || new Date());
     const yearVal = String(dateVal.getFullYear());
     const semVal = dateVal.getMonth() < 6 ? 'I' : 'II';
     
-    const newConfig: Record<string, any> = {};
-    dojos.forEach(dojo => {
-      const slug = dojo.toUpperCase().replace(/[^A-Z0-9]/g, '');
-      const notaNo = `UKT/SBY/${slug}/${semVal}/${yearVal}`;
+    setPrintConfig(prev => {
+      const newConfig = { ...prev };
+      let changed = false;
       
-      const fees: Record<string, number> = {
-        PUTIH: 285000,
-        KUNING: 295000,
-        HIJAU: 305000,
-        BIRU: 315000,
-        COKELAT: 345000
-      };
-      
-      if (Array.isArray(event.categories)) {
-        event.categories.forEach((cat: any) => {
-          const group = getBeltGroup(cat.name);
-          if (group !== 'LAINNYA') {
-            fees[group] = Number(cat.fee);
+      dojos.forEach(dojo => {
+        if (!newConfig[dojo]) {
+          const slug = dojo.toUpperCase().replace(/[^A-Z0-9]/g, '');
+          const notaNo = `UKT/SBY/${slug}/${semVal}/${yearVal}`;
+          
+          const fees: Record<string, number> = {
+            PUTIH: 285000,
+            KUNING: 295000,
+            HIJAU: 305000,
+            BIRU: 315000,
+            COKELAT: 345000
+          };
+          
+          if (Array.isArray(event.categories)) {
+            event.categories.forEach((cat: any) => {
+              const group = getBeltGroup(cat.name);
+              if (group !== 'LAINNYA') {
+                fees[group] = Number(cat.fee);
+              }
+            });
           }
-        });
-      }
+          
+          newConfig[dojo] = {
+            notaNo,
+            semester: `${semVal} / ${yearVal}`,
+            year: yearVal,
+            rusak: 0,
+            hilang: 0,
+            komisi: 50000,
+            fees
+          };
+          changed = true;
+        }
+      });
       
-      newConfig[dojo] = {
-        notaNo,
-        semester: `${semVal} / ${yearVal}`,
-        year: yearVal,
-        rusak: 0,
-        hilang: 0,
-        komisi: 50000,
-        fees
-      };
+      return changed ? newConfig : prev;
     });
-    
-    setPrintConfig(newConfig);
-  }, [printParticipants, event]);
+  }, [selectedParticipants, event, dojos]);
 
   useEffect(() => {
     if (!previewDoc) {
@@ -1120,6 +1145,14 @@ export default function EventParticipantsPage() {
     return Object.entries(selectedIds).filter(([, v]) => v).length;
   }, [selectedIds]);
 
+  useEffect(() => {
+    if (selectedCount > 0) {
+      setIsFloatingInvoiceOpen(true);
+    } else {
+      setIsFloatingInvoiceOpen(false);
+    }
+  }, [selectedCount]);
+
   return (
     <>
       <div className="pb-10">
@@ -1389,6 +1422,13 @@ export default function EventParticipantsPage() {
                     >
                       <Printer size={12} />
                       Cetak Nota
+                    </button>
+                    <button
+                      onClick={() => setIsFloatingInvoiceOpen(prev => !prev)}
+                      className="flex-1 md:flex-none px-3.5 py-2 bg-amber-500/10 border border-amber-500/35 text-amber-500 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      <Receipt size={12} />
+                      {isFloatingInvoiceOpen ? 'Tutup Invoice' : 'Buka Invoice'}
                     </button>
                     <button
                       onClick={() => setSelectedIds({})}
@@ -3213,6 +3253,261 @@ export default function EventParticipantsPage() {
                   })}
                 </div>
               </div>
+            );
+          })()}
+        </AnimatePresence>
+      </AdminModalPortal>
+
+      {/* Floating Invoice Drawer */}
+      <AdminModalPortal>
+        <AnimatePresence>
+          {isFloatingInvoiceOpen && selectedCount > 0 && activeFloatingDojo && printConfig[activeFloatingDojo] && (() => {
+            const list = selectedParticipants.filter(p => (p.member?.dojo?.name || 'Pusat') === activeFloatingDojo);
+            const config = printConfig[activeFloatingDojo];
+            
+            const counts = { PUTIH: 0, KUNING: 0, HIJAU: 0, BIRU: 0, COKELAT: 0, LAINNYA: 0 };
+            list.forEach(p => {
+              const grp = getBeltGroup(p.category?.name || p.member?.currentRank);
+              if (grp in counts) counts[grp as keyof typeof counts]++;
+              else counts.LAINNYA++;
+            });
+
+            const subtotalA =
+              (counts.PUTIH * config.fees.PUTIH) +
+              (counts.KUNING * config.fees.KUNING) +
+              (counts.HIJAU * config.fees.HIJAU) +
+              (counts.BIRU * config.fees.BIRU) +
+              (counts.COKELAT * config.fees.COKELAT);
+
+            const subtotalB = (config.rusak * 15000) + (config.hilang * 100000);
+            const totalC = list.length * config.komisi;
+            const grandTotal = (subtotalA + subtotalB) - totalC;
+
+            return (
+              <motion.div
+                initial={{ x: '100%', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100%', opacity: 0 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 200 }}
+                className="fixed right-0 top-0 bottom-0 w-full sm:w-[460px] z-[99] bg-[#0c0d0e]/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col no-print text-white"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="text-amber-500" size={20} />
+                    <div>
+                      <h3 className="text-sm font-black uppercase text-amber-500 tracking-wider">
+                        Floating Invoice
+                      </h3>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                        {list.length} Peserta terpilih
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsFloatingInvoiceOpen(false)}
+                    className="p-1.5 text-gray-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
+                  {/* Dojo selector if multiple */}
+                  {dojos.length > 1 && (
+                    <div>
+                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider mb-2 block">
+                        Pilih Ranting / Dojo ({dojos.length})
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {dojos.map((d) => (
+                          <button
+                            key={d}
+                            onClick={() => setActiveFloatingDojo(d)}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                              activeFloatingDojo === d
+                                ? 'bg-amber-500 text-black'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                            }`}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Config Form */}
+                  <div className="space-y-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-500 mb-2">
+                      Penyesuaian Biaya & Nota ({activeFloatingDojo})
+                    </h4>
+                    
+                    <div>
+                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                        Nomor Nota
+                      </label>
+                      <input
+                        type="text"
+                        value={config.notaNo}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPrintConfig((prev) => ({
+                            ...prev,
+                            [activeFloatingDojo]: { ...prev[activeFloatingDojo], notaNo: val }
+                          }));
+                        }}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                          Buku Rusak (Qty)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={config.rusak}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10) || 0;
+                            setPrintConfig((prev) => ({
+                              ...prev,
+                              [activeFloatingDojo]: { ...prev[activeFloatingDojo], rusak: val }
+                            }));
+                          }}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                          Buku Hilang (Qty)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={config.hilang}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10) || 0;
+                            setPrintConfig((prev) => ({
+                              ...prev,
+                              [activeFloatingDojo]: { ...prev[activeFloatingDojo], hilang: val }
+                            }));
+                          }}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                        Komisi Ranting / Orang
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                          Rp
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={config.komisi}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10) || 0;
+                            setPrintConfig((prev) => ({
+                              ...prev,
+                              [activeFloatingDojo]: { ...prev[activeFloatingDojo], komisi: val }
+                            }));
+                          }}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Preview */}
+                  <div className="bg-white text-black p-5 rounded-2xl font-mono text-[10px] leading-relaxed border border-gray-300 shadow-lg">
+                    <div className="text-center font-bold text-xs uppercase border-b border-black pb-2 mb-3">
+                      NOTA PEMBAYARAN UKT - {activeFloatingDojo}
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span>Sabuk Putih: {counts.PUTIH} x Rp.{config.fees.PUTIH.toLocaleString('id-ID')}</span>
+                        <span>Rp.{(counts.PUTIH * config.fees.PUTIH).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Sabuk Kuning: {counts.KUNING} x Rp.{config.fees.KUNING.toLocaleString('id-ID')}</span>
+                        <span>Rp.{(counts.KUNING * config.fees.KUNING).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Sabuk Hijau: {counts.HIJAU} x Rp.{config.fees.HIJAU.toLocaleString('id-ID')}</span>
+                        <span>Rp.{(counts.HIJAU * config.fees.HIJAU).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Sabuk Biru: {counts.BIRU} x Rp.{config.fees.BIRU.toLocaleString('id-ID')}</span>
+                        <span>Rp.{(counts.BIRU * config.fees.BIRU).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-black pb-1">
+                        <span>Sabuk Cokelat: {counts.COKELAT} x Rp.{config.fees.COKELAT.toLocaleString('id-ID')}</span>
+                        <span>Rp.{(counts.COKELAT * config.fees.COKELAT).toLocaleString('id-ID')}</span>
+                      </div>
+
+                      <div className="flex justify-between font-bold pt-1">
+                        <span>TOTAL A (Biaya Sabuk)</span>
+                        <span>Rp.{subtotalA.toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 mt-3">
+                      <div className="flex justify-between">
+                        <span>Buku Rusak: {config.rusak} x Rp.15.000</span>
+                        <span>Rp.{(config.rusak * 15000).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-black pb-1">
+                        <span>Buku Hilang: {config.hilang} x Rp.100.000</span>
+                        <span>Rp.{(config.hilang * 100000).toLocaleString('id-ID')}</span>
+                      </div>
+
+                      <div className="flex justify-between font-bold pt-1">
+                        <span>TOTAL B (Ganti Buku)</span>
+                        <span>Rp.{subtotalB.toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 mt-3 pt-2 border-t border-dashed border-black">
+                      <div className="flex justify-between">
+                        <span>Komisi Ranting: {list.length} x Rp.{config.komisi.toLocaleString('id-ID')}</span>
+                        <span>Rp.{totalC.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between border-t-black font-black text-xs py-1 mt-1">
+                        <span>GRAND TOTAL ((A+B)-C)</span>
+                        <span>Rp.{grandTotal.toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-6 border-t border-white/10 shrink-0 flex gap-3">
+                  <button
+                    onClick={() => {
+                      setPrintParticipants(selectedParticipants);
+                    }}
+                    className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-black font-black uppercase tracking-wider text-[10px] rounded-xl flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all"
+                  >
+                    <Printer size={14} />
+                    Cetak Nota
+                  </button>
+                  <button
+                    onClick={() => setSelectedIds({})}
+                    className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-wider text-[10px] rounded-xl border border-white/10 active:scale-95 transition-all"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </motion.div>
             );
           })()}
         </AnimatePresence>
