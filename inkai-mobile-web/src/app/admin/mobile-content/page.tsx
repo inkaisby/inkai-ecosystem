@@ -214,7 +214,11 @@ export default function MobileContentEditor() {
         content: JSON.stringify(contentData)
       });
       toast.success("Berhasil memperbarui konten!");
-      fetchData();
+      
+      // Update local state instead of calling fetchData() to prevent screen blinking/reloading
+      setDbTabs(prev => prev.map(t => 
+        t.slug === slug ? { ...t, content: JSON.stringify(contentData) } : t
+      ));
     } catch (err) {
       console.error(err);
       toast.error("Gagal menyimpan data");
