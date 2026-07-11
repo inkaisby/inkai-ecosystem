@@ -3289,7 +3289,12 @@ export default function EventParticipantsPage() {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-                className="fixed right-0 top-0 bottom-0 w-full sm:w-[460px] z-[99] bg-[#0c0d0e]/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col no-print text-white"
+                className="fixed right-0 top-0 bottom-0 bg-[#0c0d0e]/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col no-print text-white"
+                style={{
+                  width: '100%',
+                  maxWidth: '380px',
+                  zIndex: 150,
+                }}
               >
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
