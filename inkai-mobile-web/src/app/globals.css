@@ -1856,6 +1856,13 @@ body:has([data-admin-shell]),
   overflow-x: visible !important;
 }
 
+/* Disable glass card scale shrink on tap/click inside the admin shell to prevent input and click lag */
+[data-admin-shell] .glass-card,
+[data-admin-shell] .glass-card:active {
+  transform: none !important;
+  transition: none !important;
+}
+
 /* ==========================================
    Responsive Overrides for Admin Shell
    ========================================== */
