@@ -66,11 +66,14 @@
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.tabBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-light);
+@media (hover: hover) {
+  .tabBtn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-light);
+  }
 }
 
 .tabBtnActive {
@@ -231,13 +234,17 @@
   cursor: pointer;
   transition: background-color 0.1s ease, transform 0.05s ease;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.btnSecondary:hover {
-  background: rgba(245, 158, 11, 0.1);
+@media (hover: hover) {
+  .btnSecondary:hover {
+    background: rgba(245, 158, 11, 0.1);
+  }
 }
 
 .btnSecondary:active {
+  background: rgba(245, 158, 11, 0.15) !important;
   transform: scale(0.96);
 }
 
@@ -298,10 +305,14 @@
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-.uploadBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+@media (hover: hover) {
+  .uploadBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
 
 /* Organisasi specific styles */
