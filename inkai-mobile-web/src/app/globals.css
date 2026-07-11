@@ -1847,6 +1847,15 @@ input::-ms-clear {
   display: none;
 }
 
+/* Allow position: sticky to function inside the admin shell by overriding overflow-x: hidden on ancestors */
+html:has([data-admin-shell]),
+body:has([data-admin-shell]),
+.mobile-wrapper:has([data-admin-shell]),
+.mobile-content:has([data-admin-shell]) {
+  overflow: visible !important;
+  overflow-x: visible !important;
+}
+
 /* ==========================================
    Responsive Overrides for Admin Shell
    ========================================== */
