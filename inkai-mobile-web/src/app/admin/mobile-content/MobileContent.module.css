@@ -213,11 +213,19 @@
   background: var(--gradient-gold);
   color: #000;
   border: none;
-  transition: transform 0.1s ease, filter 0.2s ease;
+  transition: opacity 0.1s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btnPrimary:active {
-  transform: scale(0.98);
+  opacity: 0.85;
+}
+
+@media (hover: hover) {
+  .btnPrimary:hover {
+    filter: brightness(1.1);
+  }
 }
 
 .btnSecondary {
