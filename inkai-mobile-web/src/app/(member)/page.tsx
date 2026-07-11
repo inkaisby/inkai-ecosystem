@@ -318,8 +318,8 @@ export default function PublicLandingPage() {
         </div>
         <p className={styles.footerCopy}>© 2026 Institut Karate-Do Indonesia (INKAI)</p>
         <p className={styles.footerSub}>All Rights Reserved</p>
-        <a href="https://inkai.or.id" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
-          inkai.or.id
+        <a href="https://inkai.org" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
+          inkai.org
         </a>
       </footer>
 

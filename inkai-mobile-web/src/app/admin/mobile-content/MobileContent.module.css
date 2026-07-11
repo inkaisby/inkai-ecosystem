@@ -91,6 +91,15 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  position: sticky;
+  top: calc(var(--admin-topbar-h) + var(--admin-topbar-top) - 1px);
+  background: var(--card-dark);
+  z-index: 100;
+  padding: 1rem 1.5rem;
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  border-bottom: 1px solid var(--hairline);
+  border-top-left-radius: 1.25rem;
+  border-top-right-radius: 1.25rem;
 }
 
 .sectionTitle {
@@ -220,11 +229,16 @@
   color: var(--primary-gold);
   background: transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.1s ease, transform 0.05s ease;
+  touch-action: manipulation;
 }
 
 .btnSecondary:hover {
   background: rgba(245, 158, 11, 0.1);
+}
+
+.btnSecondary:active {
+  transform: scale(0.96);
 }
 
 .btnTrash {
@@ -324,7 +338,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.25rem;
+  position: sticky;
+  top: calc(var(--admin-topbar-h) + var(--admin-topbar-top) + 3.3rem);
+  background: var(--card-dark);
+  z-index: 90;
+  padding: 0.75rem 1.5rem;
+  margin: -1rem -1.5rem 0.5rem -1.5rem;
+  border-bottom: 1px solid var(--hairline);
 }
 
 .orgMemberRow {
