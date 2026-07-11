@@ -5,12 +5,6 @@
   flex-direction: column;
   gap: 1.5rem;
   padding: 0 1rem 4rem;
-  animation: fadeIn 0.5s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .titleSection {
@@ -65,7 +59,6 @@
   background: var(--surface-row-bg);
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -144,7 +137,6 @@
   padding: 0.75rem 1rem;
   font-size: 0.8125rem;
   color: var(--text-light);
-  transition: border-color 0.2s ease;
 }
 
 .input:focus, .textarea:focus {
@@ -213,7 +205,6 @@
   background: var(--gradient-gold);
   color: #000;
   border: none;
-  transition: opacity 0.1s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -240,7 +231,6 @@
   color: var(--primary-gold);
   background: transparent;
   cursor: pointer;
-  transition: background-color 0.1s ease, transform 0.05s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -253,7 +243,6 @@
 
 .btnSecondary:active {
   background: rgba(245, 158, 11, 0.15) !important;
-  transform: scale(0.96);
 }
 
 .btnTrash {
@@ -266,7 +255,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
 }
 
 .btnTrash:hover {
@@ -312,7 +300,6 @@
   font-size: 0.6875rem;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
