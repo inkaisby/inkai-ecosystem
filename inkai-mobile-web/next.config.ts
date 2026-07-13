@@ -10,8 +10,8 @@ const securityHeaders = [
     value: 'max-age=63072000; includeSubDomains; preload',
   },
   {
-    key: 'X-Frame-Options',
-    value: 'DENY',
+    key: 'Content-Security-Policy',
+    value: "frame-ancestors 'self' https://inkai-jatim.vercel.app http://localhost:3000",
   },
   {
     key: 'X-Content-Type-Options',
