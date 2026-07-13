@@ -141,11 +141,32 @@ button {
   }
 }
 
+/* Specific styling when loaded in an iframe to prevent clipping */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(iframe), body:has(iframe) {
+    height: auto;
+  }
+}
+
+/* If this document is embedded in an iframe */
+@media screen {
+  html, body {
+    /* If window self !== top, or inside iframe */
+    height: auto !important;
+  }
+  
+  /* Reset rigid min-heights */
+  .mobile-wrapper, 
+  .mobile-content,
+  [class*="shell"] {
+    min-height: unset !important;
+    height: auto !important;
+  }
+}
+
 .mobile-content {
   width: 100%;
   max-width: 480px;
-  min-height: 100vh;
-  min-height: 100dvh;
   background-color: var(--background-dark);
   position: relative;
   box-shadow: 0 0 80px rgba(0, 0, 0, 0.8);
