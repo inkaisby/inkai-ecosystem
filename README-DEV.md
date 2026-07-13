@@ -5,7 +5,6 @@ Selamat datang di repositori pengembangan **Institut Karate-do Indonesia (INKAI)
 ## 📁 Struktur Proyek
 
 - **`/inkai-backend`**: API Server (Node.js, Express, TypeScript, PostgreSQL).
-- **`/inkai-web-admin`**: Portal Dashboard untuk Pengurus (Next.js, Tailwind).
 - **`/inkai-mobile`**: Aplikasi Mobile untuk Anggota (Flutter).
 
 ---
@@ -18,12 +17,7 @@ Selamat datang di repositori pengembangan **Institut Karate-do Indonesia (INKAI)
 3. Salin file `.env` dan sesuaikan koneksi database: `cp .env.example .env`
 4. Jalankan server: `npm run dev`
 
-### 2. Persiapan Web Admin
-1. Masuk ke folder web: `cd inkai-web-admin`
-2. Install dependensi: `npm install`
-3. Jalankan dashboard: `npm run dev`
-
-### 3. Persiapan Mobile App
+### 2. Persiapan Mobile App
 1. Pastikan **Flutter SDK** sudah terinstall di sistem Anda.
 2. Masuk ke folder mobile: `cd inkai-mobile`
 3. Ambil dependensi: `flutter pub get`

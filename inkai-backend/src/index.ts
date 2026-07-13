@@ -63,7 +63,6 @@ app.use(helmet({
 
 const ALLOWED_ORIGINS = [
   'https://inkai-mobile-web.vercel.app',
-  'https://inkai-web-admin.vercel.app',
   'https://inkai-ecosystem.vercel.app',
   ...(process.env.NODE_ENV === 'development' ? ['http://localhost:3000', 'http://localhost:3001'] : []),
 ];
