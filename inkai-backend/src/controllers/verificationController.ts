@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import { createNotification } from '../utils/notification';
+import { logSecurityEvent } from '../utils/securityLogger';
 
 /** RANK_PROMOTION: legacy plain rank string atau JSON `{ title, date?, location? }` */
 function parseRankPromotionData(raw: string): { title: string; eventDate: Date; location: string | null } {
@@ -275,6 +276,12 @@ export const processClaim = async (req: any, res: Response) => {
         type: approved ? 'SUCCESS' : 'WARNING',
       });
     }
+
+    logSecurityEvent(req, 'ADMIN_ACTION', {
+      userId: req.user?.userId || req.user?.id,
+      targetId: id,
+      details: `Memproses pengajuan verifikasi ${verification.type} untuk anggota ${verification.member.fullName} dengan status: ${status}. Catatan: ${adminNotes || '-'}`,
+    });
 
     res.json({ status: 'success', message: `Claim ${status.toLowerCase()} successfully` });
   } catch (error: any) {

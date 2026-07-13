@@ -93,6 +93,7 @@ model User {
   conversations     Conversation[] @relation("UserConversations")
   roles             Role[]         @relation("UserRoles")
   events            Event[]        @relation("UserEvents")
+  auditLogs         AuditLog[]
 }
 
 model Role {
@@ -357,4 +358,19 @@ model RankFeeTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  email     String?
+  action    String
+  details   String?  @db.Text
+  ip        String?
+  userAgent String?  @db.Text
+  location  String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
 

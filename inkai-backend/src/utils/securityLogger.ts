@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import { captureSafeException } from './sentry';
+import prisma from './prisma';
 
 export type SecurityEventType =
   | 'LOGIN_SUCCESS'
@@ -55,6 +56,7 @@ export function logSecurityEvent(req: Request, type: SecurityEventType, opts: {
   targetId?: string;
   details?: string;
   severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  email?: string;
 } = {}): void {
   const client = extractClientInfo(req);
   const severity = opts.severity || inferSeverity(type);
@@ -74,6 +76,29 @@ export function logSecurityEvent(req: Request, type: SecurityEventType, opts: {
 
   // Structured JSON log — easy to parse by log aggregators (Vercel, Datadog, etc.)
   console.log(JSON.stringify({ _security: true, ...event }));
+
+  // Extracted email helper
+  let emailToSave = opts.email;
+  if (!emailToSave && opts.details) {
+    const emailMatch = opts.details.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) {
+      emailToSave = emailMatch[0];
+    }
+  }
+
+  // Save to Database
+  prisma.auditLog.create({
+    data: {
+      userId: opts.userId || null,
+      email: emailToSave || null,
+      action: type,
+      details: opts.details || '',
+      ip: client.ip,
+      userAgent: client.userAgent,
+    }
+  }).catch((err) => {
+    console.error('Failed to create audit log in DB:', err);
+  });
 
   // Send critical events to Sentry
   if (severity === 'CRITICAL' || severity === 'HIGH') {

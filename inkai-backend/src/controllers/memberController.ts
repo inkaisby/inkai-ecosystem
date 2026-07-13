@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { notifyAdmins, createNotification } from '../utils/notification';
 import { supabase } from '../utils/supabase';
 import path from 'path';
+import { logSecurityEvent } from '../utils/securityLogger';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -572,6 +573,12 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       branchId: newMember.dojo.branchId
     });
 
+    logSecurityEvent(req, 'MEMBER_CREATED', {
+      userId: req.user?.userId || req.user?.id,
+      targetId: newMember.id,
+      details: `Membuat anggota baru: ${newMember.fullName} (NIA: ${newMember.nia || 'N/A'}) di Dojo ${newMember.dojo.name}`,
+    });
+
     res.status(201).json({ status: 'success', data: newMember });
   } catch (error: any) {
     console.error('[MemberController] Error:', error);
@@ -791,6 +798,12 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
         });
       }
     }
+
+    logSecurityEvent(req, 'ADMIN_ACTION', {
+      userId: req.user?.userId || req.user?.id,
+      targetId: id,
+      details: `Memperbarui data anggota: ${updatedMember.fullName} (NIA: ${updatedMember.nia || 'N/A'})`,
+    });
 
     res.json({ status: 'success', data: updatedMember });
   } catch (error: any) {
@@ -1240,10 +1253,19 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     
+    const member = await prisma.member.findUnique({ where: { id } });
+    const memberName = member ? member.fullName : id;
+
     // Soft delete
     await prisma.member.update({
       where: { id },
       data: { isDeleted: true }
+    });
+
+    logSecurityEvent(req, 'MEMBER_DELETED', {
+      userId: req.user?.userId || req.user?.id,
+      targetId: id,
+      details: `Menghapus anggota: ${memberName}`,
     });
 
     res.json({ status: 'success', message: 'Member deleted successfully' });

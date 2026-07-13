@@ -198,6 +198,10 @@ export const api = Object.assign(apiInstance, {
     getStats: () => apiInstance.get('/dashboard/stats').then(res => res.data),
     getRecentActivities: () => apiInstance.get('/dashboard/recent-activities').then(res => res.data),
   },
+  auditLogs: {
+    getAll: (params?: { page?: number; limit?: number; search?: string; action?: string }) =>
+      apiInstance.get('/audit-logs', { params }).then((res) => res.data),
+  },
   events: {
     getAll: () => apiInstance.get('/events').then(res => res.data),
     getDetail: (id: string) => apiInstance.get(`/events/${id}`).then(res => res.data),

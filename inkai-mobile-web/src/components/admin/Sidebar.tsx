@@ -13,7 +13,8 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  ClipboardList
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,6 +31,7 @@ const menuItems = [
   { icon: Store, label: 'Store', href: '#', slug: 'store' },
   { icon: BookOpen, label: 'Library', href: '#', slug: 'library' },
   { icon: MessageSquare, label: 'Broadcast', href: '/admin/broadcast', slug: 'broadcast' },
+  { icon: ClipboardList, label: 'Audit Log', href: '/admin/audit-logs', slug: 'audit-logs' },
   { icon: Settings, label: 'Settings', href: '/admin/settings', slug: 'settings' },
 ];
 
