@@ -26,6 +26,14 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
         { details: { contains: search, mode: 'insensitive' } },
         { ip: { contains: search, mode: 'insensitive' } },
         { userAgent: { contains: search, mode: 'insensitive' } },
+        {
+          user: {
+            OR: [
+              { email: { contains: search, mode: 'insensitive' } },
+              { fullName: { contains: search, mode: 'insensitive' } },
+            ]
+          }
+        }
       ];
     }
 
