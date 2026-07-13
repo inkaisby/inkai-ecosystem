@@ -128,14 +128,24 @@ button {
   display: flex;
   justify-content: center;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--shell-outer-bg);
   overflow-x: hidden;
+}
+
+/* Allow scrolling and auto-height inside iframes */
+@media (max-width: 480px), (display-mode: standalone), (hover: none) {
+  html, body {
+    height: auto;
+    min-height: 100%;
+  }
 }
 
 .mobile-content {
   width: 100%;
   max-width: 480px;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--background-dark);
   position: relative;
   box-shadow: 0 0 80px rgba(0, 0, 0, 0.8);
