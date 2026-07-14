@@ -21,6 +21,7 @@ import memberGuideRoutes from './routes/memberGuideRoutes';
 import navTabRoutes from './routes/navTabRoutes';
 import newsCarouselRoutes from './routes/newsCarouselRoutes';
 import auditRoutes from './routes/auditRoutes';
+import settingsRoutes from './routes/settingsRoutes';
 import { createServer } from 'http';
 import prisma from './utils/prisma';
 import { initSentryBackend, captureSafeException } from './utils/sentry';
@@ -61,17 +62,34 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
-const ALLOWED_ORIGINS = [
+const DEFAULT_ALLOWED_ORIGINS = [
   'https://inkai-mobile-web.vercel.app',
   'https://inkai-ecosystem.vercel.app',
-  ...(process.env.NODE_ENV === 'development' ? ['http://localhost:3000', 'http://localhost:3001'] : []),
+  'https://inkai-sby.vercel.app',
+  'https://inkai-jatim.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
 ];
+
+function parseAllowedOrigins(): string[] {
+  const fromEnv = process.env.CORS_ALLOWED_ORIGINS?.trim();
+  if (!fromEnv) return DEFAULT_ALLOWED_ORIGINS;
+  const parsed = fromEnv
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  return parsed.length > 0 ? parsed : DEFAULT_ALLOWED_ORIGINS;
+}
+
+const ALLOWED_ORIGINS = parseAllowedOrigins();
+
 app.use(cors({
   origin: (origin, callback) => {
+    // Native/mobile clients and same-origin server calls may omit Origin.
     if (!origin || ALLOWED_ORIGINS.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('CORS not allowed'));
+      callback(new Error(`CORS not allowed: ${origin}`));
     }
   },
   credentials: true,
@@ -112,6 +130,7 @@ app.use('/v1/chat', chatRoutes);
 app.use('/v1/nav-tabs', navTabRoutes);
 app.use('/v1/news-carousel', newsCarouselRoutes);
 app.use('/v1/audit-logs', auditRoutes);
+app.use('/v1/settings', settingsRoutes);
 app.use('/v1', memberGuideRoutes);
 
 // Health Check

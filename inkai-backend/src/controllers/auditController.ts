@@ -71,3 +71,33 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
+
+export const createAuditLog = async (req: AuthRequest, res: Response) => {
+  try {
+    const { action, details, ip, userAgent } = req.body as {
+      action?: string;
+      details?: string;
+      ip?: string;
+      userAgent?: string;
+    };
+    if (!action?.trim()) {
+      return res.status(400).json({ status: 'error', message: 'action wajib' });
+    }
+
+    const log = await prisma.auditLog.create({
+      data: {
+        userId: req.user?.userId,
+        email: req.user?.email,
+        action: action.trim(),
+        details: details?.trim() || undefined,
+        ip: ip?.trim() || undefined,
+        userAgent: userAgent?.trim() || undefined,
+      },
+    });
+
+    return res.status(201).json({ status: 'success', data: log });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return res.status(500).json({ status: 'error', message });
+  }
+};

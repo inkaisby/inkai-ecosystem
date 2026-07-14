@@ -1,17 +1,17 @@
 import { Router } from 'express';
 import { getProvinces, getBranches, getDojos, getDojo, searchDojos, createProvince, updateProvince, createBranch, updateBranch, createDojo, updateDojo } from '../controllers/orgController';
-import { authenticate, authorize } from '../middleware/authMiddleware';
+import { authenticate, authorize, optionalAuthenticate } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// Publicly read organizational structure
-router.get('/provinces', getProvinces);
-router.get('/branches/all', getBranches);
-router.get('/branches/:provinceId', getBranches);
-router.get('/dojos/all', getDojos);
-router.get('/dojos/search', searchDojos);
-router.get('/dojos/:branchId', getDojos);
-router.get('/dojo/:id', getDojo);
+// Publicly read organizational structure (optional auth scopes results)
+router.get('/provinces', optionalAuthenticate, getProvinces);
+router.get('/branches/all', optionalAuthenticate, getBranches);
+router.get('/branches/:provinceId', optionalAuthenticate, getBranches);
+router.get('/dojos/all', optionalAuthenticate, getDojos);
+router.get('/dojos/search', optionalAuthenticate, searchDojos);
+router.get('/dojos/:branchId', optionalAuthenticate, getDojos);
+router.get('/dojo/:id', optionalAuthenticate, getDojo);
 
 // Mutation endpoints must be fully protected
 const adminRoles = ['ADMINISTRATOR', 'ADMIN_PUSAT'];

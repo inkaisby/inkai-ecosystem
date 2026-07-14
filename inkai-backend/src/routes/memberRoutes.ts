@@ -30,6 +30,7 @@ router.get('/me/children', authenticate, memberController.getMyChildren);
 router.post('/me/children', authenticate, memberController.addChildMember);
 router.post('/upload-document', authenticate, uploadDoc.single('document'), memberController.uploadDocument);
 router.patch('/:memberId/ranks/:rankId', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH']), memberController.updateMemberRank);
+router.patch('/:id/registration', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), memberController.processMemberRegistration);
 router.post('/bulk', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT']), memberController.bulkCreateMembers);
 
 // 2. Collection routes

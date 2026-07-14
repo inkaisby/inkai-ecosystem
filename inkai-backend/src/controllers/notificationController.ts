@@ -18,11 +18,25 @@ export const getMyNotifications = async (req: any, res: Response) => {
 export const markAsRead = async (req: any, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.notification.update({
-      where: { id },
-      data: { isRead: true }
+    await prisma.notification.updateMany({
+      where: { id, userId: req.user.userId },
+      data: { isRead: true },
     });
     res.json({ status: 'success', message: 'Notification marked as read' });
+  } catch (error: any) {
+    console.error('[NotificationController] Error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const markAllAsRead = async (req: any, res: Response) => {
+  try {
+    const userId = req.user.userId;
+    await prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
+    res.json({ status: 'success', message: 'All notifications marked as read' });
   } catch (error: any) {
     console.error('[NotificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
@@ -33,15 +47,43 @@ export const clearReadNotifications = async (req: any, res: Response) => {
   try {
     const userId = req.user.userId;
     await prisma.notification.deleteMany({
-      where: { 
+      where: {
         userId,
-        isRead: true
-      }
+        isRead: true,
+      },
     });
     res.json({ status: 'success', message: 'Read notifications cleared' });
   } catch (error: any) {
     console.error('[NotificationController] Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const createNotification = async (req: any, res: Response) => {
+  try {
+    const { userId, title, content, type } = req.body as {
+      userId?: string;
+      title?: string;
+      content?: string;
+      type?: string;
+    };
+    if (!userId || !title?.trim() || !content?.trim()) {
+      return res.status(400).json({ status: 'error', message: 'userId, title, dan content wajib' });
+    }
+
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        title: title.trim(),
+        content: content.trim(),
+        type: type || 'INFO',
+      },
+    });
+
+    return res.status(201).json({ status: 'success', data: notification });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return res.status(500).json({ status: 'error', message });
   }
 };
 

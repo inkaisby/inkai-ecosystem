@@ -235,6 +235,23 @@ export const getMemberDetail = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ status: 'error', message: 'Member not found' });
     }
 
+    const roles = jwtRoleNames(req.user);
+    const isSuper = roles.some((r) => r === 'ADMINISTRATOR' || r === 'ADMIN_PUSAT');
+    if (
+      req.user &&
+      !isSuper &&
+      member.dojo &&
+      !adminScopedToMember(req.user, {
+        dojoId: member.dojoId,
+        dojo: {
+          branchId: member.dojo.branchId,
+          branch: { provinceId: member.dojo.branch.provinceId },
+        },
+      })
+    ) {
+      return res.status(403).json({ status: 'error', message: 'Forbidden' });
+    }
+
     res.json({ status: 'success', data: member });
   } catch (error: any) {
     console.error('[MemberController] Error:', error);
@@ -637,10 +654,19 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
     const updatedMember = await prisma.$transaction(async (tx) => {
       const currentMember = await tx.member.findUnique({ 
         where: { id },
-        include: { user: true }
+        include: {
+          user: true,
+          dojo: { include: { branch: true } },
+        },
       });
 
       if (!currentMember) throw new Error('Member not found');
+
+      const roles = jwtRoleNames(req.user);
+      const isSuper = roles.some((r) => r === 'ADMINISTRATOR' || r === 'ADMIN_PUSAT');
+      if (!isSuper && !adminScopedToMember(req.user, currentMember)) {
+        throw new Error('Forbidden: anggota di luar wilayah administrasi Anda');
+      }
 
       priorForNotify = {
         nia: currentMember.nia ?? null,
@@ -1246,6 +1272,97 @@ export const provisionMemberLogin = async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     console.error('[provisionMemberLogin]', error);
     res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
+  }
+};
+
+/** Approve/reject pendaftaran anggota baru (inkai-sby / inkai-jatim). */
+export const processMemberRegistration = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { action, nia } = req.body as { action?: string; nia?: string };
+
+    if (action !== 'approve' && action !== 'reject') {
+      return res.status(400).json({ status: 'error', message: 'action harus approve atau reject' });
+    }
+
+    const member = await prisma.member.findUnique({
+      where: { id, isDeleted: false },
+      include: {
+        user: true,
+        dojo: { include: { branch: true } },
+      },
+    });
+
+    if (!member) {
+      return res.status(404).json({ status: 'error', message: 'Anggota tidak ditemukan' });
+    }
+
+    const roles = jwtRoleNames(req.user);
+    const isSuper = roles.some((r) => r === 'ADMINISTRATOR' || r === 'ADMIN_PUSAT');
+    if (!isSuper && !adminScopedToMember(req.user, member)) {
+      return res.status(403).json({ status: 'error', message: 'Forbidden: di luar wilayah administrasi Anda' });
+    }
+
+    if (member.status !== 'PENDING') {
+      return res.status(400).json({ status: 'error', message: 'Anggota tidak dalam status PENDING' });
+    }
+
+    if (action === 'approve' && nia) {
+      const finalNia = String(nia).trim();
+      const dup = await prisma.member.findFirst({
+        where: { nia: finalNia, NOT: { id } },
+      });
+      if (dup) {
+        return res.status(400).json({ status: 'error', message: 'NIA sudah digunakan' });
+      }
+    }
+
+    const newStatus = action === 'approve' ? 'Active' : 'REJECTED';
+
+    await prisma.$transaction(async (tx) => {
+      await tx.member.update({
+        where: { id },
+        data: {
+          status: newStatus,
+          ...(action === 'approve' && nia ? { nia: String(nia).trim() } : {}),
+        },
+      });
+
+      if (member.userId) {
+        await tx.user.update({
+          where: { id: member.userId },
+          data: { isActive: action === 'approve' },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: member.userId,
+            title: action === 'approve' ? 'Pendaftaran Disetujui' : 'Pendaftaran Ditolak',
+            content:
+              action === 'approve'
+                ? 'Selamat! Pendaftaran Anda telah disetujui. Silakan login ke dashboard.'
+                : 'Pendaftaran Anda belum dapat disetujui. Hubungi admin dojo/cabang.',
+            type: action === 'approve' ? 'SUCCESS' : 'WARNING',
+          },
+        });
+      }
+    });
+
+    logSecurityEvent(req, 'ADMIN_ACTION', {
+      userId: req.user?.userId,
+      targetId: id,
+      details: `${action === 'approve' ? 'MEMBER_APPROVE' : 'MEMBER_REJECT'}: ${newStatus} member ${member.fullName}`,
+    });
+
+    res.json({
+      status: 'success',
+      data: { id, status: newStatus },
+      message: action === 'approve' ? 'Anggota berhasil disetujui' : 'Anggota berhasil ditolak',
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    const status = msg.includes('Forbidden') ? 403 : 500;
+    res.status(status).json({ status: 'error', message: msg });
   }
 };
 

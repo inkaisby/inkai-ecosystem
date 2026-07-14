@@ -5,8 +5,10 @@ import { authenticate, authorize } from '../middleware/authMiddleware';
 const router = Router();
 
 router.get('/my', authenticate, notificationController.getMyNotifications);
+router.patch('/read-all', authenticate, notificationController.markAllAsRead);
 router.patch('/:id/read', authenticate, notificationController.markAsRead);
 router.delete('/clear-read', authenticate, notificationController.clearReadNotifications);
+router.post('/', authenticate, authorize(['ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO', 'ADMINISTRATOR', 'ADMIN']), notificationController.createNotification);
 router.post('/broadcast', authenticate, authorize(['ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO', 'ADMINISTRATOR', 'ADMIN']), notificationController.broadcastNotification);
 
 export default router;

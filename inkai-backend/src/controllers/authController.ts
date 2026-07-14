@@ -80,6 +80,9 @@ function buildSessionUserResponse(user: any, permissionSlugs: string[]) {
     const m = user.member;
     return {
       ...m,
+      id: user.id,
+      userId: user.id,
+      memberId: m.id,
       email: user.email,
       photoUrl: user.photoUrl,
       phoneNumber: user.phoneNumber,
@@ -96,6 +99,8 @@ function buildSessionUserResponse(user: any, permissionSlugs: string[]) {
   }
 
   return {
+    id: user.id,
+    userId: user.id,
     fullName: user.fullName,
     email: user.email,
     photoUrl: user.photoUrl,
