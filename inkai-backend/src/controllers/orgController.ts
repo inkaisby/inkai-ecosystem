@@ -449,10 +449,25 @@ export const updateBranch = async (req: Request, res: Response) => {
 export const updateDojo = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, adminEmail, adminPassword, bankName, bankAccountNumber, bankAccountName } = req.body;
+    const { name, contactPerson, headName, address, kecamatan, tempatLatihan, phoneNumber, schedule, adminEmail, adminPassword, bankName, bankAccountNumber, bankAccountName, latitude, longitude, geofenceRadius } = req.body;
     const dojo = await prisma.dojo.update({
       where: { id },
-      data: { name, contactPerson, headName: headName || contactPerson, address, kecamatan, tempatLatihan, phoneNumber, schedule, bankName, bankAccountNumber, bankAccountName }
+      data: {
+        name,
+        contactPerson,
+        headName: headName || contactPerson,
+        address,
+        kecamatan,
+        tempatLatihan,
+        phoneNumber,
+        schedule,
+        bankName,
+        bankAccountNumber,
+        bankAccountName,
+        ...(latitude !== undefined ? { latitude: latitude === null || latitude === '' ? null : Number(latitude) } : {}),
+        ...(longitude !== undefined ? { longitude: longitude === null || longitude === '' ? null : Number(longitude) } : {}),
+        ...(geofenceRadius !== undefined ? { geofenceRadius: Number(geofenceRadius) || 50 } : {}),
+      }
     });
 
     // Invalidate cache
