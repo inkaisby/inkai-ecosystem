@@ -261,7 +261,7 @@ export const getMemberDetail = async (req: AuthRequest, res: Response) => {
 
 export const getAllMembers = async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 10, search = '', dojoId, status, currentRank } = req.query;
+    const { page = 1, limit = 10, search = '', dojoId, branchId, status, currentRank } = req.query;
     const pageNum = Number(page);
     const pageSafe =
       typeof pageNum === 'number' && Number.isFinite(pageNum) && pageNum > 0
@@ -272,20 +272,38 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
 
     const where: any = {
       isDeleted: false,
-      OR: [
-        { fullName: { contains: String(search), mode: 'insensitive' } },
-        { nia: { contains: String(search), mode: 'insensitive' } },
-        { nik: { contains: String(search), mode: 'insensitive' } },
-        { user: { email: { contains: String(search), mode: 'insensitive' } } }
-      ]
     };
+
+    const searchText = String(search || '').trim();
+    if (searchText) {
+      where.OR = [
+        { fullName: { contains: searchText, mode: 'insensitive' } },
+        { nia: { contains: searchText, mode: 'insensitive' } },
+        { nik: { contains: searchText, mode: 'insensitive' } },
+        { user: { email: { contains: searchText, mode: 'insensitive' } } }
+      ];
+    }
 
     if (dojoId) {
       where.dojoId = String(dojoId);
     }
 
+    if (branchId) {
+      where.dojo = { ...(where.dojo || {}), branchId: String(branchId) };
+    }
+
     if (status) {
-      where.status = String(status);
+      const raw = String(status).trim();
+      const normalized = raw.toUpperCase();
+      if (normalized === 'ACTIVE' || normalized === 'AKTIF') {
+        where.status = { in: ['Active', 'ACTIVE', 'AKTIF'] };
+      } else if (normalized === 'PENDING') {
+        where.status = { in: ['PENDING', 'Pending'] };
+      } else if (normalized === 'REJECTED') {
+        where.status = { in: ['REJECTED', 'Rejected'] };
+      } else {
+        where.status = raw;
+      }
     }
 
     if (currentRank) {
@@ -298,12 +316,15 @@ export const getAllMembers = async (req: AuthRequest, res: Response) => {
         where.dojoId = String(req.user.managedDojoId);
       } else if (req.user.managedProvinceId) {
         where.dojo = {
+          ...(where.dojo || {}),
           branch: {
+            ...(where.dojo?.branch || {}),
             provinceId: req.user.managedProvinceId,
           },
         };
       } else if (req.user.managedBranchId) {
         where.dojo = {
+          ...(where.dojo || {}),
           branchId: req.user.managedBranchId,
         };
       }

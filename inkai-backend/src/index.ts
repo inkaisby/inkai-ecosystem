@@ -67,6 +67,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'https://inkai-ecosystem.vercel.app',
   'https://inkai-sby.vercel.app',
   'https://inkai-jatim.vercel.app',
+  'https://inkai-admin.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
 ];

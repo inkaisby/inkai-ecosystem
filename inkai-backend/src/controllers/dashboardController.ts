@@ -16,38 +16,49 @@ export const getStats = async (req: AuthRequest, res: Response) => {
       if (req.user.managedProvinceId) {
         where.dojo = { branch: { provinceId: req.user.managedProvinceId } };
         dojoWhere.branch = { provinceId: req.user.managedProvinceId };
+        branchWhere.provinceId = req.user.managedProvinceId;
         provinceWhere.id = req.user.managedProvinceId;
       } else if (req.user.managedBranchId) {
         where.dojo = { branchId: req.user.managedBranchId };
         dojoWhere.branchId = req.user.managedBranchId;
-        // For branch admin, provinces might not be directly relevant, 
-        // but we can show the parent province if needed.
+        branchWhere.id = req.user.managedBranchId;
       } else if (req.user.managedDojoId) {
         where.dojoId = req.user.managedDojoId;
         dojoWhere.id = req.user.managedDojoId;
+        branchWhere.dojos = { some: { id: req.user.managedDojoId } };
       }
     }
 
-    const totalMembers = await prisma.member.count({ where });
-    const totalDojos = await prisma.dojo.count({ where: dojoWhere });
-    const totalBranches = await prisma.branch.count({ where: branchWhere });
-    const totalProvinces = await prisma.province.count({ where: provinceWhere });
-    
-    // Summary of monthly iuran
-    const iuranSum = await prisma.billing.aggregate({
-      where: { 
-        type: 'MONTHLY_IURAN', 
-        status: 'PAID',
-        member: where
-      },
-      _sum: { amount: true }
-    });
+    const verificationWhere: any = { status: 'PENDING' };
+    if (req.user?.managedProvinceId) {
+      verificationWhere.member = { dojo: { branch: { provinceId: req.user.managedProvinceId } } };
+    } else if (req.user?.managedBranchId) {
+      verificationWhere.member = { dojo: { branchId: req.user.managedBranchId } };
+    } else if (req.user?.managedDojoId) {
+      verificationWhere.member = { dojoId: req.user.managedDojoId };
+    }
 
-    const membersByRank = await prisma.member.groupBy({
-      by: ['dojoId', 'currentRank'],
-      where,
-      _count: { id: true },
-    });
+    const [totalMembers, totalDojos, totalBranches, totalProvinces, iuranSum, pendingVerifications, membersByRank] =
+      await Promise.all([
+        prisma.member.count({ where }),
+        prisma.dojo.count({ where: dojoWhere }),
+        prisma.branch.count({ where: branchWhere }),
+        prisma.province.count({ where: provinceWhere }),
+        prisma.billing.aggregate({
+          where: {
+            type: 'MONTHLY_IURAN',
+            status: 'PAID',
+            member: where,
+          },
+          _sum: { amount: true },
+        }),
+        prisma.verification.count({ where: verificationWhere }),
+        prisma.member.groupBy({
+          by: ['dojoId', 'currentRank'],
+          where,
+          _count: { id: true },
+        }),
+      ]);
 
     const dojosInStats = await prisma.dojo.findMany({
       where: { id: { in: membersByRank.map(m => m.dojoId).filter(id => id !== null) as string[] } },
@@ -67,8 +78,6 @@ export const getStats = async (req: AuthRequest, res: Response) => {
       const rank = (m.currentRank || 'Unknown').trim().toUpperCase();
       stat.kyuBreakdown[rank] = (stat.kyuBreakdown[rank] || 0) + m._count.id;
     }
-
-    const pendingVerifications = 0; 
 
     res.json({
       status: 'success',
