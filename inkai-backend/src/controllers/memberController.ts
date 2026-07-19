@@ -510,9 +510,13 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       fullName, 
       dojoId, 
       gender, 
-      birthDate, 
+      birthDate,
+      birthPlace,
+      address,
+      phoneNumber,
       currentRank, 
       nia,
+      nik,
       email,
       password,
       status = 'Active'
@@ -527,8 +531,11 @@ export const createMember = async (req: AuthRequest, res: Response) => {
 
     let effectiveRank = currentRank || 'Putih';
 
-    // Convert empty NIA to null for uniqueness
-    let finalNia = nia && nia.trim() !== '' ? nia.trim() : null;
+    // Convert empty NIA/NIK to null for uniqueness (banyak anggota boleh tanpa NIK)
+    let finalNia = nia && String(nia).trim() !== '' ? String(nia).trim() : null;
+    const nikTrim = nik && String(nik).trim() !== '' ? String(nik).trim() : null;
+    let finalNik =
+      nikTrim && /^\d{16}$/.test(nikTrim) ? nikTrim : null;
 
     if (!canSetMemberNiaAndRank(adminRoles)) {
       finalNia = null;
@@ -540,6 +547,13 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       const existingMember = await prisma.member.findUnique({ where: { nia: finalNia } });
       if (existingMember) {
         return res.status(400).json({ message: 'NIA sudah digunakan oleh anggota lain' });
+      }
+    }
+
+    if (finalNik) {
+      const existingNik = await prisma.member.findUnique({ where: { nik: finalNik } });
+      if (existingNik) {
+        return res.status(400).json({ message: 'NIK sudah digunakan oleh anggota lain' });
       }
     }
 
@@ -561,6 +575,7 @@ export const createMember = async (req: AuthRequest, res: Response) => {
             email,
             passwordHash: hashedPassword,
             fullName,
+            phoneNumber: phoneNumber || undefined,
             roles: {
               connectOrCreate: {
                 where: { name: 'MEMBER' },
@@ -576,10 +591,13 @@ export const createMember = async (req: AuthRequest, res: Response) => {
         data: {
           fullName,
           dojoId,
-          gender,
+          gender: gender || undefined,
+          birthPlace: birthPlace ? String(birthPlace).trim() || undefined : undefined,
+          address: address ? String(address).trim() || undefined : undefined,
           birthDate: birthDate ? new Date(birthDate) : undefined,
           currentRank: effectiveRank,
           nia: finalNia,
+          nik: finalNik,
           status,
           userId
         },
@@ -638,7 +656,10 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       password,
       status,
       allowEventWithoutDues,
-      monthlyDuesAmount
+      monthlyDuesAmount,
+      birthCertificateUrl,
+      bpjsCardUrl,
+      bpjsCardNumber,
     } = req.body;
 
     const adminRoles = jwtRoleNames(req.user);
@@ -772,6 +793,24 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
             amount: Number(monthlyDuesAmount)
           }
         });
+      }
+      if (birthCertificateUrl !== undefined) {
+        memberUpdateData.birthCertificateUrl =
+          birthCertificateUrl && String(birthCertificateUrl).trim() !== ''
+            ? String(birthCertificateUrl).trim()
+            : null;
+      }
+      if (bpjsCardUrl !== undefined) {
+        memberUpdateData.bpjsCardUrl =
+          bpjsCardUrl && String(bpjsCardUrl).trim() !== ''
+            ? String(bpjsCardUrl).trim()
+            : null;
+      }
+      if (bpjsCardNumber !== undefined) {
+        memberUpdateData.bpjsCardNumber =
+          bpjsCardNumber && String(bpjsCardNumber).trim() !== ''
+            ? String(bpjsCardNumber).replace(/\s+/g, '').trim()
+            : null;
       }
       if (userId !== currentMember.userId) memberUpdateData.userId = userId;
 
