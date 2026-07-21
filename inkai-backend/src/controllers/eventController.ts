@@ -521,12 +521,13 @@ export const registerForEvent = async (req: Request, res: Response) => {
       });
     }
 
-    /** Pendaftaran mandiri selalu mencatat pemahaman ketua dojo/ranting atas anggota asal mereka. */
+    /** Hanya admin ranting anggota + cabang — jangan fan-out ke semua user. */
     await notifyAdmins({
       title: 'Anggota mendaftar kegiatan mandiri',
       content: `${registration.member.fullName} (${registration.member.dojo.name}) mendaftar sendiri untuk "${registration.event.title}"${registration.category ? ` — ${registration.category.name}` : ''}.`,
       type: 'INFO',
       dojoId: registration.member.dojoId,
+      branchId: registration.member.dojo.branchId || undefined,
     });
 
     res.status(201).json({ status: 'success', data: registration });

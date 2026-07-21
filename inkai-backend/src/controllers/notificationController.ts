@@ -1,12 +1,31 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 
+const MAX_LIMIT = 100;
+
 export const getMyNotifications = async (req: any, res: Response) => {
   try {
     const userId = req.user.userId;
+    const rawLimit = Number(req.query?.limit);
+    const take =
+      Number.isFinite(rawLimit) && rawLimit > 0
+        ? Math.min(Math.floor(rawLimit), MAX_LIMIT)
+        : MAX_LIMIT;
+
     const notifications = await prisma.notification.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        type: true,
+        audience: true,
+        userId: true,
+        isRead: true,
+        createdAt: true,
+      },
     });
     res.json({ status: 'success', data: notifications });
   } catch (error: any) {
@@ -61,15 +80,21 @@ export const clearReadNotifications = async (req: any, res: Response) => {
 
 export const createNotification = async (req: any, res: Response) => {
   try {
-    const { userId, title, content, type } = req.body as {
+    const { userId, title, content, type, audience } = req.body as {
       userId?: string;
       title?: string;
       content?: string;
       type?: string;
+      audience?: string;
     };
     if (!userId || !title?.trim() || !content?.trim()) {
       return res.status(400).json({ status: 'error', message: 'userId, title, dan content wajib' });
     }
+
+    const audienceNorm =
+      audience === 'ADMIN' || audience === 'BROADCAST' || audience === 'MEMBER'
+        ? audience
+        : 'MEMBER';
 
     const notification = await prisma.notification.create({
       data: {
@@ -77,6 +102,7 @@ export const createNotification = async (req: any, res: Response) => {
         title: title.trim(),
         content: content.trim(),
         type: type || 'INFO',
+        audience: audienceNorm,
       },
     });
 
@@ -92,9 +118,12 @@ export const broadcastNotification = async (req: any, res: Response) => {
     const { title, content, type, targetRole, dojoId, branchId } = req.body;
     const admin = req.user;
 
-    // Build filter for recipients
-    const where: any = { isActive: true };
-    
+    // Build filter for recipients — always scoped; never all users.
+    const where: any = {
+      isActive: true,
+      isDeleted: false,
+    };
+
     // 1. Apply Regional Constraints from the Sender (Security Policy)
     if (admin.managedProvinceId) {
       where.member = { dojo: { branch: { provinceId: admin.managedProvinceId } } };
@@ -102,6 +131,11 @@ export const broadcastNotification = async (req: any, res: Response) => {
       where.member = { dojo: { branchId: admin.managedBranchId } };
     } else if (admin.managedDojoId) {
       where.member = { dojoId: admin.managedDojoId };
+    } else if (!targetRole && !dojoId && !branchId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Broadcast wajib punya scope wilayah atau targetRole',
+      });
     }
 
     // 2. Apply optional filters from Request Body (if within scope)
@@ -111,28 +145,33 @@ export const broadcastNotification = async (req: any, res: Response) => {
     if (dojoId && !admin.managedBranchId && !admin.managedProvinceId) {
       where.member = { dojoId };
     }
+    if (branchId && !admin.managedProvinceId) {
+      where.member = { ...(where.member || {}), dojo: { branchId } };
+    }
 
-    const users = await prisma.user.findMany({ 
+    const users = await prisma.user.findMany({
       where,
-      select: { id: true } 
+      select: { id: true },
+      take: 5000,
     });
 
     if (users.length === 0) {
       return res.status(404).json({ status: 'error', message: 'Tidak ada target user yang ditemukan untuk filter ini.' });
     }
-    
+
     await prisma.notification.createMany({
-      data: users.map(user => ({
+      data: users.map((user) => ({
         title,
         content,
         type: type || 'INFO',
-        userId: user.id
-      }))
+        userId: user.id,
+        audience: 'BROADCAST',
+      })),
     });
 
-    res.json({ 
-      status: 'success', 
-      message: `Broadcast berhasil dikirim ke ${users.length} pengguna.` 
+    res.json({
+      status: 'success',
+      message: `Broadcast berhasil dikirim ke ${users.length} pengguna.`,
     });
   } catch (error: any) {
     console.error('[NotificationController] Error:', error);
