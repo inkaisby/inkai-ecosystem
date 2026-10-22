@@ -601,26 +601,51 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     logSecurityEvent(req, 'PASSWORD_RESET_REQUESTED', { userId: user.id });
 
-    const resetLink = `inkai://reset-password?token=${token}`;
-    console.log(`\n📧 [RESET PASSWORD] Link untuk ${user.email}:\n${resetLink}\n`);
+    const reqOrigin =
+      (req.headers.origin as string) ||
+      (req.headers.referer as string) ||
+      process.env.APP_URL ||
+      'http://localhost:3000';
+    const baseUrl = reqOrigin.replace(/\/$/, '');
+    const resetLink = `${baseUrl}/?token=${token}`;
+
+    console.log(`\n🔑 [RESET PASSWORD] Token untuk ${user.email}: ${token}`);
+    console.log(`🔗 [RESET LINK]: ${resetLink}\n`);
+
+    let waSent = false;
+    let waLink: string | null = null;
 
     if (user.phoneNumber) {
+      let digits = user.phoneNumber.replace(/\D/g, '');
+      if (digits.startsWith('0')) {
+        digits = '62' + digits.substring(1);
+      } else if (!digits.startsWith('62')) {
+        digits = '62' + digits;
+      }
+
+      const waMsg = `Halo ${user.fullName || 'Anggota'},\n\nAnda baru saja meminta pemulihan kata sandi akun K-Majestigers.\n\n🔗 Tautan Reset Langsung:\n${resetLink}\n\n🔑 Token Pemulihan:\n${token}\n\nJika Anda tidak merasa memintanya, abaikan pesan ini.\n\nSalam,\nK-Majestigers`;
+      waLink = `https://wa.me/${digits}?text=${encodeURIComponent(waMsg)}`;
+
       try {
         const fonnteToken = process.env.FONNTE_TOKEN;
         if (!fonnteToken) {
-          console.error('[ForgotPassword] FONNTE_TOKEN not set');
+          console.warn('[ForgotPassword] FONNTE_TOKEN belum dikonfigurasi di .env. Pesan WhatsApp otomatis dilewati.');
         } else {
-          await fetch("https://api.fonnte.com/send", {
+          const fonnteRes = await fetch("https://api.fonnte.com/send", {
             method: "POST",
             headers: {
               Authorization: fonnteToken,
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              target: user.phoneNumber,
-              message: `Halo ${user.fullName || 'Anggota'},\n\nAnda baru saja meminta pemulihan kata sandi untuk akun Sistem Informasi INKAI.\n\nSilakan gunakan tautan berikut untuk mengatur ulang kata sandi Anda:\n${resetLink}\n\nJika Anda tidak merasa memintanya, abaikan pesan ini.\n\nSalam,\nSistem Informasi INKAI`
+              target: digits,
+              message: waMsg
             })
           });
+          const fonnteData: any = await fonnteRes.json().catch(() => null);
+          if (fonnteData?.status) {
+            waSent = true;
+          }
         }
       } catch (err) {
         console.error("Gagal mengirim WhatsApp Fonnte:", err);
@@ -629,7 +654,14 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     res.json({
       status: 'success',
-      message: 'Instruksi pemulihan telah dikirim ke WhatsApp Anda'
+      message: waSent
+        ? `Token pemulihan telah berhasil dikirim via WhatsApp ke ${user.phoneNumber}`
+        : `Token pemulihan telah dibuat dan siap digunakan.`,
+      waSent,
+      token,
+      resetLink,
+      waLink,
+      phoneNumber: user.phoneNumber
     });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
@@ -796,5 +828,26 @@ export const logout = async (req: any, res: Response) => {
     res.json({ status: 'success', message: 'Berhasil logout' });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: 'Gagal logout' });
+  }
+};
+
+export const checkEmail = async (req: Request, res: Response) => {
+  try {
+    const emailRaw = req.query.email || req.body?.email;
+    const email = typeof emailRaw === 'string' ? emailRaw.trim().toLowerCase() : '';
+    if (!email || !email.includes('@')) {
+      return res.json({ status: 'success', exists: false });
+    }
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, fullName: true }
+    });
+    return res.json({
+      status: 'success',
+      exists: Boolean(existingUser),
+      message: existingUser ? 'Email sudah terdaftar' : 'Email tersedia'
+    });
+  } catch (error: any) {
+    return res.status(500).json({ status: 'error', message: 'Terjadi kesalahan sistem' });
   }
 };

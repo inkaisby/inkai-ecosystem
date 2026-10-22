@@ -22,6 +22,7 @@ import navTabRoutes from './routes/navTabRoutes';
 import newsCarouselRoutes from './routes/newsCarouselRoutes';
 import auditRoutes from './routes/auditRoutes';
 import settingsRoutes from './routes/settingsRoutes';
+import matchRoutes from './routes/matchRoutes';
 import { createServer } from 'http';
 import prisma from './utils/prisma';
 import { initSentryBackend, captureSafeException } from './utils/sentry';
@@ -70,6 +71,13 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'https://inkai-admin.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
+  'http://localhost:8000',
+  'http://127.0.0.1:8000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
+  'https://k-majestigers.vercel.app',
 ];
 
 function parseAllowedOrigins(): string[] {
@@ -87,7 +95,7 @@ const ALLOWED_ORIGINS = parseAllowedOrigins();
 app.use(cors({
   origin: (origin, callback) => {
     // Native/mobile clients and same-origin server calls may omit Origin.
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+    if (!origin || origin === 'null' || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || ALLOWED_ORIGINS.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error(`CORS not allowed: ${origin}`));
@@ -120,6 +128,7 @@ app.use('/v1/members', memberRoutes);
 app.use('/v1/org', orgRoutes);
 app.use('/v1/attendance', attendanceRoutes);
 app.use('/v1/events', eventRoutes);
+app.use('/v1/matches', matchRoutes);
 app.use('/v1/billing', billingRoutes);
 app.use('/v1/inventory', inventoryRoutes);
 app.use('/v1/notifications', notificationRoutes);
@@ -133,6 +142,27 @@ app.use('/v1/news-carousel', newsCarouselRoutes);
 app.use('/v1/audit-logs', auditRoutes);
 app.use('/v1/settings', settingsRoutes);
 app.use('/v1', memberGuideRoutes);
+
+// Dual-mount /api for K-Majestigers Frontend
+app.use('/api/auth', authRoutes);
+app.use('/api/members', memberRoutes);
+app.use('/api/org', orgRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/matches', matchRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/verifications', verificationRoutes);
+app.use('/api/sync', syncRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/nav-tabs', navTabRoutes);
+app.use('/api/news-carousel', newsCarouselRoutes);
+app.use('/api/audit-logs', auditRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api', memberGuideRoutes);
 
 // Health Check
 app.get('/', (req: Request, res: Response) => {

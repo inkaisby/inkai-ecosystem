@@ -142,6 +142,10 @@ model Member {
   bpjsCardUrl         String?
   bpjsCardNumber      String?
   bpjsOcrExtracted    Json?
+  photoUrl            String?
+  weight              Float?
+  height              Float?
+  bloodType           String?
   attendances         Attendance[]
   billings            Billing[]
   eventRegistrations  EventRegistration[]
@@ -236,6 +240,7 @@ model Event {
   registrations EventRegistration[]
   verifications Verification[]
   attendances   Attendance[]
+  matches       Match[]
 }
 
 model EventCategory {
@@ -245,6 +250,7 @@ model EventCategory {
   fee     Float
   event   Event  @relation(fields: [eventId], references: [id])
   registrations EventRegistration[]
+  matches       Match[]
 }
 
 model EventRegistration {
@@ -379,3 +385,33 @@ model AuditLog {
 }
 
 
+
+model Match {
+  id            String         @id @default(uuid())
+  eventId       String
+  categoryId    String?
+  round         String         @default("Babak 1")
+  matchNumber   Int            @default(1)
+  tatamiNumber  Int            @default(1)
+  status        String         @default("SCHEDULED")
+  akaMemberId   String?
+  akaName       String
+  akaDojoName   String
+  akaScore      Int            @default(0)
+  akaSenshu     Boolean        @default(false)
+  akaPenalties  Int            @default(0)
+  aoMemberId    String?
+  aoName        String
+  aoDojoName    String
+  aoScore       Int            @default(0)
+  aoSenshu      Boolean        @default(false)
+  aoPenalties   Int            @default(0)
+  winnerName    String?
+  estTime       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  event         Event          @relation(fields: [eventId], references: [id])
+  category      EventCategory? @relation(fields: [categoryId], references: [id])
+
+  @@index([eventId, tatamiNumber])
+}

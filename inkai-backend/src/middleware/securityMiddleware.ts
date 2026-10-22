@@ -23,7 +23,8 @@ export const globalRateLimiter = rateLimit({
  */
 export const sensitiveActionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: 100,
+  skip: (req) => req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: {

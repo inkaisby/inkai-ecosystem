@@ -93,7 +93,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
         data: { 
           ...user.member, 
           email: user.email,
-          photoUrl: user.photoUrl,
+          photoUrl: user.member?.photoUrl || user.photoUrl || null,
           phoneNumber: user.phoneNumber,
           nik: user.member.nik,
           roles: user.roles.map(r => r.name),
@@ -127,63 +127,110 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
 
 export const updateMyProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const { fullName, phoneNumber, gender, birthDate, nik } = req.body;
+    const { fullName, phoneNumber, gender, birthDate, birthPlace, nik, address, weight, height, bloodType, photoUrl, nia, currentRank, dojoId } = req.body;
     const userId = req.user.userId;
 
     if (!userId) {
       return res.status(401).json({ status: 'error', message: 'Unauthorized: No user ID found' });
     }
 
-    console.log(`[UpdateProfile] Starting update for user: ${userId}`);
+    console.log(`[UpdateProfile] Memperbarui profil untuk userId: ${userId}`);
 
-    // Fetch current data to see what changed
+    // Ambil data user saat ini
     const currentUser = await prisma.user.findUnique({ where: { id: userId } });
     if (!currentUser) {
-      return res.status(404).json({ status: 'error', message: 'User not found' });
+      return res.status(404).json({ status: 'error', message: 'User tidak ditemukan' });
     }
 
     const userData: any = {};
     if (fullName && fullName !== currentUser.fullName) userData.fullName = fullName;
-    
-    // Only update phoneNumber if it's provided and different
     if (phoneNumber && phoneNumber !== currentUser.phoneNumber) {
       userData.phoneNumber = phoneNumber;
     }
+    if (photoUrl !== undefined && photoUrl !== currentUser.photoUrl) {
+      userData.photoUrl = photoUrl;
+    }
 
-    // 1. Update User table if there are changes
+    // 1. Update tabel User jika ada perubahan
     let updatedUser = currentUser;
     if (Object.keys(userData).length > 0) {
       updatedUser = await prisma.user.update({
         where: { id: userId },
         data: userData
       });
-      console.log(`[UpdateProfile] User table updated`);
+      console.log(`[UpdateProfile] Tabel User diperbarui`);
     }
 
-    // 2. Check and update Member table
-    const member = await prisma.member.findUnique({ where: { userId } });
+    // 2. Cek apakah record Member sudah ada, jika belum buatkan terhubung ke dojo default
+    let member = await prisma.member.findUnique({ where: { userId } });
+    if (!member) {
+      const defaultDojo = await prisma.dojo.findFirst();
+      if (defaultDojo) {
+        member = await prisma.member.create({
+          data: {
+            userId,
+            fullName: fullName || currentUser.fullName || 'Member K-Majestigers',
+            dojoId: defaultDojo.id,
+            status: 'Active',
+            currentRank: 'Sabuk Putih (Kyu 10)'
+          }
+        });
+        console.log(`[UpdateProfile] Record Member baru dibuat untuk userId: ${userId}`);
+      }
+    }
+
+    // 3. Update tabel Member
     if (member) {
       const memberData: any = {};
       if (fullName && fullName !== member.fullName) memberData.fullName = fullName;
       if (gender) memberData.gender = gender;
       if (birthDate) memberData.birthDate = new Date(birthDate);
+      if (birthPlace !== undefined) memberData.birthPlace = birthPlace;
       if (nik) memberData.nik = nik;
+      if (address !== undefined) memberData.address = address;
+      if (weight !== undefined && weight !== null && weight !== '') {
+        const parsedWeight = parseFloat(weight);
+        if (!isNaN(parsedWeight)) memberData.weight = parsedWeight;
+      }
+      if (height !== undefined && height !== null && height !== '') {
+        const parsedHeight = parseFloat(height);
+        if (!isNaN(parsedHeight)) memberData.height = parsedHeight;
+      }
+      if (bloodType !== undefined) memberData.bloodType = bloodType;
+      if (photoUrl !== undefined) memberData.photoUrl = photoUrl;
+      if (nia !== undefined) memberData.nia = (nia && String(nia).trim() !== '') ? String(nia).trim() : null;
+      if (currentRank !== undefined && currentRank !== null && currentRank !== '') memberData.currentRank = currentRank;
+      if (dojoId !== undefined && dojoId !== null && dojoId !== '') memberData.dojoId = dojoId;
 
       if (Object.keys(memberData).length > 0) {
-        await prisma.member.update({
-          where: { userId },
+        member = await prisma.member.update({
+          where: { id: member.id },
           data: memberData
         });
-        console.log(`[UpdateProfile] Member table updated`);
+        console.log(`[UpdateProfile] Tabel Member diperbarui`);
       }
     }
 
     res.json({
       status: 'success',
-      message: 'Profile updated successfully',
+      message: 'Profil anggota berhasil diperbarui',
       data: {
         fullName: updatedUser.fullName,
-        phoneNumber: updatedUser.phoneNumber
+        phoneNumber: updatedUser.phoneNumber,
+        photoUrl: member?.photoUrl || updatedUser.photoUrl || null,
+        ...(member ? {
+          gender: member.gender,
+          birthDate: member.birthDate,
+          birthPlace: member.birthPlace,
+          weight: member.weight,
+          height: member.height,
+          bloodType: member.bloodType,
+          address: member.address,
+          nia: member.nia,
+          currentRank: member.currentRank,
+          dojoId: member.dojoId,
+          photoUrl: member.photoUrl || updatedUser.photoUrl || null
+        } : {})
       }
     });
   } catch (error: any) {
@@ -936,6 +983,12 @@ export const uploadDocument = async (req: AuthRequest, res: Response) => {
     const updateData: any = {};
     if (fieldName === 'akte_lahir') {
       updateData.birthCertificateUrl = fileUrl;
+    } else if (fieldName === 'photo' || fieldName === 'avatar' || fieldName === 'pas_foto') {
+      updateData.photoUrl = fileUrl;
+      await prisma.user.update({
+        where: { id: userId },
+        data: { photoUrl: fileUrl }
+      });
     } else if (fieldName === 'bpjs') {
       updateData.bpjsCardUrl = fileUrl;
 
@@ -1448,5 +1501,86 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
     res.json({ status: 'success', message: 'Member deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+
+const resolveMemberId = async (req: AuthRequest) => {
+  if (req.user?.memberId) return req.user.memberId;
+  const uid = req.user?.userId || req.user?.id;
+  if (!uid) return null;
+  const m = await prisma.member.findFirst({ where: { userId: uid, isDeleted: false } });
+  return m ? m.id : null;
+};
+
+export const getMyRanks = async (req: AuthRequest, res: Response) => {
+  try {
+    const memberId = await resolveMemberId(req);
+    if (!memberId) return res.status(404).json({ status: 'error', message: 'Profil anggota tidak ditemukan.' });
+    const ranks = await prisma.memberRank.findMany({
+      where: { memberId },
+      orderBy: { date: 'desc' }
+    });
+    res.json({ status: 'success', data: ranks });
+  } catch (err: any) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const addMyRank = async (req: AuthRequest, res: Response) => {
+  try {
+    const memberId = await resolveMemberId(req);
+    if (!memberId) return res.status(404).json({ status: 'error', message: 'Profil anggota tidak ditemukan.' });
+    const { rank, date, location } = req.body;
+    const newRank = await prisma.memberRank.create({
+      data: {
+        memberId,
+        rank: rank || 'Sabuk Putih (Kyu 10)',
+        date: date ? new Date(date) : new Date(),
+        location: location || 'Ujian Reguler Dojo',
+        isVerified: true
+      }
+    });
+    if (rank) {
+      await prisma.member.update({
+        where: { id: memberId },
+        data: { currentRank: rank }
+      });
+    }
+    res.json({ status: 'success', data: newRank });
+  } catch (err: any) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const updateMyRank = async (req: AuthRequest, res: Response) => {
+  try {
+    const memberId = await resolveMemberId(req);
+    if (!memberId) return res.status(404).json({ status: 'error', message: 'Profil anggota tidak ditemukan.' });
+    const { id } = req.params;
+    const { rank, date, location } = req.body;
+    const updated = await prisma.memberRank.update({
+      where: { id },
+      data: {
+        ...(rank ? { rank } : {}),
+        ...(date ? { date: new Date(date) } : {}),
+        ...(location !== undefined ? { location } : {})
+      }
+    });
+    res.json({ status: 'success', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const deleteMyRank = async (req: AuthRequest, res: Response) => {
+  try {
+    const memberId = await resolveMemberId(req);
+    if (!memberId) return res.status(404).json({ status: 'error', message: 'Profil anggota tidak ditemukan.' });
+    const { id } = req.params;
+    await prisma.memberRank.delete({ where: { id } });
+    res.json({ status: 'success', message: 'Riwayat berhasil dihapus.' });
+  } catch (err: any) {
+    res.status(500).json({ status: 'error', message: err.message });
   }
 };

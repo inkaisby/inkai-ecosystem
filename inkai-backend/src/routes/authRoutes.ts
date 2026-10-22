@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, adminLogin, getSession, register, changePassword, uploadProfilePhoto, forgotPassword, resetPassword, updateProfile, uploadFile, logout } from '../controllers/authController';
+import { checkEmail, login, adminLogin, getSession, register, changePassword, uploadProfilePhoto, forgotPassword, resetPassword, updateProfile, uploadFile, logout } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
 import { authLoginLimiter } from '../middleware/loginRateLimit';
 import { sensitiveActionLimiter } from '../middleware/securityMiddleware';
@@ -36,6 +36,8 @@ const uploadDoc = multer({
 
 const router = Router();
 
+router.get('/check-email', checkEmail);
+router.post('/check-email', checkEmail);
 router.post('/register', sensitiveActionLimiter, register);
 router.post('/login', authLoginLimiter, login);
 router.get('/me', authenticate, getSession);
