@@ -78,6 +78,10 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:8080',
   'http://127.0.0.1:8080',
   'https://k-majestigers.vercel.app',
+  'https://k-majestigers.com',
+  'https://www.k-majestigers.com',
+  'http://k-majestigers.com',
+  'http://www.k-majestigers.com',
 ];
 
 function parseAllowedOrigins(): string[] {
@@ -95,7 +99,7 @@ const ALLOWED_ORIGINS = parseAllowedOrigins();
 app.use(cors({
   origin: (origin, callback) => {
     // Native/mobile clients and same-origin server calls may omit Origin.
-    if (!origin || origin === 'null' || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || ALLOWED_ORIGINS.includes(origin)) {
+    if (!origin || origin === 'null' || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || ALLOWED_ORIGINS.includes(origin) || origin.includes('k-majestigers.com') || origin.includes('k-majestigers.vercel.app')) {
       callback(null, true);
     } else {
       callback(new Error(`CORS not allowed: ${origin}`));
