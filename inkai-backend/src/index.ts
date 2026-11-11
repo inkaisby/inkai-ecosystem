@@ -24,7 +24,7 @@ import auditRoutes from './routes/auditRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import matchRoutes from './routes/matchRoutes';
 import { createServer } from 'http';
-import prisma from './utils/prisma';
+import prisma, { runWithTenant, Tenant } from './utils/prisma';
 import { initSentryBackend, captureSafeException } from './utils/sentry';
 import { globalRateLimiter, securityCCTV } from './middleware/securityMiddleware';
 
@@ -107,9 +107,34 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant', 'x-tenant', 'X-Tenant-Id', 'x-tenant-id'],
   maxAge: 86400,
 }));
+
+app.use((req, res, next) => {
+  const rawTenant =
+    (req.headers['x-tenant'] as string) ||
+    (req.headers['x-tenant-id'] as string) ||
+    (req.headers['x-app'] as string) ||
+    '';
+
+  let tenant: Tenant = 'surabaya';
+
+  if (rawTenant.toLowerCase().includes('majestigers')) {
+    tenant = 'majestigers';
+  } else if (rawTenant.toLowerCase().includes('surabaya') || rawTenant.toLowerCase().includes('sby')) {
+    tenant = 'surabaya';
+  } else {
+    const origin = (req.headers['origin'] || req.headers['referer'] || '') as string;
+    if (origin.toLowerCase().includes('majestigers')) {
+      tenant = 'majestigers';
+    } else if (origin.toLowerCase().includes('inkai-sby') || origin.toLowerCase().includes('inkai-jatim') || origin.toLowerCase().includes('inkaisby')) {
+      tenant = 'surabaya';
+    }
+  }
+
+  runWithTenant(tenant, () => next());
+});
 
 app.use(express.json());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));

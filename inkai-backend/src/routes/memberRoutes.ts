@@ -35,7 +35,7 @@ router.patch('/me/ranks/:id', authenticate, memberController.updateMyRank);
 router.delete('/me/ranks/:id', authenticate, memberController.deleteMyRank);
 router.patch('/:memberId/ranks/:rankId', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH']), memberController.updateMemberRank);
 router.patch('/:id/registration', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), memberController.processMemberRegistration);
-router.post('/bulk', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT']), memberController.bulkCreateMembers);
+router.post('/bulk', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_BRANCH', 'ADMIN_DOJO', 'DOJO_MANAGER']), memberController.bulkCreateMembers);
 
 // 2. Collection routes
 router.get('/', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), memberController.getAllMembers);
@@ -45,6 +45,6 @@ router.post('/:id/provision-login', authenticate, authorize(['ADMINISTRATOR', 'A
 // 3. Wildcard ID routes last
 router.get('/:id', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), memberController.getMemberDetail);
 router.patch('/:id', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_PROVINCE', 'ADMIN_BRANCH', 'ADMIN_DOJO']), memberController.updateMember);
-router.delete('/:id', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT']), memberController.deleteMember);
+router.delete('/:id', authenticate, authorize(['ADMINISTRATOR', 'ADMIN_PUSAT', 'ADMIN_BRANCH', 'ADMIN_DOJO', 'DOJO_MANAGER']), memberController.deleteMember);
 
 export default router;

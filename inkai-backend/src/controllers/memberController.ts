@@ -557,6 +557,8 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       fullName, 
       dojoId, 
       gender, 
+      weight, 
+      height, 
       birthDate,
       birthPlace,
       address,
@@ -646,7 +648,9 @@ export const createMember = async (req: AuthRequest, res: Response) => {
           nia: finalNia,
           nik: finalNik,
           status,
-          userId
+          userId,
+          weight: weight !== undefined && weight !== null && weight !== '' ? Number(weight) : undefined,
+          height: height !== undefined && height !== null && height !== '' ? Number(height) : undefined
         },
         include: {
           dojo: {
@@ -859,6 +863,8 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
             ? String(bpjsCardNumber).replace(/\s+/g, '').trim()
             : null;
       }
+      if (req.body.weight !== undefined) memberUpdateData.weight = req.body.weight !== null && req.body.weight !== '' ? Number(req.body.weight) : null;
+      if (req.body.height !== undefined) memberUpdateData.height = req.body.height !== null && req.body.height !== '' ? Number(req.body.height) : null;
       if (userId !== currentMember.userId) memberUpdateData.userId = userId;
 
       return await tx.member.update({
@@ -1153,7 +1159,9 @@ export const bulkCreateMembers = async (req: AuthRequest, res: Response) => {
                 : currentRankStored,
               nia: finalNia,
               status,
-              userId
+              userId,
+              weight: m.weight !== undefined && m.weight !== null && m.weight !== '' ? Number(m.weight) : undefined,
+              height: m.height !== undefined && m.height !== null && m.height !== '' ? Number(m.height) : undefined
             }
           });
         });

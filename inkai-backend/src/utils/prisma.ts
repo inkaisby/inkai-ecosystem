@@ -1,4 +1,25 @@
 import { PrismaClient } from '@prisma/client';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+export type Tenant = 'surabaya' | 'majestigers';
+
+interface TenantStore {
+  tenant: Tenant;
+}
+
+const tenantStorage = new AsyncLocalStorage<TenantStore>();
+
+export function getTenantContext(): Tenant {
+  return tenantStorage.getStore()?.tenant || 'surabaya';
+}
+
+export function setTenantContext(tenant: Tenant) {
+  tenantStorage.enterWith({ tenant });
+}
+
+export function runWithTenant<T>(tenant: Tenant, fn: () => T): T {
+  return tenantStorage.run({ tenant }, fn);
+}
 
 /** Hilangkan spasi / newline dari paste Vercel & tanda kutip luar ("...") yang ikut ke nilai env. */
 export function sanitizeDatabaseUrlFromEnv(raw: string | undefined): string {
@@ -48,51 +69,46 @@ function rejectSupabaseDirectPortOnVercel(databaseUrl: string): void {
 }
 
 /**
- * Perketat timeout & pooler kecil di edge/serverless supaya handshake ke Supabase tidak putus terlalu cepat.
+ * Normalisasi URL database:
+ * - Di Vercel: gunakan connection pooler (:6543) dengan timeout dan connection limit ketat.
+ * - Di Localhost/Dev: jika port 6543 (yang sering diblokir firewall/ISP lokal), dialihkan ke port 5432.
  */
-function normalizeDatabaseUrlForVercel(databaseUrl: string): string {
-  if (!process.env.VERCEL) return databaseUrl;
+function normalizeDatabaseUrlForEnvironment(databaseUrl: string): string {
   try {
     const u = new URL(databaseUrl);
     const host = u.hostname.toLowerCase();
     if (!isSupabaseRelatedHost(host)) return databaseUrl;
-    if (!u.searchParams.has('connect_timeout')) {
-      u.searchParams.set('connect_timeout', '30');
+
+    if (process.env.VERCEL) {
+      if (!u.searchParams.has('connect_timeout')) {
+        u.searchParams.set('connect_timeout', '30');
+      }
+      if (!u.searchParams.has('connection_limit')) {
+        u.searchParams.set('connection_limit', '1');
+      }
+      return u.toString();
     }
-    if (!u.searchParams.has('connection_limit')) {
-      u.searchParams.set('connection_limit', '1');
+
+    // Local dev fallback ke port 5432 jika menggunakan shared pooler :6543
+    if (u.port === '6543') {
+      u.port = '5432';
+      u.searchParams.delete('pgbouncer');
+      return u.toString();
     }
+
     return u.toString();
   } catch {
     return databaseUrl;
   }
 }
 
-/**
- * Singleton global agar Lambda/Vercel memakai satu klien pada instance yang sama.
- * Runtime memakai `DATABASE_URL` (Supabase: transaction pooler `db.<ref>:6543` + ?pgbouncer=true).
- * Migrasi: `npm run migrate:deploy` memakai `DIRECT_URL` di skrip, bukan field schema.
- */
-const prismaClientSingleton = (): PrismaClient => {
-  const raw = sanitizeDatabaseUrlFromEnv(process.env.DATABASE_URL);
-  if (!raw) {
-    throw new Error('DATABASE_URL belum diset');
+function createPrismaClient(raw: string, tenantName: string): PrismaClient {
+  const sanitized = sanitizeDatabaseUrlFromEnv(raw);
+  if (!sanitized) {
+    throw new Error(`DATABASE_URL untuk ${tenantName} belum diset`);
   }
-  rejectSupabaseDirectPortOnVercel(raw);
-  if (process.env.INKAI_DEBUG_DB_URL === '1') {
-    try {
-      const u = new URL(raw);
-      console.log(
-        '[INKAI_DEBUG_DB_URL] host=%s username_parsed=%s port=%s',
-        u.hostname,
-        u.username || '(empty)',
-        u.port || 'default',
-      );
-    } catch {
-      console.log('[INKAI_DEBUG_DB_URL] URL parse failed');
-    }
-  }
-  const url = normalizeDatabaseUrlForVercel(raw);
+  rejectSupabaseDirectPortOnVercel(sanitized);
+  const url = normalizeDatabaseUrlForEnvironment(sanitized);
   return new PrismaClient({
     datasources: { db: { url } },
     log:
@@ -100,11 +116,59 @@ const prismaClientSingleton = (): PrismaClient => {
         ? ['warn', 'error']
         : ['error'],
   });
+}
+
+const g = globalThis as typeof globalThis & {
+  prismaClients?: Partial<Record<Tenant, PrismaClient>>;
+  prisma?: PrismaClient;
 };
 
-const g = globalThis as typeof globalThis & { prisma?: PrismaClient };
+if (!g.prismaClients) {
+  g.prismaClients = {};
+}
 
-const prisma = g.prisma ?? prismaClientSingleton();
-g.prisma = prisma;
+export function getPrismaClient(tenant: Tenant = getTenantContext()): PrismaClient {
+  const resolvedTenant: Tenant = tenant === 'majestigers' ? 'majestigers' : 'surabaya';
+
+  if (g.prismaClients![resolvedTenant]) {
+    return g.prismaClients![resolvedTenant]!;
+  }
+
+  let dbUrl = '';
+  if (resolvedTenant === 'majestigers') {
+    dbUrl =
+      process.env.DATABASE_URL_MAJESTIGERS ||
+      (process.env.DATABASE_URL?.includes('dlkiwinvpihdcdvmaqlr')
+        ? process.env.DATABASE_URL
+        : '');
+  } else {
+    dbUrl =
+      process.env.DATABASE_URL_SURABAYA ||
+      (process.env.DATABASE_URL?.includes('ztrryuhhdoqdglajukuw')
+        ? process.env.DATABASE_URL
+        : '') ||
+      process.env.DATABASE_URL ||
+      '';
+  }
+
+  if (!dbUrl) {
+    dbUrl = process.env.DATABASE_URL || '';
+  }
+
+  const client = createPrismaClient(dbUrl, resolvedTenant);
+  g.prismaClients![resolvedTenant] = client;
+  return client;
+}
+
+const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrismaClient();
+    const val = Reflect.get(client, prop, client);
+    if (typeof val === 'function') {
+      return val.bind(client);
+    }
+    return val;
+  },
+});
 
 export default prisma;

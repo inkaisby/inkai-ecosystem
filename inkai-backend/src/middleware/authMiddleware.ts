@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { isTokenBlacklisted } from '../utils/tokenBlacklist';
+import { setTenantContext, Tenant } from '../utils/prisma';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -24,8 +25,11 @@ export const optionalAuthenticate = async (req: AuthRequest, res: Response, next
       req.user = undefined;
       return next();
     }
-    const decoded = jwt.verify(token, getJwtSecret());
-    req.user = decoded as any;
+    const decoded = jwt.verify(token, getJwtSecret()) as any;
+    req.user = decoded;
+    if (decoded?.tenant) {
+      setTenantContext(decoded.tenant as Tenant);
+    }
   } catch {
     req.user = undefined;
   }
@@ -43,8 +47,11 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     if (await isTokenBlacklisted(token)) {
       return res.status(401).json({ message: 'Token has been revoked' });
     }
-    const decoded = jwt.verify(token, getJwtSecret());
+    const decoded = jwt.verify(token, getJwtSecret()) as any;
     req.user = decoded;
+    if (decoded?.tenant) {
+      setTenantContext(decoded.tenant as Tenant);
+    }
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid or expired token' });

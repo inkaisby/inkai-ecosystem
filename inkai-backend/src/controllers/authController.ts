@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import prisma from '../utils/prisma';
+import prisma, { getPrismaClient, getTenantContext, setTenantContext, Tenant } from '../utils/prisma';
 import { supabase } from '../utils/supabase';
 import path from 'path';
 import { validatePassword, generateSecurePassword } from '../utils/passwordValidator';
@@ -212,11 +212,29 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Find user by email or NIA
-    let user = await prisma.user.findFirst({
+    // Determine initial tenant from request context, fallback to alternate tenant if not found
+    let activeTenant: Tenant = getTenantContext();
+    let user = await getPrismaClient(activeTenant).user.findFirst({
       where: userWhereForLoginIdentifier(parsedId),
       include: sessionUserInclude,
     });
+
+    if (!user) {
+      const altTenant: Tenant = activeTenant === 'surabaya' ? 'majestigers' : 'surabaya';
+      try {
+        const altUser = await getPrismaClient(altTenant).user.findFirst({
+          where: userWhereForLoginIdentifier(parsedId),
+          include: sessionUserInclude,
+        });
+        if (altUser) {
+          user = altUser;
+          activeTenant = altTenant;
+          setTenantContext(activeTenant);
+        }
+      } catch (err: any) {
+        console.warn(`[auth.login] Fallback tenant query to '${altTenant}' failed:`, err?.message);
+      }
+    }
 
     if (!user) {
       trackFailedLogin(identifier);
@@ -248,7 +266,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Kredensial tidak valid' });
     }
     resetFailedLogins(identifier);
-    logSecurityEvent(req, 'LOGIN_SUCCESS', { userId: user.id });
+    logSecurityEvent(req, 'LOGIN_SUCCESS', { userId: user.id, details: `tenant:${activeTenant}` });
 
     const uniquePermissions = collectPermissionSlugs(user.roles);
 
@@ -258,6 +276,7 @@ export const login = async (req: Request, res: Response) => {
         userId: user.id, 
         memberId: user.member?.id,
         memberBranchId: user.member?.dojo?.branchId ?? null,
+        tenant: activeTenant,
         roles: user.roles.map(r => r.name),
         permissions: uniquePermissions,
         managedProvinceId: user.managedProvinceId,
